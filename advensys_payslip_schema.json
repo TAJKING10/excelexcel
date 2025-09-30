@@ -1,0 +1,62 @@
+{
+  "payslip": {
+    "id": "string",
+    "period": {
+      "month": "1-12",
+      "year": "YYYY"
+    },
+    "employee": {
+      "id": "string",
+      "firstName": "string",
+      "lastName": "string",
+      "email": "string",
+      "class": "string",
+      "hireDate": "YYYY-MM-DD",
+      "terminationDate": "YYYY-MM-DD|null"
+    },
+    "company": {
+      "id": "string",
+      "name": "string",
+      "country": "string",
+      "currency": "string"
+    },
+    "earnings": {
+      "grossMonthly": "number",
+      "cotisable": "number",
+      "imposable": "number"
+    },
+    "employeeContrib": {
+      "maladie": "number",
+      "pension": "number",
+      "otherDeductions": "number",
+      "incomeTax": "number",
+      "total": "number"
+    },
+    "employerContrib": {
+      "maladie": "number",
+      "pension": "number",
+      "sante": "number",
+      "accident": "number",
+      "socialSecurityTotal": "number"
+    },
+    "netPay": "number",
+    "ytd": {
+      "gross": "number",
+      "net": "number",
+      "employeeContribTotal": "number",
+      "employerContribTotal": "number",
+      "taxes": "number"
+    },
+    "lines": [
+      {
+        "code": "string",
+        "label_fr": "string",
+        "label_en": "string",
+        "quantity": "number",
+        "rate": "number",
+        "amount": "number",
+        "type": "earning|deduction|employer_contrib|info"
+      }
+    ]
+  }
+}

@@ -1,107 +1,108 @@
-import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './stores/auth';
-import { AppShell } from './components/layout/AppShell';
-import { DashboardCards } from './components/dashboard/DashboardCards';
-import { EmployeeList } from './components/employees/EmployeeList';
+import { getDefaultRoute } from './lib/rbac';
+import { ProtectedRoute } from './components/guards/ProtectedRoute';
+
+// Layouts
+import { AdminShell } from './components/layout/AdminShell';
+import { OrgShell } from './components/layout/OrgShell';
+import { UserShell } from './components/layout/UserShell';
+
+// Pages - Admin
+import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { CompanyList } from './components/companies/CompanyList';
+import { CompanyDetail } from './pages/CompanyDetail';
+import { EmployeeList } from './components/employees/EmployeeList';
 import { IndividualList } from './components/individuals/IndividualList';
 import { PayslipList } from './components/payslips/PayslipList';
 
-function LoginForm() {
-  const { login } = useAuthStore();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+// Pages - Org (Company Admin)
+import { OrgDashboard } from './pages/org/OrgDashboard';
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+// Pages - Employee
+import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
 
-    const success = await login(username, password);
-    if (!success) {
-      setError('Invalid credentials');
-    }
-    setIsLoading(false);
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          Excel to Web Login
-        </h1>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter username"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter password"
-              required
-            />
-          </div>
-          {error && (
-            <div className="text-red-600 text-sm text-center">
-              {error}
-            </div>
-          )}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:opacity-50 transition-colors"
-          >
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        <div className="mt-6 text-xs text-gray-500 text-center">
-          <p>Demo accounts:</p>
-          <p>SuperAdmin / SuperAdmin</p>
-          <p>user123 / user123</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Auth
+import LoginPage from './pages/LoginPage';
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const { i18n } = useTranslation();
 
-  if (!isAuthenticated) {
-    return <LoginForm />;
+  useEffect(() => {
+    // Set default language
+    i18n.changeLanguage('fr');
+  }, [i18n]);
+
+  if (!isAuthenticated || !user) {
+    return <LoginPage />;
   }
+
+  // Redirect to role-specific default route
+  const defaultRoute = getDefaultRoute(user.role);
 
   return (
     <Router>
-      <AppShell>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardCards />} />
-          <Route path="/employees" element={<EmployeeList />} />
-          <Route path="/companies" element={<CompanyList />} />
-          <Route path="/individuals" element={<IndividualList />} />
-          <Route path="/payslips" element={<PayslipList />} />
-        </Routes>
-      </AppShell>
+      <Routes>
+        {/* Root redirect */}
+        <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+
+        {/* SUPER_ADMIN Routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute requiredRole="SUPER_ADMIN" path="/admin">
+              <AdminShell />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="companies" element={<CompanyList />} />
+          <Route path="companies/:companyId" element={<CompanyDetail />} />
+          <Route path="employees" element={<EmployeeList />} />
+          <Route path="individuals" element={<IndividualList />} />
+          <Route path="payslips" element={<PayslipList />} />
+          <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
+        </Route>
+
+        {/* COMPANY_ADMIN Routes */}
+        <Route
+          path="/org/*"
+          element={
+            <ProtectedRoute requiredRole={['SUPER_ADMIN', 'COMPANY_ADMIN']} path="/org">
+              <OrgShell />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/org/dashboard" replace />} />
+          <Route path="dashboard" element={<OrgDashboard />} />
+          <Route path="employees" element={<EmployeeList />} />
+          <Route path="payslips" element={<PayslipList />} />
+          <Route path="analytics" element={<div className="p-6">Analytics (Coming Soon)</div>} />
+          <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
+        </Route>
+
+        {/* EMPLOYEE Routes */}
+        <Route
+          path="/me/*"
+          element={
+            <ProtectedRoute path="/me">
+              <UserShell />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/me/dashboard" replace />} />
+          <Route path="dashboard" element={<EmployeeDashboard />} />
+          <Route path="payslips" element={<PayslipList />} />
+          <Route path="profile" element={<div className="p-6">Profile (Coming Soon)</div>} />
+        </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+      </Routes>
     </Router>
   );
 }

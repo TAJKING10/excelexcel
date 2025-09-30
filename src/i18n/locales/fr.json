@@ -1,0 +1,203 @@
+{
+  "app": {
+    "title": "Advensys Paie",
+    "subtitle": "Gestion de paie Luxembourg"
+  },
+  "auth": {
+    "title": "Advensys Paie",
+    "login": "Connexion",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "loginButton": "Se connecter",
+    "loggingIn": "Connexion...",
+    "invalidCredentials": "Identifiants invalides",
+    "demoAccounts": "Comptes de démonstration"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "employees": "Employés",
+    "companies": "Entreprises",
+    "individuals": "Individus",
+    "payslips": "Fiches de paie",
+    "myPayslips": "Mes fiches de paie",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "logout": "Déconnexion",
+    "analytics": "Analytique"
+  },
+  "dashboard": {
+    "welcome": "Bienvenue",
+    "overview": "Aperçu",
+    "stats": "Statistiques"
+  },
+  "companies": {
+    "title": "Entreprises",
+    "add": "Ajouter entreprise",
+    "name": "Nom",
+    "country": "Pays",
+    "currency": "Devise",
+    "employees": "Employés",
+    "actions": "Actions",
+    "view": "Voir",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "overview": "Aperçu",
+    "analytics": "Analytique",
+    "totalEmployees": "Employés totaux",
+    "activeEmployees": "Employés actifs",
+    "monthlyPayroll": "Masse salariale mensuelle",
+    "socialCharges": "Charges sociales"
+  },
+  "employees": {
+    "title": "Employés",
+    "add": "Ajouter employé",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "Email",
+    "class": "Classe",
+    "hireDate": "Date d'embauche",
+    "terminationDate": "Date de fin",
+    "baseSalary": "Salaire de base",
+    "status": "Statut",
+    "active": "Actif",
+    "terminated": "Terminé",
+    "actions": "Actions",
+    "view": "Voir",
+    "edit": "Modifier",
+    "delete": "Supprimer"
+  },
+  "individuals": {
+    "title": "Individus",
+    "add": "Ajouter individu",
+    "name": "Nom",
+    "type": "Type",
+    "company": "Entreprise",
+    "actions": "Actions"
+  },
+  "payslips": {
+    "title": "Fiches de paie",
+    "myPayslips": "Mes fiches de paie",
+    "create": "Créer fiche de paie",
+    "period": "Période",
+    "employee": "Employé",
+    "grossPay": "Salaire brut",
+    "netPay": "Salaire net",
+    "status": "Statut",
+    "actions": "Actions",
+    "view": "Voir",
+    "edit": "Modifier",
+    "download": "Télécharger PDF",
+    "delete": "Supprimer",
+    "import": "Importer depuis Excel",
+    "exportTemplate": "Exporter modèle Excel",
+    "month": "Mois",
+    "year": "Année",
+    "earnings": {
+      "title": "Gains",
+      "grossMonthly": "Brut mensuel",
+      "cotisable": "Cotisable",
+      "imposable": "Imposable"
+    },
+    "employeeContrib": {
+      "title": "Cotisations employé",
+      "maladie": "Maladie",
+      "pension": "Pension",
+      "otherDeductions": "Autres déductions",
+      "incomeTax": "Impôt sur le revenu",
+      "total": "Total"
+    },
+    "employerContrib": {
+      "title": "Cotisations employeur",
+      "maladie": "Maladie",
+      "pension": "Pension",
+      "sante": "Santé",
+      "accident": "Accident",
+      "socialSecurityTotal": "Total Sécurité Sociale"
+    },
+    "ytd": {
+      "title": "Cumul annuel",
+      "gross": "Brut",
+      "net": "Net",
+      "employeeContrib": "Cotisations employé",
+      "employerContrib": "Cotisations employeur",
+      "taxes": "Impôts"
+    },
+    "lines": {
+      "code": "Code",
+      "label": "Libellé",
+      "quantity": "Quantité",
+      "rate": "Taux",
+      "amount": "Montant",
+      "type": "Type",
+      "earning": "Gain",
+      "deduction": "Déduction",
+      "employer_contrib": "Cotisation employeur",
+      "info": "Information"
+    }
+  },
+  "analytics": {
+    "title": "Analytique",
+    "period": "Période",
+    "from": "De",
+    "to": "À",
+    "export": "Exporter",
+    "netVsGross": "Net vs Brut",
+    "contributions": "Cotisations",
+    "taxes": "Impôts",
+    "gross": "Brut",
+    "net": "Net",
+    "maladie": "Maladie",
+    "pension": "Pension",
+    "sante": "Santé",
+    "accident": "Accident"
+  },
+  "excel": {
+    "import": {
+      "title": "Importer depuis Excel",
+      "upload": "Télécharger fichier",
+      "mapColumns": "Mapper les colonnes",
+      "validate": "Valider",
+      "importing": "Importation...",
+      "success": "Importation réussie",
+      "error": "Erreur d'importation",
+      "step1": "Étape 1: Télécharger",
+      "step2": "Étape 2: Mapper",
+      "step3": "Étape 3: Valider",
+      "selectFile": "Sélectionner un fichier Excel",
+      "dragDrop": "ou glisser-déposer ici",
+      "employeesCreated": "Employés créés",
+      "employeesUpdated": "Employés mis à jour",
+      "payslipsCreated": "Fiches de paie créées"
+    }
+  },
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "view": "Voir",
+    "download": "Télécharger",
+    "upload": "Télécharger",
+    "export": "Exporter",
+    "import": "Importer",
+    "add": "Ajouter",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "finish": "Terminer"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "noData": "Aucune donnée",
+    "error": "Erreur",
+    "success": "Succès",
+    "warning": "Avertissement",
+    "info": "Information",
+    "language": "Langue",
+    "french": "Français",
+    "english": "Anglais"
+  }
+}

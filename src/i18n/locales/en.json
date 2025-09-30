@@ -1,0 +1,203 @@
+{
+  "app": {
+    "title": "Advensys Payroll",
+    "subtitle": "Luxembourg Payroll Management"
+  },
+  "auth": {
+    "title": "Advensys Payroll",
+    "login": "Login",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Log in",
+    "loggingIn": "Logging in...",
+    "invalidCredentials": "Invalid credentials",
+    "demoAccounts": "Demo accounts"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "employees": "Employees",
+    "companies": "Companies",
+    "individuals": "Individuals",
+    "payslips": "Payslips",
+    "myPayslips": "My Payslips",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "analytics": "Analytics"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "overview": "Overview",
+    "stats": "Statistics"
+  },
+  "companies": {
+    "title": "Companies",
+    "add": "Add Company",
+    "name": "Name",
+    "country": "Country",
+    "currency": "Currency",
+    "employees": "Employees",
+    "actions": "Actions",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "overview": "Overview",
+    "analytics": "Analytics",
+    "totalEmployees": "Total Employees",
+    "activeEmployees": "Active Employees",
+    "monthlyPayroll": "Monthly Payroll",
+    "socialCharges": "Social Charges"
+  },
+  "employees": {
+    "title": "Employees",
+    "add": "Add Employee",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "class": "Class",
+    "hireDate": "Hire Date",
+    "terminationDate": "Termination Date",
+    "baseSalary": "Base Salary",
+    "status": "Status",
+    "active": "Active",
+    "terminated": "Terminated",
+    "actions": "Actions",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "individuals": {
+    "title": "Individuals",
+    "add": "Add Individual",
+    "name": "Name",
+    "type": "Type",
+    "company": "Company",
+    "actions": "Actions"
+  },
+  "payslips": {
+    "title": "Payslips",
+    "myPayslips": "My Payslips",
+    "create": "Create Payslip",
+    "period": "Period",
+    "employee": "Employee",
+    "grossPay": "Gross Pay",
+    "netPay": "Net Pay",
+    "status": "Status",
+    "actions": "Actions",
+    "view": "View",
+    "edit": "Edit",
+    "download": "Download PDF",
+    "delete": "Delete",
+    "import": "Import from Excel",
+    "exportTemplate": "Export Excel Template",
+    "month": "Month",
+    "year": "Year",
+    "earnings": {
+      "title": "Earnings",
+      "grossMonthly": "Monthly Gross",
+      "cotisable": "Contributable",
+      "imposable": "Taxable"
+    },
+    "employeeContrib": {
+      "title": "Employee Contributions",
+      "maladie": "Health",
+      "pension": "Pension",
+      "otherDeductions": "Other Deductions",
+      "incomeTax": "Income Tax",
+      "total": "Total"
+    },
+    "employerContrib": {
+      "title": "Employer Contributions",
+      "maladie": "Health",
+      "pension": "Pension",
+      "sante": "Healthcare",
+      "accident": "Accident",
+      "socialSecurityTotal": "Social Security Total"
+    },
+    "ytd": {
+      "title": "Year to Date",
+      "gross": "Gross",
+      "net": "Net",
+      "employeeContrib": "Employee Contributions",
+      "employerContrib": "Employer Contributions",
+      "taxes": "Taxes"
+    },
+    "lines": {
+      "code": "Code",
+      "label": "Label",
+      "quantity": "Quantity",
+      "rate": "Rate",
+      "amount": "Amount",
+      "type": "Type",
+      "earning": "Earning",
+      "deduction": "Deduction",
+      "employer_contrib": "Employer Contribution",
+      "info": "Information"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "period": "Period",
+    "from": "From",
+    "to": "To",
+    "export": "Export",
+    "netVsGross": "Net vs Gross",
+    "contributions": "Contributions",
+    "taxes": "Taxes",
+    "gross": "Gross",
+    "net": "Net",
+    "maladie": "Health",
+    "pension": "Pension",
+    "sante": "Healthcare",
+    "accident": "Accident"
+  },
+  "excel": {
+    "import": {
+      "title": "Import from Excel",
+      "upload": "Upload File",
+      "mapColumns": "Map Columns",
+      "validate": "Validate",
+      "importing": "Importing...",
+      "success": "Import successful",
+      "error": "Import error",
+      "step1": "Step 1: Upload",
+      "step2": "Step 2: Map",
+      "step3": "Step 3: Validate",
+      "selectFile": "Select an Excel file",
+      "dragDrop": "or drag and drop here",
+      "employeesCreated": "Employees created",
+      "employeesUpdated": "Employees updated",
+      "payslipsCreated": "Payslips created"
+    }
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "export": "Export",
+    "import": "Import",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish"
+  },
+  "common": {
+    "loading": "Loading...",
+    "noData": "No data",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information",
+    "language": "Language",
+    "french": "French",
+    "english": "English"
+  }
+}

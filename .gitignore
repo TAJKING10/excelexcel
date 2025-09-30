@@ -1,0 +1,16 @@
+# dependencies
+node_modules/
+.vite/
+pnpm-lock.yaml
+yarn.lock
+
+# builds
+dist/
+build/
+
+# misc
+*.log
+.DS_Store
+*.local.*
+.env*
+!.env.example
