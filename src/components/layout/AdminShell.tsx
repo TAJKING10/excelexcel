@@ -15,7 +15,8 @@ import {
   FileText,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react'
 
 export function AdminShell() {
@@ -25,11 +26,12 @@ export function AdminShell() {
   const { user } = useAuthStore()
 
   const navItems = [
-    { path: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
-    { path: '/companies', icon: Building2, label: t('companies.title') },
-    { path: '/employees', icon: Users, label: t('employees.title') },
-    { path: '/individuals', icon: UserCheck, label: t('individuals.title') },
-    { path: '/payslips', icon: FileText, label: t('payslips.title') },
+    { path: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') || 'Dashboard' },
+    { path: '/admin/companies', icon: Building2, label: t('companies.title') || 'Companies' },
+    { path: '/admin/employees', icon: Users, label: t('employees.title') || 'Employees' },
+    { path: '/admin/individuals', icon: UserCheck, label: t('individuals.title') || 'Individuals' },
+    { path: '/admin/payslips', icon: FileText, label: t('payslips.title') || 'Payslips' },
+    { path: '/admin/users', icon: Shield, label: 'User Access' },
   ]
 
   return (
@@ -89,7 +91,7 @@ export function AdminShell() {
 
         {/* Bottom Actions */}
         <div className="p-4 space-y-2">
-          <Link to="/settings">
+          <Link to="/admin/settings">
             <Button
               variant="ghost"
               className={cn(
@@ -98,7 +100,7 @@ export function AdminShell() {
               )}
             >
               <Settings size={20} className="shrink-0" />
-              {!sidebarCollapsed && <span className="ml-3">{t('nav.settings')}</span>}
+              {!sidebarCollapsed && <span className="ml-3">{t('nav.settings') || 'Settings'}</span>}
             </Button>
           </Link>
         </div>

@@ -36,6 +36,22 @@ const mockUsers: User[] = [
     companyId: 'company-1',
     employeeId: 'emp-1',
   },
+  {
+    id: '4',
+    username: 'user1',
+    email: 'user1@advensys.lu',
+    firstName: 'Jane',
+    lastName: 'Smith',
+    role: 'EMPLOYEE',
+    access: {
+      companyIds: ['company-1'],
+      individualIds: ['ind-1'],
+      canViewPayslips: true,
+      canEditPayslips: true,
+      canDeletePayslips: false,
+      canViewAnalytics: true,
+    },
+  },
 ];
 
 export const useAuthStore = create<AuthState>((set) => ({

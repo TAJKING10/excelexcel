@@ -19,9 +19,169 @@ import {
 export function EmployeeDashboard() {
   const { t } = useLanguageStore();
   const { user } = useAuthStore();
-  const { employees, payslips, companies } = useDataStore();
+  const { employees, payslips, companies, individuals } = useDataStore();
 
-  // Get employee data for the logged-in user
+  // Check if user has custom access
+  const hasCustomAccess = user?.access && (
+    user.access.companyIds.length > 0 ||
+    user.access.individualIds.length > 0
+  );
+
+  // If user has custom access, show all accessible companies and individuals
+  if (hasCustomAccess) {
+    const accessibleCompanies = companies.filter((c) =>
+      user.access?.companyIds.includes(c.id)
+    );
+    const accessibleIndividuals = individuals.filter((i) =>
+      user.access?.individualIds.includes(i.id)
+    );
+    const accessibleEmployees = employees.filter((e) =>
+      user.access?.companyIds.includes(e.companyId)
+    );
+    const accessiblePayslips = payslips.filter((p) =>
+      user.access?.companyIds.includes(p.companyId) ||
+      user.access?.individualIds.includes(p.employeeId)
+    );
+
+    return (
+      <div className="space-y-6">
+        {/* Welcome Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">
+            {t('dashboard.welcome') || 'Welcome'}, {user?.firstName}!
+          </h1>
+          <p className="text-muted-foreground">
+            Your assigned companies and individuals
+          </p>
+        </div>
+
+        {/* Access Overview */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Companies</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{accessibleCompanies.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Individuals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{accessibleIndividuals.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Employees</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{accessibleEmployees.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Payslips</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{accessiblePayslips.length}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Accessible Companies */}
+        {accessibleCompanies.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Accessible Companies</CardTitle>
+              <CardDescription>Companies you have access to manage</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {accessibleCompanies.map((company) => {
+                  const companyEmployees = accessibleEmployees.filter(
+                    (e) => e.companyId === company.id
+                  );
+                  const companyPayslips = accessiblePayslips.filter(
+                    (p) => p.companyId === company.id
+                  );
+                  return (
+                    <div key={company.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{company.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {companyEmployees.length} employees • {companyPayslips.length} payslips
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        View Details
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Accessible Individuals */}
+        {accessibleIndividuals.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Accessible Individuals</CardTitle>
+              <CardDescription>Individual freelancers you can manage</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {accessibleIndividuals.map((individual) => (
+                  <div key={individual.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium">
+                        {individual.firstName} {individual.lastName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{individual.email}</p>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      View Details
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Permissions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Permissions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2 flex-wrap">
+              {user.access?.canViewPayslips && (
+                <Badge variant="secondary">View Payslips</Badge>
+              )}
+              {user.access?.canEditPayslips && (
+                <Badge variant="default">Edit Payslips</Badge>
+              )}
+              {user.access?.canDeletePayslips && (
+                <Badge variant="destructive">Delete Payslips</Badge>
+              )}
+              {user.access?.canViewAnalytics && (
+                <Badge variant="outline">View Analytics</Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Standard employee view
   const employeeId = user?.employeeId;
   const companyId = user?.companyId;
 

@@ -29,14 +29,19 @@ import {
 
 export function AdminDashboard() {
   const { t } = useLanguageStore();
-  const { companies, employees, payslips } = useDataStore();
+  const { companies, employees, individuals, payslips, getAllAnalytics } = useDataStore();
   const navigate = useNavigate();
 
+  // Get comprehensive analytics
+  const analytics = getAllAnalytics();
+
   // Calculate overview stats
-  const totalCompanies = companies.length;
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter((e) => e.status === 'active').length;
-  const totalPayslips = payslips.length;
+  const totalCompanies = analytics.totalCompanies;
+  const totalIndividuals = analytics.totalIndividuals;
+  const totalEmployees = analytics.totalEmployees;
+  const activeEmployees = analytics.activeEmployees;
+  const totalPayslips = analytics.totalPayslips;
+  const totalPayroll = analytics.totalPayroll;
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
   const monthlyPayslips = payslips.filter(
@@ -130,26 +135,27 @@ export function AdminDashboard() {
           icon={Building2}
           title={t('dashboard.totalCompanies') || 'Total Companies'}
           value={totalCompanies}
-          onClick={() => navigate('/companies')}
+          subtitle={`${totalIndividuals} individuals`}
+          onClick={() => navigate('/admin/companies')}
         />
         <StatCard
           icon={Users}
           title={t('dashboard.totalEmployees') || 'Total Employees'}
           value={totalEmployees}
           subtitle={`${activeEmployees} ${t('dashboard.active') || 'active'}`}
-          onClick={() => navigate('/employees')}
+          onClick={() => navigate('/admin/employees')}
         />
         <StatCard
           icon={FileText}
           title={t('dashboard.totalPayslips') || 'Total Payslips'}
           value={totalPayslips}
-          onClick={() => navigate('/payslips')}
+          onClick={() => navigate('/admin/payslips')}
         />
         <StatCard
-          icon={Calendar}
-          title={t('dashboard.thisMonth') || 'This Month'}
-          value={monthlyPayslips}
-          subtitle={t('dashboard.payslipsCreated') || 'payslips created'}
+          icon={TrendingUp}
+          title={'Total Payroll'}
+          value={`€${totalPayroll.toLocaleString()}`}
+          subtitle={`${monthlyPayslips} this month`}
         />
       </div>
 
@@ -266,9 +272,115 @@ export function AdminDashboard() {
         </CardContent>
       </Card>
 
+      {/* Companies Analytics Table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Companies Analytics</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/admin/companies')}
+          >
+            {t('dashboard.viewAll') || 'View All'}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Company</TableHead>
+                <TableHead>Total Employees</TableHead>
+                <TableHead>Active</TableHead>
+                <TableHead>Monthly Payroll</TableHead>
+                <TableHead>Social Charges</TableHead>
+                <TableHead>{t('employees.actions') || 'Actions'}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {analytics.companiesData.map(({ company, analytics: companyAnalytics }) => (
+                <TableRow key={company.id}>
+                  <TableCell className="font-medium">{company.name}</TableCell>
+                  <TableCell>{companyAnalytics.totalEmployees}</TableCell>
+                  <TableCell>
+                    <Badge variant="default">{companyAnalytics.activeEmployees}</Badge>
+                  </TableCell>
+                  <TableCell>€{companyAnalytics.monthlyPayroll.toLocaleString()}</TableCell>
+                  <TableCell>€{companyAnalytics.totalSocialCharges.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/admin/companies/${company.id}`)}
+                    >
+                      {t('dashboard.view') || 'View'}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Individuals Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Individuals (Freelancers)</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/admin/individuals')}
+          >
+            {t('dashboard.viewAll') || 'View All'}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Linked Company</TableHead>
+                <TableHead>{t('employees.actions') || 'Actions'}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {individuals.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    No individuals found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                individuals.map((individual) => (
+                  <TableRow key={individual.id}>
+                    <TableCell className="font-medium">
+                      {individual.firstName} {individual.lastName}
+                    </TableCell>
+                    <TableCell>{individual.email}</TableCell>
+                    <TableCell>
+                      {individual.companyId
+                        ? companies.find(c => c.id === individual.companyId)?.name || 'N/A'
+                        : 'Independent'}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        {t('dashboard.view') || 'View'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/companies')}>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/admin/companies')}>
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <Building2 className="mr-2 h-5 w-5" />
@@ -282,7 +394,7 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/employees')}>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/admin/employees')}>
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <Users className="mr-2 h-5 w-5" />
@@ -296,7 +408,7 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/payslips')}>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/admin/payslips')}>
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <FileText className="mr-2 h-5 w-5" />

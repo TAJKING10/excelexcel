@@ -12,6 +12,7 @@ import { UserShell } from './components/layout/UserShell';
 
 // Pages - Admin
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { UserAccessManagement } from './pages/admin/UserAccessManagement';
 import { CompanyList } from './components/companies/CompanyList';
 import { CompanyDetail } from './pages/CompanyDetail';
 import { EmployeeList } from './components/employees/EmployeeList';
@@ -65,6 +66,7 @@ function App() {
           <Route path="employees" element={<EmployeeList />} />
           <Route path="individuals" element={<IndividualList />} />
           <Route path="payslips" element={<PayslipList />} />
+          <Route path="users" element={<UserAccessManagement />} />
           <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
         </Route>
 

@@ -1,6 +1,15 @@
 // User & Auth Types
 export type Role = 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'EMPLOYEE';
 
+export interface UserAccess {
+  companyIds: string[]; // Companies the user has access to
+  individualIds: string[]; // Individual freelancers the user has access to
+  canViewPayslips: boolean;
+  canEditPayslips: boolean;
+  canDeletePayslips: boolean;
+  canViewAnalytics: boolean;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -10,6 +19,7 @@ export interface User {
   role: Role;
   companyId?: string; // For COMPANY_ADMIN and EMPLOYEE
   employeeId?: string; // For EMPLOYEE only
+  access?: UserAccess; // Access control for users
 }
 
 // Company Types

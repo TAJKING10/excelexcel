@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { Company, Employee, Payslip, CompanyAnalytics } from '@/types';
+import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess } from '@/types';
 
-interface Individual {
+export interface Individual {
   id: string;
   firstName: string;
   lastName: string;
@@ -14,6 +14,7 @@ interface DataState {
   employees: Employee[];
   individuals: Individual[];
   payslips: Payslip[];
+  users: User[];
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
   updateCompany: (id: string, company: Partial<Company>) => void;
   deleteCompany: (id: string) => void;
@@ -26,7 +27,20 @@ interface DataState {
   addPayslip: (payslip: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updatePayslip: (id: string, payslip: Partial<Payslip>) => void;
   deletePayslip: (id: string) => void;
+  addUser: (user: Omit<User, 'id'>) => void;
+  updateUser: (id: string, user: Partial<User>) => void;
+  updateUserAccess: (userId: string, access: UserAccess) => void;
+  deleteUser: (id: string) => void;
   getCompanyAnalytics: (companyId: string) => CompanyAnalytics;
+  getAllAnalytics: () => {
+    totalCompanies: number;
+    totalIndividuals: number;
+    totalEmployees: number;
+    activeEmployees: number;
+    totalPayslips: number;
+    totalPayroll: number;
+    companiesData: Array<{ company: Company; analytics: CompanyAnalytics }>;
+  };
 }
 
 const mockCompanies: Company[] = [
@@ -227,6 +241,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   employees: mockEmployees,
   individuals: mockIndividuals,
   payslips: mockPayslips,
+  users: [],
 
   addCompany: (company) =>
     set((state) => ({
@@ -301,6 +316,26 @@ export const useDataStore = create<DataState>((set, get) => ({
       payslips: state.payslips.filter((p) => p.id !== id),
     })),
 
+  addUser: (user) =>
+    set((state) => ({
+      users: [...state.users, { ...user, id: `user-${Date.now()}` }],
+    })),
+
+  updateUser: (id, user) =>
+    set((state) => ({
+      users: state.users.map((u) => (u.id === id ? { ...u, ...user } : u)),
+    })),
+
+  updateUserAccess: (userId, access) =>
+    set((state) => ({
+      users: state.users.map((u) => (u.id === userId ? { ...u, access } : u)),
+    })),
+
+  deleteUser: (id) =>
+    set((state) => ({
+      users: state.users.filter((u) => u.id !== id),
+    })),
+
   getCompanyAnalytics: (companyId: string): CompanyAnalytics => {
     const state = get();
     const employees = state.employees.filter((e) => e.companyId === companyId);
@@ -354,6 +389,31 @@ export const useDataStore = create<DataState>((set, get) => ({
       netVsGross,
       contributions,
       taxes,
+    };
+  },
+
+  getAllAnalytics: () => {
+    const state = get();
+    const totalCompanies = state.companies.length;
+    const totalIndividuals = state.individuals.length;
+    const totalEmployees = state.employees.length;
+    const activeEmployees = state.employees.filter((e) => e.status === 'active').length;
+    const totalPayslips = state.payslips.length;
+    const totalPayroll = state.payslips.reduce((sum, p) => sum + p.earnings.grossMonthly, 0);
+
+    const companiesData = state.companies.map((company) => ({
+      company,
+      analytics: get().getCompanyAnalytics(company.id),
+    }));
+
+    return {
+      totalCompanies,
+      totalIndividuals,
+      totalEmployees,
+      activeEmployees,
+      totalPayslips,
+      totalPayroll,
+      companiesData,
     };
   },
 }));
