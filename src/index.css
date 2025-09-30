@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 210 10% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 10% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 10% 20%;
+    --primary: 184 72% 34%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 184 38% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --tertiary: 262 40% 45%;
+    --tertiary-foreground: 0 0% 100%;
+    --neutral: 210 20% 96%;
+    --neutral-foreground: 210 10% 20%;
+    --muted: 210 18% 90%;
+    --muted-foreground: 210 10% 55%;
+    --accent: 184 72% 34%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 18 80% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 14% 82%;
+    --input: 210 14% 82%;
+    --ring: 184 72% 34%;
+    --success: 152 45% 40%;
+    --warning: 18 80% 52%;
+    --radius: 12px;
+  }
+
+  .dark {
+    --background: 210 22% 12%;
+    --foreground: 210 20% 98%;
+    --card: 210 18% 20%;
+    --card-foreground: 210 20% 98%;
+    --popover: 210 18% 20%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 184 72% 34%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 184 38% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --tertiary: 262 40% 45%;
+    --tertiary-foreground: 0 0% 100%;
+    --neutral: 210 15% 28%;
+    --neutral-foreground: 210 20% 98%;
+    --muted: 210 15% 28%;
+    --muted-foreground: 210 10% 55%;
+    --accent: 184 72% 34%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 18 80% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 15% 28%;
+    --input: 210 15% 28%;
+    --ring: 184 72% 34%;
+    --success: 152 45% 40%;
+    --warning: 18 80% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html,
+  body {
+    @apply bg-background text-foreground;
+  }
+}
