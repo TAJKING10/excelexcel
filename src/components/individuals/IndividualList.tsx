@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLanguageStore } from '@/stores/language'
 import { useDataStore } from '@/stores/data'
+import { useAuthStore } from '@/stores/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -11,11 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, FileText, MoreHorizontal, Edit, Trash2 } from 'lucide-react'
+import { Plus, FileText, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react'
 import type { Individual } from '@/types'
 
 export function IndividualList() {
   const { t } = useLanguageStore()
+  const { user } = useAuthStore()
+  const navigate = useNavigate()
   const { individuals, addIndividual, updateIndividual, deleteIndividual } = useDataStore()
   const { toast } = useToast()
 
@@ -132,9 +136,13 @@ export function IndividualList() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline">
-                          <FileText size={16} className="mr-2" />
-                          {t('payslips.create')}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? `/admin/individuals/${individual.id}` : `/individuals/${individual.id}`)}
+                        >
+                          <Eye size={16} className="mr-2" />
+                          View
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -143,6 +151,10 @@ export function IndividualList() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? `/admin/individuals/${individual.id}` : `/individuals/${individual.id}`)}>
+                              <FileText size={16} className="mr-2" />
+                              {t('payslips.create')}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(individual)}>
                               <Edit size={16} className="mr-2" />
                               {t('employees.edit')}

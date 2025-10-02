@@ -84,7 +84,7 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['"DM Sans"', '"Inter"', 'sans-serif'],
+        sans: ['Barlow', 'var(--font-family)', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       letterSpacing: {

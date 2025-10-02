@@ -1,6 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+/* === Advensys Brand Tokens === */
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,60 +7,124 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 210 10% 20%;
+    /* Brand Colors - Advensys */
+    --primary-50:  #eff6ff;
+    --primary-100: #dbeafe;
+    --primary-200: #bfdbfe;
+    --primary-300: #93c5fd;
+    --primary-400: #60a5fa;
+    --primary-500: #00226E; /* Primary Blue (Deep navy) */
+    --primary-600: #003ABD; /* Secondary Blue (Bright) */
+    --primary-700: #1d4ed8;
+    --primary-800: #1e40af;
+    --primary-900: #1e3a8a;
+
+    --accent-400: #FFC200; /* Yellow */
+    --accent-500: #FF785E; /* Orange/CTA */
+    --accent-600: #D97706; /* Dark orange */
+
+    --bg-primary:   #ffffff;
+    --bg-secondary: #F8FAFC;
+    --bg-tertiary:  #f1f5f9;
+
+    --text-primary:   #00226E; /* main */
+    --text-secondary: #003ABD; /* supporting */
+    --text-tertiary:  #64748B;
+    --text-dark:      #334155;
+    --text-inverse:   #ffffff;
+
+    --success: #059669;
+    --error:   #dc2626;
+    --warning: #f59e0b;
+
+    /* Typography */
+    --font-family: 'Barlow', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+    /* Spacing (8px grid via rems) */
+    --space-1: .25rem;  /* 4px */
+    --space-2: .5rem;   /* 8px */
+    --space-3: .75rem;  /* 12px */
+    --space-4: 1rem;    /* 16px */
+    --space-6: 1.5rem;  /* 24px */
+    --space-8: 2rem;    /* 32px */
+    --space-12: 3rem;   /* 48px */
+
+    /* Radius */
+    --radius-sm: 2px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 10px rgba(0,34,110,.08);
+    --shadow-lg: 0 12px 24px rgba(0,34,110,.12);
+
+    /* Focus ring */
+    --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.5);
+
+    /* Motion */
+    --motion-fast: 150ms ease-out;
+    --motion-std: 300ms cubic-bezier(0.4,0,0.2,1);
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, #00226E 0%, #1d4ed8 100%);
+    --gradient-accent:  linear-gradient(135deg, #FFC200 0%, #D97706 100%);
+    --gradient-hero:    linear-gradient(135deg, #00226E 0%, #003ABD 50%, #1d4ed8 100%);
+
+    /* Shadcn compatibility */
+    --background: 0 0% 100%;
+    --foreground: 220 100% 22%;
     --card: 0 0% 100%;
-    --card-foreground: 210 10% 20%;
+    --card-foreground: 220 100% 22%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 10% 20%;
-    --primary: 184 72% 34%;
+    --popover-foreground: 220 100% 22%;
+    --primary: 220 100% 37%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 184 38% 50%;
-    --secondary-foreground: 0 0% 100%;
-    --tertiary: 262 40% 45%;
-    --tertiary-foreground: 0 0% 100%;
-    --neutral: 210 20% 96%;
-    --neutral-foreground: 210 10% 20%;
-    --muted: 210 18% 90%;
-    --muted-foreground: 210 10% 55%;
-    --accent: 184 72% 34%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 18 80% 52%;
+    --secondary: 210 20% 97%;
+    --secondary-foreground: 220 100% 22%;
+    --muted: 210 20% 97%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 25 100% 68%;
+    --accent-foreground: 220 100% 22%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 14% 82%;
-    --input: 210 14% 82%;
-    --ring: 184 72% 34%;
-    --success: 152 45% 40%;
-    --warning: 18 80% 52%;
-    --radius: 12px;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 220 100% 37%;
+    --radius: 0.5rem;
   }
 
   .dark {
-    --background: 210 22% 12%;
-    --foreground: 210 20% 98%;
-    --card: 210 18% 20%;
-    --card-foreground: 210 20% 98%;
-    --popover: 210 18% 20%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 184 72% 34%;
+    --bg-primary:   #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary:  #334155;
+    --text-primary:   #f8fafc;
+    --text-secondary: #93c5fd;
+    --text-tertiary:  #cbd5e1;
+    --text-dark:      #e2e8f0;
+    --text-inverse:   #00226E;
+
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 15%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 15%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 220 100% 37%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 184 38% 50%;
-    --secondary-foreground: 0 0% 100%;
-    --tertiary: 262 40% 45%;
-    --tertiary-foreground: 0 0% 100%;
-    --neutral: 210 15% 28%;
-    --neutral-foreground: 210 20% 98%;
-    --muted: 210 15% 28%;
-    --muted-foreground: 210 10% 55%;
-    --accent: 184 72% 34%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 18 80% 52%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 25 100% 68%;
+    --accent-foreground: 220 100% 22%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 15% 28%;
-    --input: 210 15% 28%;
-    --ring: 184 72% 34%;
-    --success: 152 45% 40%;
-    --warning: 18 80% 52%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 220 100% 37%;
   }
 }
 
@@ -69,9 +132,42 @@
   * {
     @apply border-border;
   }
-  
+
   html,
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-family);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+  }
+
+  h1 {
+    @apply text-[clamp(32px,5vw,48px)] font-extrabold tracking-[0.06em] uppercase;
+    color: var(--text-primary);
+  }
+
+  h2 {
+    @apply text-2xl font-bold tracking-[0.06em] uppercase;
+    color: var(--text-primary);
+  }
+
+  h3 {
+    @apply text-xl font-medium leading-[1.125];
+    color: var(--text-primary);
+  }
+
+  h4 {
+    @apply text-lg font-medium;
+    color: var(--text-primary);
+  }
+}
+
+@layer utilities {
+  .transition-advensys {
+    transition: all var(--motion-std);
+  }
+
+  .transition-fast {
+    transition: all var(--motion-fast);
   }
 }

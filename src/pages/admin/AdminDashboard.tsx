@@ -14,6 +14,11 @@ import {
   TrendingUp,
   ArrowRight,
   UserCog,
+  Plus,
+  Upload,
+  Download,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import {
   BarChart,
@@ -46,9 +51,19 @@ export function AdminDashboard() {
   const totalAdvensysStaff = users.filter(u => u.role === 'EMPLOYEE').length;
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
+  const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+
   const monthlyPayslips = payslips.filter(
     (p) => p.period.month === currentMonth && p.period.year === currentYear
   ).length;
+
+  const lastMonthPayslips = payslips.filter(
+    (p) => p.period.month === lastMonth && p.period.year === lastMonthYear
+  ).length;
+
+  const payslipsDelta = monthlyPayslips - lastMonthPayslips;
+  const payslipsDeltaPercent = lastMonthPayslips > 0 ? ((payslipsDelta / lastMonthPayslips) * 100).toFixed(1) : 0;
 
   // Recent activity (last 5 payslips)
   const recentPayslips = [...payslips]
@@ -99,12 +114,14 @@ export function AdminDashboard() {
     title,
     value,
     subtitle,
+    delta,
     onClick,
   }: {
     icon: any;
     title: string;
     value: string | number;
     subtitle?: string;
+    delta?: { value: number; percent: string };
     onClick?: () => void;
   }) => (
     <Card className={onClick ? 'cursor-pointer hover:bg-muted/50 transition-colors' : ''} onClick={onClick}>
@@ -114,6 +131,22 @@ export function AdminDashboard() {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
+        {delta && (
+          <div className="flex items-center gap-1 mt-1">
+            {delta.value >= 0 ? (
+              <Badge variant="default" className="bg-green-500 text-white flex items-center gap-1">
+                <ArrowUp className="h-3 w-3" />
+                {delta.percent}%
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <ArrowDown className="h-3 w-3" />
+                {Math.abs(parseFloat(delta.percent))}%
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground">vs last month</span>
+          </div>
+        )}
         {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
       </CardContent>
     </Card>
@@ -130,6 +163,31 @@ export function AdminDashboard() {
           {t('dashboard.adminWelcome') || 'Welcome to the admin dashboard'}
         </p>
       </div>
+
+      {/* Quick Actions */}
+      <Card className="bg-muted/50">
+        <CardHeader>
+          <CardTitle className="text-base">{t('dashboard.quickActions') || 'Quick Actions'}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/admin/individuals/create')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Individual
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/admin/payslips/create')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Payslip
+          </Button>
+          <Button variant="outline" size="sm">
+            <Upload className="h-4 w-4 mr-2" />
+            Import Excel
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export Template
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Overview Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -150,9 +208,10 @@ export function AdminDashboard() {
         <StatCard
           icon={FileText}
           title={t('nav.payslips') || 'Payslips'}
-          value={totalPayslips}
-          subtitle={`${monthlyPayslips} ${t('dashboard.thisMonth') || 'this month'}`}
-          onClick={() => navigate('/admin/payslips')}
+          value={monthlyPayslips}
+          subtitle={`${t('dashboard.thisMonth') || 'this month'} (${totalPayslips} total)`}
+          delta={{ value: payslipsDelta, percent: payslipsDeltaPercent.toString() }}
+          onClick={() => navigate(`/admin/payslips?period=${currentYear}-${String(currentMonth).padStart(2, '0')}`)}
         />
         <StatCard
           icon={TrendingUp}

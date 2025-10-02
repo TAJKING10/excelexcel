@@ -51,48 +51,49 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   return (
     <div className={cn(
-      "bg-card border-r border-border transition-all duration-200 ease-in-out flex flex-col",
+      "bg-white border-r border-[#eff6ff] transition-all duration-300 ease-in-out flex flex-col shadow-sm",
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-[#eff6ff]">
         <div className="flex items-center justify-between">
           {!collapsed && (
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-semibold text-sm">A</span>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#003ABD] to-[#00226E] rounded-lg flex items-center justify-center shadow-md">
+                <span className="text-white font-extrabold text-lg">A</span>
               </div>
-              <span className="font-semibold text-card-foreground">{t('auth.title')}</span>
+              <span className="font-bold text-[#00226E] text-lg tracking-tight">{t('auth.title')}</span>
             </div>
           )}
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={() => onToggle(!collapsed)}
-            className="text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff]"
           >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </Button>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive = location.pathname === item.path
-          
+          const isActive = location.pathname === item.path ||
+                          (item.path !== '/' && item.path !== '/admin' && location.pathname.startsWith(item.path))
+
           return (
             <Link key={item.path} to={item.path}>
               <Button
-                variant={isActive ? "secondary" : "ghost"}
+                variant="ghost"
                 className={cn(
-                  "w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted",
-                  isActive && "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                  collapsed && "px-2"
+                  "w-full justify-start h-11 text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] transition-advensys font-medium",
+                  isActive && "bg-[#eff6ff] text-[#003ABD] shadow-sm border-l-4 border-[#003ABD] rounded-l-none",
+                  collapsed ? "px-2 justify-center" : "px-4"
                 )}
               >
-                <Icon size={20} className="shrink-0" />
+                <Icon size={20} className={cn("shrink-0", isActive && "text-[#003ABD]")} />
                 {!collapsed && <span className="ml-3">{item.label}</span>}
               </Button>
             </Link>
@@ -103,26 +104,26 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <Separator />
 
       {/* Bottom Actions */}
-      <div className="p-4 space-y-2">
+      <div className="p-3 space-y-1 border-t border-[#eff6ff]">
         <Link to="/settings">
           <Button
             variant="ghost"
             className={cn(
-              "w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted",
-              collapsed && "px-2"
+              "w-full justify-start h-11 text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] transition-advensys font-medium",
+              collapsed ? "px-2 justify-center" : "px-4"
             )}
           >
             <Settings size={20} className="shrink-0" />
             {!collapsed && <span className="ml-3">{t('nav.settings')}</span>}
           </Button>
         </Link>
-        
+
         <Button
           variant="ghost"
           onClick={logout}
           className={cn(
-            "w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted",
-            collapsed && "px-2"
+            "w-full justify-start h-11 text-[#64748B] hover:text-[#dc2626] hover:bg-red-50 transition-advensys font-medium",
+            collapsed ? "px-2 justify-center" : "px-4"
           )}
         >
           <LogOut size={20} className="shrink-0" />
