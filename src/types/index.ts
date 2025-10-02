@@ -29,6 +29,18 @@ export interface Company {
   createdAt: string;
 }
 
+// Individual (Freelancer) Types
+export interface Individual {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  country: string;
+  currency: string;
+  status: 'active' | 'terminated';
+  createdAt: string;
+}
+
 // Employee Types
 export interface Employee {
   id: string;

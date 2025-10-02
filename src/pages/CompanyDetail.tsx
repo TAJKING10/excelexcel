@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
@@ -6,6 +6,11 @@ import { useAuthStore } from '@/stores/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import { EmployeeList } from '@/components/employees/EmployeeList';
 import { PayslipList } from '@/components/payslips/PayslipList';
 import { CompanyAnalytics } from '@/components/analytics/CompanyAnalytics';
@@ -17,7 +22,19 @@ export function CompanyDetail() {
   const navigate = useNavigate();
   const { t } = useLanguageStore();
   const { user } = useAuthStore();
-  const { companies, employees, getCompanyAnalytics } = useDataStore();
+  const { companies, employees, getCompanyAnalytics, addEmployee } = useDataStore();
+  const { toast } = useToast();
+
+  const [isAddEmployeeDialogOpen, setIsAddEmployeeDialogOpen] = useState(false);
+  const [employeeForm, setEmployeeForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    class: '',
+    hireDate: new Date().toISOString().split('T')[0],
+    baseSalary: 0,
+    status: 'active' as 'active' | 'terminated',
+  });
 
   if (!companyId) {
     return <div>Company not found</div>;
@@ -31,6 +48,39 @@ export function CompanyDetail() {
 
   const analytics = getCompanyAnalytics(companyId);
   const companyEmployees = employees.filter((e) => e.companyId === companyId);
+
+  const handleAddEmployee = () => {
+    if (!employeeForm.firstName.trim() || !employeeForm.lastName.trim()) {
+      toast({ title: 'Error', description: 'Name fields are required', variant: 'destructive' });
+      return;
+    }
+    if (!employeeForm.email.trim()) {
+      toast({ title: 'Error', description: 'Email is required', variant: 'destructive' });
+      return;
+    }
+    if (!employeeForm.baseSalary || employeeForm.baseSalary <= 0) {
+      toast({ title: 'Error', description: 'Valid salary is required', variant: 'destructive' });
+      return;
+    }
+
+    addEmployee({
+      ...employeeForm,
+      companyId: companyId!,
+      terminationDate: null,
+    });
+
+    toast({ title: 'Success', description: 'Employee added successfully' });
+    setEmployeeForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      class: '',
+      hireDate: new Date().toISOString().split('T')[0],
+      baseSalary: 0,
+      status: 'active',
+    });
+    setIsAddEmployeeDialogOpen(false);
+  };
 
   const StatCard = ({ icon: Icon, title, value, subtitle }: { icon: any; title: string; value: string | number; subtitle?: string }) => (
     <Card>
@@ -152,7 +202,13 @@ export function CompanyDetail() {
         </TabsContent>
 
         {/* Employees Tab */}
-        <TabsContent value="employees">
+        <TabsContent value="employees" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => setIsAddEmployeeDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('employees.add') || 'Add Employee'}
+            </Button>
+          </div>
           <EmployeeListFiltered companyId={companyId} />
         </TabsContent>
 
@@ -172,6 +228,91 @@ export function CompanyDetail() {
           <CompanyAnalytics companyId={companyId} />
         </TabsContent>
       </Tabs>
+
+      {/* Add Employee Dialog */}
+      <Dialog open={isAddEmployeeDialogOpen} onOpenChange={setIsAddEmployeeDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('employees.add')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="emp-firstName">{t('employees.firstname')}</Label>
+              <Input
+                id="emp-firstName"
+                value={employeeForm.firstName}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, firstName: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="emp-lastName">{t('employees.name')}</Label>
+              <Input
+                id="emp-lastName"
+                value={employeeForm.lastName}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, lastName: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="emp-email">{t('employees.email')}</Label>
+              <Input
+                id="emp-email"
+                type="email"
+                value={employeeForm.email}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="emp-class">{t('employees.class') || 'Class'}</Label>
+              <Input
+                id="emp-class"
+                value={employeeForm.class}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, class: e.target.value })}
+                placeholder="e.g., Cadre A, Employé B"
+              />
+            </div>
+            <div>
+              <Label htmlFor="emp-hireDate">{t('employees.hireDate') || 'Hire Date'}</Label>
+              <Input
+                id="emp-hireDate"
+                type="date"
+                value={employeeForm.hireDate}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, hireDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="emp-salary">{t('employees.salary')}</Label>
+              <Input
+                id="emp-salary"
+                type="number"
+                value={employeeForm.baseSalary}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, baseSalary: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="emp-status">{t('employees.status')}</Label>
+              <Select
+                value={employeeForm.status}
+                onValueChange={(value: 'active' | 'terminated') => setEmployeeForm({ ...employeeForm, status: value })}
+              >
+                <SelectTrigger id="emp-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddEmployeeDialogOpen(false)}>
+              {t('common.cancel') || 'Cancel'}
+            </Button>
+            <Button onClick={handleAddEmployee}>{t('common.save') || 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

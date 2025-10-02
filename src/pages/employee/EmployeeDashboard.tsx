@@ -7,6 +7,23 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import {
   Building2,
   Users,
@@ -21,8 +38,29 @@ export function EmployeeDashboard() {
   const { t } = useLanguageStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const { employees, payslips, companies } = useDataStore();
+  const { toast } = useToast();
+  const { employees, payslips, companies, individuals, addCompany, addIndividual } = useDataStore();
   const [activeTab, setActiveTab] = useState('companies');
+
+  // Dialog states
+  const [isAddCompanyDialogOpen, setIsAddCompanyDialogOpen] = useState(false);
+  const [isAddIndividualDialogOpen, setIsAddIndividualDialogOpen] = useState(false);
+
+  // Form states
+  const [companyForm, setCompanyForm] = useState({
+    name: '',
+    country: 'Luxembourg',
+    currency: 'EUR',
+  });
+
+  const [individualForm, setIndividualForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    country: 'Luxembourg',
+    currency: 'EUR',
+    status: 'active' as 'active' | 'terminated',
+  });
 
   // Get accessible companies and data
   const accessibleCompanies = companies.filter((c) =>
@@ -37,6 +75,10 @@ export function EmployeeDashboard() {
     user?.access?.companyIds.includes(p.companyId)
   );
 
+  const accessibleIndividuals = individuals.filter((i) =>
+    user?.access?.individualIds?.includes(i.id)
+  );
+
   // Get stats for each company
   const getCompanyStats = (companyId: string) => {
     const companyEmployees = employees.filter(e => e.companyId === companyId);
@@ -46,6 +88,29 @@ export function EmployeeDashboard() {
       activeEmployees: companyEmployees.filter(e => e.status === 'active').length,
       totalPayslips: companyPayslips.length,
     };
+  };
+
+  // Handlers for creating company and individual
+  const handleAddCompany = () => {
+    if (!companyForm.name.trim()) {
+      toast({ title: 'Error', description: 'Company name is required', variant: 'destructive' });
+      return;
+    }
+    addCompany(companyForm);
+    toast({ title: 'Success', description: 'Company created successfully' });
+    setCompanyForm({ name: '', country: 'Luxembourg', currency: 'EUR' });
+    setIsAddCompanyDialogOpen(false);
+  };
+
+  const handleAddIndividual = () => {
+    if (!individualForm.firstName.trim() || !individualForm.lastName.trim()) {
+      toast({ title: 'Error', description: 'Name fields are required', variant: 'destructive' });
+      return;
+    }
+    addIndividual(individualForm);
+    toast({ title: 'Success', description: 'Individual created successfully' });
+    setIndividualForm({ firstName: '', lastName: '', email: '', country: 'Luxembourg', currency: 'EUR', status: 'active' });
+    setIsAddIndividualDialogOpen(false);
   };
 
   return (
@@ -131,7 +196,7 @@ export function EmployeeDashboard() {
                   {t('dashboard.clientCompaniesDesc')}
                 </CardDescription>
               </div>
-              <Button onClick={() => navigate('/companies/create')} className="gap-2">
+              <Button onClick={() => setIsAddCompanyDialogOpen(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
                 {t('companies.add')}
               </Button>
@@ -144,7 +209,7 @@ export function EmployeeDashboard() {
                   <p className="text-sm text-muted-foreground mb-4">
                     {t('dashboard.noCompaniesDesc')}
                   </p>
-                  <Button onClick={() => navigate('/companies/create')}>
+                  <Button onClick={() => setIsAddCompanyDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     {t('dashboard.createCompany')}
                   </Button>
@@ -211,23 +276,64 @@ export function EmployeeDashboard() {
                   {t('dashboard.individualFreelancersDesc')}
                 </CardDescription>
               </div>
-              <Button onClick={() => navigate('/individuals/create')} className="gap-2">
+              <Button onClick={() => setIsAddIndividualDialogOpen(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
                 {t('individuals.add')}
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                <UserCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">{t('dashboard.noIndividualsYet')}</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {t('dashboard.noIndividualsDesc')}
-                </p>
-                <Button onClick={() => navigate('/individuals/create')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('dashboard.addIndividual')}
-                </Button>
-              </div>
+              {accessibleIndividuals.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                  <UserCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">{t('dashboard.noIndividualsYet')}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {t('dashboard.noIndividualsDesc')}
+                  </p>
+                  <Button onClick={() => setIsAddIndividualDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('dashboard.addIndividual')}
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {accessibleIndividuals.map((individual) => (
+                    <Card
+                      key={individual.id}
+                      className="hover:shadow-lg transition-shadow cursor-pointer border-2"
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <UserCircle className="h-5 w-5 text-primary" />
+                          {individual.firstName} {individual.lastName}
+                        </CardTitle>
+                        <CardDescription>
+                          {individual.country} • {individual.currency}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{t('employees.email')}</span>
+                          <span className="text-xs">{individual.email}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{t('employees.status')}</span>
+                          <Badge variant={individual.status === 'active' ? 'default' : 'secondary'}>
+                            {individual.status}
+                          </Badge>
+                        </div>
+                        <Button
+                          className="w-full mt-4"
+                          variant="outline"
+                          size="sm"
+                        >
+                          {t('payslips.create')}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -239,7 +345,7 @@ export function EmployeeDashboard() {
           <CardTitle className="text-base">{t('dashboard.quickActions')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate('/companies/create')}>
+          <Button variant="outline" size="sm" onClick={() => setIsAddCompanyDialogOpen(true)}>
             <Building2 className="h-4 w-4 mr-2" />
             {t('dashboard.createCompany')}
           </Button>
@@ -247,12 +353,164 @@ export function EmployeeDashboard() {
             <FileText className="h-4 w-4 mr-2" />
             {t('dashboard.viewAllPayslips')}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/individuals/create')}>
+          <Button variant="outline" size="sm" onClick={() => setIsAddIndividualDialogOpen(true)}>
             <UserCircle className="h-4 w-4 mr-2" />
             {t('dashboard.addIndividual')}
           </Button>
         </CardContent>
       </Card>
+
+      {/* Create Company Dialog */}
+      <Dialog open={isAddCompanyDialogOpen} onOpenChange={setIsAddCompanyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('companies.add')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="company-name">{t('companies.name')}</Label>
+              <Input
+                id="company-name"
+                value={companyForm.name}
+                onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })}
+                placeholder={t('companies.name')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="company-country">{t('companies.country')}</Label>
+              <Select
+                value={companyForm.country}
+                onValueChange={(value) => setCompanyForm({ ...companyForm, country: value })}
+              >
+                <SelectTrigger id="company-country">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Luxembourg">Luxembourg</SelectItem>
+                  <SelectItem value="France">France</SelectItem>
+                  <SelectItem value="Belgium">Belgium</SelectItem>
+                  <SelectItem value="Germany">Germany</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="company-currency">{t('companies.currency')}</Label>
+              <Select
+                value={companyForm.currency}
+                onValueChange={(value) => setCompanyForm({ ...companyForm, currency: value })}
+              >
+                <SelectTrigger id="company-currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                  <SelectItem value="GBP">GBP (£)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddCompanyDialogOpen(false)}>
+              {t('common.cancel') || 'Cancel'}
+            </Button>
+            <Button onClick={handleAddCompany}>{t('common.save') || 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Individual Dialog */}
+      <Dialog open={isAddIndividualDialogOpen} onOpenChange={setIsAddIndividualDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('individuals.add')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="individual-firstName">{t('employees.firstname')}</Label>
+              <Input
+                id="individual-firstName"
+                value={individualForm.firstName}
+                onChange={(e) => setIndividualForm({ ...individualForm, firstName: e.target.value })}
+                placeholder={t('employees.firstname')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="individual-lastName">{t('employees.name')}</Label>
+              <Input
+                id="individual-lastName"
+                value={individualForm.lastName}
+                onChange={(e) => setIndividualForm({ ...individualForm, lastName: e.target.value })}
+                placeholder={t('employees.name')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="individual-email">{t('employees.email')}</Label>
+              <Input
+                id="individual-email"
+                type="email"
+                value={individualForm.email}
+                onChange={(e) => setIndividualForm({ ...individualForm, email: e.target.value })}
+                placeholder={t('employees.email')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="individual-country">{t('companies.country')}</Label>
+              <Select
+                value={individualForm.country}
+                onValueChange={(value) => setIndividualForm({ ...individualForm, country: value })}
+              >
+                <SelectTrigger id="individual-country">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Luxembourg">Luxembourg</SelectItem>
+                  <SelectItem value="France">France</SelectItem>
+                  <SelectItem value="Belgium">Belgium</SelectItem>
+                  <SelectItem value="Germany">Germany</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="individual-currency">{t('companies.currency')}</Label>
+              <Select
+                value={individualForm.currency}
+                onValueChange={(value) => setIndividualForm({ ...individualForm, currency: value })}
+              >
+                <SelectTrigger id="individual-currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                  <SelectItem value="GBP">GBP (£)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="individual-status">{t('employees.status')}</Label>
+              <Select
+                value={individualForm.status}
+                onValueChange={(value: 'active' | 'terminated') => setIndividualForm({ ...individualForm, status: value })}
+              >
+                <SelectTrigger id="individual-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddIndividualDialogOpen(false)}>
+              {t('common.cancel') || 'Cancel'}
+            </Button>
+            <Button onClick={handleAddIndividual}>{t('common.save') || 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

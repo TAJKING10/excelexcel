@@ -1,17 +1,21 @@
 import { create } from 'zustand';
-import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess } from '@/types';
+import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual } from '@/types';
 
 interface DataState {
   companies: Company[];
   employees: Employee[];
   payslips: Payslip[];
   users: User[];
+  individuals: Individual[];
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
   updateCompany: (id: string, company: Partial<Company>) => void;
   deleteCompany: (id: string) => void;
   addEmployee: (employee: Omit<Employee, 'id'>) => void;
   updateEmployee: (id: string, employee: Partial<Employee>) => void;
   deleteEmployee: (id: string) => void;
+  addIndividual: (individual: Omit<Individual, 'id' | 'createdAt'>) => void;
+  updateIndividual: (id: string, individual: Partial<Individual>) => void;
+  deleteIndividual: (id: string) => void;
   addPayslip: (payslip: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updatePayslip: (id: string, payslip: Partial<Payslip>) => void;
   deletePayslip: (id: string) => void;
@@ -213,11 +217,14 @@ const mockPayslips: Payslip[] = [
   },
 ];
 
+const mockIndividuals: Individual[] = [];
+
 export const useDataStore = create<DataState>((set, get) => ({
   companies: mockCompanies,
   employees: mockEmployees,
   payslips: mockPayslips,
   users: [],
+  individuals: mockIndividuals,
 
   addCompany: (company) =>
     set((state) => ({
@@ -250,6 +257,24 @@ export const useDataStore = create<DataState>((set, get) => ({
   deleteEmployee: (id) =>
     set((state) => ({
       employees: state.employees.filter((e) => e.id !== id),
+    })),
+
+  addIndividual: (individual) =>
+    set((state) => ({
+      individuals: [
+        ...state.individuals,
+        { ...individual, id: `ind-${Date.now()}`, createdAt: new Date().toISOString() },
+      ],
+    })),
+
+  updateIndividual: (id, individual) =>
+    set((state) => ({
+      individuals: state.individuals.map((i) => (i.id === id ? { ...i, ...individual } : i)),
+    })),
+
+  deleteIndividual: (id) =>
+    set((state) => ({
+      individuals: state.individuals.filter((i) => i.id !== id),
     })),
 
   addPayslip: (payslip) =>
