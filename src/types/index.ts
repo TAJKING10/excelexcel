@@ -48,11 +48,18 @@ export interface Employee {
   firstName: string;
   lastName: string;
   email: string;
+  matricule: string; // Matricule number
   class: string;
+  taxClass: string | number; // Tax class (e.g., "15% - 2", 1, 2, etc.)
   hireDate: string;
   terminationDate: string | null;
   baseSalary: number;
   status: 'active' | 'terminated';
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  identityNumber?: string; // D588378, D608388-2022, etc.
+  anciennete?: number; // Seniority in days (Excel date format)
 }
 
 // Payslip Types
@@ -62,25 +69,40 @@ export interface Period {
 }
 
 export interface Earnings {
-  grossMonthly: number;
-  cotisable: number;
-  imposable: number;
+  remunerationBase: number; // Rémun. Base
+  grossMonthly: number; // Brut Mensuel
+  cotisable: number; // Cotisable
+  imposable: number; // Imposable
 }
 
 export interface EmployeeContrib {
-  maladie: number;
-  pension: number;
-  otherDeductions: number;
-  incomeTax: number;
+  maladie: number; // Maladie
+  pension: number; // Pension
+  ciCo2: number; // CI-CO2
+  cis: number; // CIS
+  cissm: number; // CISSM
+  deductions: number; // Déductions
+  incomeTax: number; // Impôts
   total: number;
 }
 
 export interface EmployerContrib {
   maladie: number;
   pension: number;
-  sante: number;
+  sante: number; // Santé
   accident: number;
   socialSecurityTotal: number;
+}
+
+export interface WorkingHours {
+  normalHours: number;
+  supplementaryHours: number;
+  holidays: number; // Congés
+  publicHolidayExtra: number; // Férié extra
+  familyLeave: number; // Congés familliale
+  paternityLeave: number; // Congés paternité
+  sickLeave: number; // Maladie
+  unemployment: number; // Chômage
 }
 
 export interface YTD {
@@ -104,6 +126,18 @@ export interface PayslipLine {
   type: LineType;
 }
 
+export interface MonthlyPayslipData {
+  monthName: string; // "J", "F", "M", etc. or full month name
+  days: string; // "1-31", "1-29", etc.
+  daysImposable: number; // Jours impos.
+  status: string; // "Empl.", "-", etc.
+  taxClass: string | number; // Tax class
+  earnings: Earnings;
+  employeeContrib: EmployeeContrib;
+  workingHours: WorkingHours;
+  netPay: number;
+}
+
 export interface Payslip {
   id: string;
   employeeId: string;
@@ -117,19 +151,31 @@ export interface Payslip {
     class: string;
     hireDate: string;
     terminationDate: string | null;
+    matricule?: string;
+    identityNumber?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
   };
   company: {
     id: string;
     name: string;
     country: string;
     currency: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    registrationNumber?: string; // 2015 22 06 748
   };
+  monthlyData?: MonthlyPayslipData; // Detailed monthly data
   earnings: Earnings;
   employeeContrib: EmployeeContrib;
   employerContrib: EmployerContrib;
+  workingHours?: WorkingHours;
   netPay: number;
   ytd: YTD;
   lines: PayslipLine[];
+  credits?: number; // Crédits
   createdAt: string;
   updatedAt: string;
 }
