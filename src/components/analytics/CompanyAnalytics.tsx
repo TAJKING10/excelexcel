@@ -41,25 +41,25 @@ export function CompanyAnalytics({ companyId }: CompanyAnalyticsProps) {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Calendar className="mr-2 h-4 w-4" />
-            {t('analytics.selectPeriod') || 'Select Period'}
+            {t('analytics.selectPeriod')}
           </Button>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
               <Download className="mr-2 h-4 w-4" />
-              {t('analytics.export') || 'Export'}
+              {t('analytics.export')}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleExport('png')}>
-              {t('analytics.exportPNG') || 'Export as PNG'}
+              {t('analytics.exportPNG')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleExport('csv')}>
-              {t('analytics.exportCSV') || 'Export as CSV'}
+              {t('analytics.exportCSV')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleExport('excel')}>
-              {t('analytics.exportExcel') || 'Export as Excel'}
+              {t('analytics.exportExcel')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -68,7 +68,7 @@ export function CompanyAnalytics({ companyId }: CompanyAnalyticsProps) {
       {/* Net vs Gross Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('analytics.netVsGross') || 'Net vs Gross Salary'}</CardTitle>
+          <CardTitle>{t('analytics.netVsGross')}</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -82,14 +82,14 @@ export function CompanyAnalytics({ companyId }: CompanyAnalyticsProps) {
                 type="monotone"
                 dataKey="gross"
                 stroke="#3b82f6"
-                name={t('analytics.gross') || 'Gross'}
+                name={t('analytics.gross')}
                 strokeWidth={2}
               />
               <Line
                 type="monotone"
                 dataKey="net"
                 stroke="#10b981"
-                name={t('analytics.net') || 'Net'}
+                name={t('analytics.net')}
                 strokeWidth={2}
               />
             </LineChart>
@@ -100,7 +100,7 @@ export function CompanyAnalytics({ companyId }: CompanyAnalyticsProps) {
       {/* Contributions Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('analytics.contributions') || 'Social Security Contributions'}</CardTitle>
+          <CardTitle>{t('analytics.contributions')}</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -114,25 +114,25 @@ export function CompanyAnalytics({ companyId }: CompanyAnalyticsProps) {
                 dataKey="maladie"
                 stackId="a"
                 fill="#3b82f6"
-                name={t('analytics.maladie') || 'Health'}
+                name={t('analytics.maladie')}
               />
               <Bar
                 dataKey="pension"
                 stackId="a"
                 fill="#8b5cf6"
-                name={t('analytics.pension') || 'Pension'}
+                name={t('analytics.pension')}
               />
               <Bar
                 dataKey="sante"
                 stackId="a"
                 fill="#10b981"
-                name={t('analytics.sante') || 'Health Care'}
+                name={t('analytics.sante')}
               />
               <Bar
                 dataKey="accident"
                 stackId="a"
                 fill="#f59e0b"
-                name={t('analytics.accident') || 'Accident'}
+                name={t('analytics.accident')}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -142,7 +142,7 @@ export function CompanyAnalytics({ companyId }: CompanyAnalyticsProps) {
       {/* Taxes Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('analytics.taxes') || 'Income Taxes'}</CardTitle>
+          <CardTitle>{t('analytics.taxes')}</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -155,7 +155,7 @@ export function CompanyAnalytics({ companyId }: CompanyAnalyticsProps) {
               <Bar
                 dataKey="amount"
                 fill="#ef4444"
-                name={t('analytics.taxAmount') || 'Tax Amount'}
+                name={t('analytics.taxAmount')}
               />
             </BarChart>
           </ResponsiveContainer>

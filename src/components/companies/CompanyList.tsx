@@ -74,8 +74,8 @@ export function CompanyList() {
   const handleAdd = () => {
     if (!formData.name.trim()) {
       toast({
-        title: 'Error',
-        description: 'Company name is required',
+        title: t('common.error'),
+        description: t('companies.nameRequired'),
         variant: 'destructive',
       });
       return;
@@ -88,8 +88,8 @@ export function CompanyList() {
     });
 
     toast({
-      title: 'Success',
-      description: 'Company added successfully',
+      title: t('common.success'),
+      description: t('companies.createdSuccess'),
     });
 
     setFormData({ name: '', country: 'Luxembourg', currency: 'EUR' });
@@ -111,8 +111,8 @@ export function CompanyList() {
 
     if (!formData.name.trim()) {
       toast({
-        title: 'Error',
-        description: 'Company name is required',
+        title: t('common.error'),
+        description: t('companies.nameRequired'),
         variant: 'destructive',
       });
       return;
@@ -125,8 +125,8 @@ export function CompanyList() {
     });
 
     toast({
-      title: 'Success',
-      description: 'Company updated successfully',
+      title: t('common.success'),
+      description: t('common.update'),
     });
 
     setFormData({ name: '', country: 'Luxembourg', currency: 'EUR' });
@@ -139,18 +139,18 @@ export function CompanyList() {
 
     if (companyEmployees.length > 0) {
       toast({
-        title: 'Cannot delete',
-        description: 'Company has employees. Please remove them first.',
+        title: t('common.error'),
+        description: t('companies.deleteBlocked'),
         variant: 'destructive',
       });
       return;
     }
 
-    if (confirm('Are you sure you want to delete this company?')) {
+    if (confirm(t('companies.confirmDelete'))) {
       deleteCompany(companyId);
       toast({
-        title: 'Success',
-        description: 'Company deleted successfully',
+        title: t('common.success'),
+        description: t('companies.deletedSuccess'),
       });
     }
   };
@@ -162,7 +162,7 @@ export function CompanyList() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-semibold text-foreground">{t('companies.title')}</h2>
-          <p className="text-sm text-muted-foreground">{accessibleCompanies.length} companies</p>
+          <p className="text-sm text-muted-foreground">{`${accessibleCompanies.length} ${t('nav.companies').toLowerCase()}`}</p>
         </div>
         {canManageCompanies && (
           <Button
@@ -170,7 +170,7 @@ export function CompanyList() {
             onClick={() => setIsAddDialogOpen(true)}
           >
             <Plus size={16} className="mr-2" />
-            Add Company
+            {t('companies.add')}
           </Button>
         )}
       </div>
@@ -178,19 +178,19 @@ export function CompanyList() {
       {/* Table View */}
       <Card>
         <CardHeader>
-          <CardTitle>All Companies</CardTitle>
+          <CardTitle>{t('dashboard.allCompanies')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Company Name</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>Currency</TableHead>
-                <TableHead>Employees</TableHead>
-                <TableHead>Active</TableHead>
-                <TableHead>Total Payroll</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t('companies.name')}</TableHead>
+                <TableHead>{t('companies.country')}</TableHead>
+                <TableHead>{t('companies.currency')}</TableHead>
+                <TableHead>{t('companies.employees')}</TableHead>
+                <TableHead>{t('dashboard.active')}</TableHead>
+                <TableHead>{`${t('common.total')} ${t('dashboard.payroll')}`}</TableHead>
+                <TableHead>{t('companies.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -265,7 +265,7 @@ export function CompanyList() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Users size={16} className="text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Employees</span>
+                    <span className="text-sm text-muted-foreground">{t('nav.employees')}</span>
                   </div>
                   <span className="font-semibold text-foreground">
                     {stats.activeEmployees}/{stats.totalEmployees}
@@ -275,7 +275,7 @@ export function CompanyList() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <DollarSign size={16} className="text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Total Payroll</span>
+                    <span className="text-sm text-muted-foreground">{`${t('common.total')} ${t('dashboard.payroll')}`}</span>
                   </div>
                   <span className="font-semibold text-foreground">
                     {company.currency} {stats.totalPayroll.toLocaleString()}
@@ -283,7 +283,7 @@ export function CompanyList() {
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  {stats.payslipsCount} payslips • {company.country}
+                  {stats.payslipsCount} {t('nav.payslips').toLowerCase()} • {company.country}
                 </div>
 
                 {canManageCompanies && (
@@ -298,7 +298,7 @@ export function CompanyList() {
                       }}
                     >
                       <Edit size={14} className="mr-1" />
-                      Edit
+                      {t('companies.edit')}
                     </Button>
                     <Button
                       size="sm"
@@ -322,11 +322,11 @@ export function CompanyList() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Company</DialogTitle>
+            <DialogTitle>{t('dashboard.createCompany')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Company Name *</Label>
+              <Label htmlFor="name">{t('companies.name')} *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -335,7 +335,7 @@ export function CompanyList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
+              <Label htmlFor="country">{t('companies.country')}</Label>
               <Input
                 id="country"
                 value={formData.country}
@@ -344,7 +344,7 @@ export function CompanyList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="currency">Currency</Label>
+              <Label htmlFor="currency">{t('companies.currency')}</Label>
               <Input
                 id="currency"
                 value={formData.currency}
@@ -355,9 +355,9 @@ export function CompanyList() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleAdd}>Add Company</Button>
+            <Button onClick={handleAdd}>{t('companies.add')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -366,11 +366,11 @@ export function CompanyList() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Company</DialogTitle>
+            <DialogTitle>{t('companies.edit')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Company Name *</Label>
+              <Label htmlFor="edit-name">{t('companies.name')} *</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
@@ -379,7 +379,7 @@ export function CompanyList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-country">Country</Label>
+              <Label htmlFor="edit-country">{t('companies.country')}</Label>
               <Input
                 id="edit-country"
                 value={formData.country}
@@ -388,7 +388,7 @@ export function CompanyList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-currency">Currency</Label>
+              <Label htmlFor="edit-currency">{t('companies.currency')}</Label>
               <Input
                 id="edit-currency"
                 value={formData.currency}
@@ -399,9 +399,9 @@ export function CompanyList() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleUpdate}>Update Company</Button>
+            <Button onClick={handleUpdate}>{t('common.update')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -135,7 +135,7 @@ export default function LoginPage() {
                   <span className="text-xs opacity-70">EMPLOYEE</span>
                 </div>
                 <p className="text-center text-xs opacity-70 mt-2">
-                  {t('auth.password')}: {i18n.language === 'fr' ? 'identique au nom d\'utilisateur' : 'same as username'}
+              {t('auth.password')}: {t('auth.passwordHint')}
                 </p>
               </div>
             </div>

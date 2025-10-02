@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
 import { useAuthStore } from '@/stores/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,7 @@ import { Users, Plus, Edit, Trash2, Shield } from 'lucide-react';
 import { UserAccess, User } from '@/types';
 
 export function UserAccessManagement() {
+  const { t } = useLanguageStore();
   const { users, companies, individuals, addUser, updateUser, updateUserAccess, deleteUser } = useDataStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -121,10 +123,10 @@ export function UserAccessManagement() {
   };
 
   const getAccessSummary = (user: User) => {
-    if (!user.access) return 'No access configured';
+    if (!user.access) return t('common.noData');
     const companyCount = user.access.companyIds.length;
     const individualCount = user.access.individualIds.length;
-    return `${companyCount} companies, ${individualCount} individuals`;
+    return `${companyCount} ${t('nav.companies').toLowerCase()}, ${individualCount} ${t('nav.individuals').toLowerCase()}`;
   };
 
   return (
@@ -132,14 +134,12 @@ export function UserAccessManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">User Access Management</h1>
-          <p className="text-muted-foreground">
-            Manage user access to companies, individuals, and payslips
-          </p>
+          <h1 className="text-3xl font-bold text-foreground">{t('users.accessSummary')}</h1>
+          <p className="text-muted-foreground">{t('users.configureDetails')}</p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="mr-2 h-4 w-4" />
-          Add User
+          {t('users.addNewUser')}
         </Button>
       </div>
 
@@ -148,26 +148,26 @@ export function UserAccessManagement() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Users className="mr-2 h-5 w-5" />
-            Users
+            {t('users.accessSummary')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Username</TableHead>
-                <TableHead>Access Summary</TableHead>
-                <TableHead>Permissions</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t('employees.name')}</TableHead>
+                <TableHead>{t('employees.email')}</TableHead>
+                <TableHead>{t('users.username')}</TableHead>
+                <TableHead>{t('users.accessSummary')}</TableHead>
+                <TableHead>{t('users.permissions')}</TableHead>
+                <TableHead>{t('employees.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    No users found. Add a user to get started.
+                    {t('users.noUsers')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -182,16 +182,16 @@ export function UserAccessManagement() {
                     <TableCell>
                       <div className="flex gap-1">
                         {user.access?.canViewPayslips && (
-                          <Badge variant="secondary" className="text-xs">View</Badge>
+                          <Badge variant="secondary" className="text-xs">{t('payslips.view')}</Badge>
                         )}
                         {user.access?.canEditPayslips && (
-                          <Badge variant="default" className="text-xs">Edit</Badge>
+                          <Badge variant="default" className="text-xs">{t('payslips.edit')}</Badge>
                         )}
                         {user.access?.canDeletePayslips && (
-                          <Badge variant="destructive" className="text-xs">Delete</Badge>
+                          <Badge variant="destructive" className="text-xs">{t('payslips.delete')}</Badge>
                         )}
                         {user.access?.canViewAnalytics && (
-                          <Badge variant="outline" className="text-xs">Analytics</Badge>
+                          <Badge variant="outline" className="text-xs">{t('nav.analytics')}</Badge>
                         )}
                       </div>
                     </TableCell>
@@ -226,10 +226,10 @@ export function UserAccessManagement() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedUser ? 'Edit User Access' : 'Add New User'}
+              {selectedUser ? t('users.editUserAccess') : t('users.addNewUser')}
             </DialogTitle>
             <DialogDescription>
-              Configure user details and access permissions
+              {t('users.configureDetails')}
             </DialogDescription>
           </DialogHeader>
 
@@ -237,7 +237,7 @@ export function UserAccessManagement() {
             {/* User Details */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="firstName">{t('employees.firstname')}</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
@@ -247,7 +247,7 @@ export function UserAccessManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName">{t('employees.name')}</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
@@ -257,7 +257,7 @@ export function UserAccessManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">{t('auth.username')}</Label>
                 <Input
                   id="username"
                   value={formData.username}
@@ -267,7 +267,7 @@ export function UserAccessManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('employees.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -281,7 +281,7 @@ export function UserAccessManagement() {
 
             {/* Permissions */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Permissions</Label>
+              <Label className="text-base font-semibold">{t('users.permissions')}</Label>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -292,7 +292,7 @@ export function UserAccessManagement() {
                     }
                   />
                   <Label htmlFor="canViewPayslips" className="font-normal">
-                    Can View Payslips
+                    {t('users.canViewPayslips')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -304,7 +304,7 @@ export function UserAccessManagement() {
                     }
                   />
                   <Label htmlFor="canEditPayslips" className="font-normal">
-                    Can Edit Payslips
+                    {t('users.canEditPayslips')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -316,7 +316,7 @@ export function UserAccessManagement() {
                     }
                   />
                   <Label htmlFor="canDeletePayslips" className="font-normal">
-                    Can Delete Payslips
+                    {t('users.canDeletePayslips')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -328,7 +328,7 @@ export function UserAccessManagement() {
                     }
                   />
                   <Label htmlFor="canViewAnalytics" className="font-normal">
-                    Can View Analytics
+                    {t('users.canViewAnalytics')}
                   </Label>
                 </div>
               </div>
@@ -336,7 +336,7 @@ export function UserAccessManagement() {
 
             {/* Company Access */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Company Access</Label>
+              <Label className="text-base font-semibold">{t('users.companyAccess')}</Label>
               <div className="border rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
                 {companies.map((company) => (
                   <div key={company.id} className="flex items-center space-x-2">
@@ -355,10 +355,10 @@ export function UserAccessManagement() {
 
             {/* Individual Access */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Individual Access</Label>
+              <Label className="text-base font-semibold">{t('users.individualAccess')}</Label>
               <div className="border rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
                 {individuals.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No individuals available</p>
+                  <p className="text-sm text-muted-foreground">{t('users.noIndividualsAvailable')}</p>
                 ) : (
                   individuals.map((individual) => (
                     <div key={individual.id} className="flex items-center space-x-2">
@@ -382,10 +382,10 @@ export function UserAccessManagement() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSave}>
-              {selectedUser ? 'Update' : 'Create'} User
+              {selectedUser ? t('common.update') : t('common.create')} {t('users.user')}
             </Button>
           </DialogFooter>
         </DialogContent>

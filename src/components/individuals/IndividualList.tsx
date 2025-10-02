@@ -49,11 +49,11 @@ export function IndividualList() {
 
   const handleAdd = () => {
     if (!form.firstName.trim() || !form.lastName.trim()) {
-      toast({ title: 'Error', description: 'Name fields are required', variant: 'destructive' })
+      toast({ title: t('common.error'), description: t('individuals.nameRequired'), variant: 'destructive' })
       return
     }
     addIndividual(form)
-    toast({ title: 'Success', description: 'Individual created successfully' })
+    toast({ title: t('common.success'), description: t('individuals.createdSuccess') })
     resetForm()
     setIsAddDialogOpen(false)
   }
@@ -61,11 +61,11 @@ export function IndividualList() {
   const handleEdit = () => {
     if (!editingIndividual) return
     if (!form.firstName.trim() || !form.lastName.trim()) {
-      toast({ title: 'Error', description: 'Name fields are required', variant: 'destructive' })
+      toast({ title: t('common.error'), description: t('individuals.nameRequired'), variant: 'destructive' })
       return
     }
     updateIndividual(editingIndividual.id, form)
-    toast({ title: 'Success', description: 'Individual updated successfully' })
+    toast({ title: t('common.success'), description: t('common.update') })
     resetForm()
     setEditingIndividual(null)
     setIsEditDialogOpen(false)
@@ -74,7 +74,7 @@ export function IndividualList() {
   const handleDelete = (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete ${name}?`)) {
       deleteIndividual(id)
-      toast({ title: 'Success', description: 'Individual deleted successfully' })
+      toast({ title: t('common.success'), description: t('actions.delete') })
     }
   }
 
@@ -142,7 +142,7 @@ export function IndividualList() {
                           onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? `/admin/individuals/${individual.id}` : `/individuals/${individual.id}`)}
                         >
                           <Eye size={16} className="mr-2" />
-                          View
+                          {t('actions.view')}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -252,9 +252,9 @@ export function IndividualList() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsAddDialogOpen(false); resetForm(); }}>
-              {t('common.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleAdd}>{t('common.save') || 'Save'}</Button>
+            <Button onClick={handleAdd}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -263,7 +263,7 @@ export function IndividualList() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('individuals.edit') || 'Edit Individual'}</DialogTitle>
+            <DialogTitle>{t('individuals.edit')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -333,9 +333,9 @@ export function IndividualList() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingIndividual(null); resetForm(); }}>
-              {t('common.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleEdit}>{t('common.save') || 'Save'}</Button>
+            <Button onClick={handleEdit}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

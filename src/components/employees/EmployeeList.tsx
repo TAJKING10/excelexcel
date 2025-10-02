@@ -100,7 +100,7 @@ export function EmployeeList() {
 
   const getCompanyName = (companyId: string) => {
     const company = companies.find((c) => c.id === companyId);
-    return company?.name || 'Unknown';
+    return company?.name || t('common.unknown');
   };
 
   const resetForm = () => {
@@ -126,8 +126,8 @@ export function EmployeeList() {
       !formData.baseSalary
     ) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
+        title: t('common.error'),
+        description: t('employees.fillRequired'),
         variant: 'destructive',
       });
       return;
@@ -146,8 +146,8 @@ export function EmployeeList() {
     });
 
     toast({
-      title: 'Success',
-      description: 'Employee added successfully',
+      title: t('common.success'),
+      description: t('employees.addedSuccess'),
     });
 
     resetForm();
@@ -180,8 +180,8 @@ export function EmployeeList() {
       !formData.baseSalary
     ) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
+        title: t('common.error'),
+        description: t('employees.fillRequired'),
         variant: 'destructive',
       });
       return;
@@ -199,8 +199,8 @@ export function EmployeeList() {
     });
 
     toast({
-      title: 'Success',
-      description: 'Employee updated successfully',
+      title: t('common.success'),
+      description: t('employees.updatedSuccess'),
     });
 
     resetForm();
@@ -209,11 +209,11 @@ export function EmployeeList() {
   };
 
   const handleDelete = (employeeId: string) => {
-    if (confirm('Are you sure you want to delete this employee?')) {
+    if (confirm(t('employees.confirmDelete'))) {
       deleteEmployee(employeeId);
       toast({
-        title: 'Success',
-        description: 'Employee deleted successfully',
+        title: t('common.success'),
+        description: t('employees.deletedSuccess'),
       });
     }
   };
@@ -226,8 +226,8 @@ export function EmployeeList() {
         terminationDate: null,
       });
       toast({
-        title: 'Success',
-        description: 'Employee reactivated successfully',
+        title: t('common.success'),
+        description: t('employees.reactivatedSuccess'),
       });
     } else {
       // Terminate
@@ -237,8 +237,8 @@ export function EmployeeList() {
         terminationDate,
       });
       toast({
-        title: 'Success',
-        description: 'Employee terminated successfully',
+        title: t('common.success'),
+        description: t('employees.terminatedSuccess'),
       });
     }
   };
@@ -249,7 +249,7 @@ export function EmployeeList() {
         <div>
           <h2 className="text-2xl font-semibold text-foreground">{t('employees.title')}</h2>
           <p className="text-sm text-muted-foreground">
-            {filteredEmployees.length} employee(s)
+            {filteredEmployees.length} {t('employees.count')}
           </p>
         </div>
         {(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN') && (
@@ -271,20 +271,20 @@ export function EmployeeList() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter size={18} />
-            Filters
+            {t('employees.filters')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {user?.role === 'SUPER_ADMIN' && (
               <div className="space-y-2">
-                <Label>Company</Label>
+                <Label>{t('companies.name')}</Label>
                 <Select value={filterCompanyId} onValueChange={setFilterCompanyId}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Companies</SelectItem>
+                    <SelectItem value="all">{t('employees.allCompanies')}</SelectItem>
                     {companies.map((company) => (
                       <SelectItem key={company.id} value={company.id}>
                         {company.name}
@@ -295,15 +295,15 @@ export function EmployeeList() {
               </div>
             )}
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t('employees.status')}</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="all">{t('employees.allStatuses')}</SelectItem>
+                  <SelectItem value="active">{t('employees.active')}</SelectItem>
+                  <SelectItem value="terminated">{t('employees.terminated')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -313,7 +313,7 @@ export function EmployeeList() {
 
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-card-foreground">Employees</CardTitle>
+          <CardTitle className="text-card-foreground">{t('employees.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -325,9 +325,9 @@ export function EmployeeList() {
                 </TableHead>
                 <TableHead className="text-muted-foreground">{t('employees.email')}</TableHead>
                 {user?.role === 'SUPER_ADMIN' && (
-                  <TableHead className="text-muted-foreground">Company</TableHead>
+                  <TableHead className="text-muted-foreground">{t('companies.name')}</TableHead>
                 )}
-                <TableHead className="text-muted-foreground">Class</TableHead>
+                <TableHead className="text-muted-foreground">{t('employees.class')}</TableHead>
                 <TableHead className="text-muted-foreground">{t('employees.status')}</TableHead>
                 <TableHead className="text-muted-foreground">{t('employees.salary')}</TableHead>
                 <TableHead className="text-muted-foreground">{t('employees.actions')}</TableHead>
@@ -340,7 +340,7 @@ export function EmployeeList() {
                     colSpan={user?.role === 'SUPER_ADMIN' ? 8 : 7}
                     className="text-center text-muted-foreground"
                   >
-                    No employees found
+                    {t('employees.noEmployees')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -388,7 +388,7 @@ export function EmployeeList() {
                                 onClick={() => handleTerminate(employee)}
                               >
                                 <RotateCcw size={16} className="mr-2" />
-                                {employee.status === 'active' ? 'Terminate' : 'Reactivate'}
+                                {employee.status === 'active' ? t('employees.terminate') : t('employees.reactivate')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive hover:bg-muted"
@@ -414,18 +414,18 @@ export function EmployeeList() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Employee</DialogTitle>
+            <DialogTitle>{t('employees.addNew')}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="add-company">Company *</Label>
+              <Label htmlFor="add-company">{t('companies.name')} *</Label>
               <Select
                 value={formData.companyId}
                 onValueChange={(val) => setFormData({ ...formData, companyId: val })}
                 disabled={user?.role === 'COMPANY_ADMIN'}
               >
                 <SelectTrigger id="add-company">
-                  <SelectValue placeholder="Select company" />
+                  <SelectValue placeholder={t('companies.select')} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableCompanies.map((company) => (
@@ -437,55 +437,55 @@ export function EmployeeList() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="add-firstName">First Name *</Label>
+              <Label htmlFor="add-firstName">{t('employees.firstname')} *</Label>
               <Input
                 id="add-firstName"
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder="John"
+                placeholder={t('employees.firstnamePlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="add-lastName">Last Name *</Label>
+              <Label htmlFor="add-lastName">{t('employees.name')} *</Label>
               <Input
                 id="add-lastName"
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder="Doe"
+                placeholder={t('employees.lastnamePlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="add-email">Email *</Label>
+              <Label htmlFor="add-email">{t('employees.email')} *</Label>
               <Input
                 id="add-email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="john.doe@example.com"
+                placeholder={t('employees.emailPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="add-class">Class</Label>
+              <Label htmlFor="add-class">{t('employees.class')}</Label>
               <Input
                 id="add-class"
                 value={formData.class}
                 onChange={(e) => setFormData({ ...formData, class: e.target.value })}
-                placeholder="Cadre A"
+                placeholder={t('employees.classPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="add-baseSalary">Base Salary *</Label>
+              <Label htmlFor="add-baseSalary">{t('employees.baseSalary')} *</Label>
               <Input
                 id="add-baseSalary"
                 type="number"
                 value={formData.baseSalary}
                 onChange={(e) => setFormData({ ...formData, baseSalary: e.target.value })}
-                placeholder="5000"
+                placeholder={t('employees.salaryPlaceholder')}
                 step="0.01"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="add-hireDate">Hire Date</Label>
+              <Label htmlFor="add-hireDate">{t('employees.hireDate')}</Label>
               <Input
                 id="add-hireDate"
                 type="date"
@@ -494,7 +494,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="add-status">Status</Label>
+              <Label htmlFor="add-status">{t('employees.status')}</Label>
               <Select
                 value={formData.status}
                 onValueChange={(val: 'active' | 'terminated') =>
@@ -505,8 +505,8 @@ export function EmployeeList() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="active">{t('employees.active')}</SelectItem>
+                  <SelectItem value="terminated">{t('employees.terminated')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -519,9 +519,9 @@ export function EmployeeList() {
                 setIsAddDialogOpen(false);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleAdd}>Add Employee</Button>
+            <Button onClick={handleAdd}>{t('employees.add')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -530,11 +530,11 @@ export function EmployeeList() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Employee</DialogTitle>
+            <DialogTitle>{t('employees.editEmployee')}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-company">Company</Label>
+              <Label htmlFor="edit-company">{t('companies.name')}</Label>
               <Input
                 id="edit-company"
                 value={getCompanyName(formData.companyId)}
@@ -543,7 +543,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-firstName">First Name *</Label>
+              <Label htmlFor="edit-firstName">{t('employees.firstname')} *</Label>
               <Input
                 id="edit-firstName"
                 value={formData.firstName}
@@ -551,7 +551,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-lastName">Last Name *</Label>
+              <Label htmlFor="edit-lastName">{t('employees.name')} *</Label>
               <Input
                 id="edit-lastName"
                 value={formData.lastName}
@@ -559,7 +559,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-email">Email *</Label>
+              <Label htmlFor="edit-email">{t('employees.email')} *</Label>
               <Input
                 id="edit-email"
                 type="email"
@@ -568,7 +568,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-class">Class</Label>
+              <Label htmlFor="edit-class">{t('employees.class')}</Label>
               <Input
                 id="edit-class"
                 value={formData.class}
@@ -576,7 +576,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-baseSalary">Base Salary *</Label>
+              <Label htmlFor="edit-baseSalary">{t('employees.baseSalary')} *</Label>
               <Input
                 id="edit-baseSalary"
                 type="number"
@@ -586,7 +586,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-hireDate">Hire Date</Label>
+              <Label htmlFor="edit-hireDate">{t('employees.hireDate')}</Label>
               <Input
                 id="edit-hireDate"
                 type="date"
@@ -595,7 +595,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-terminationDate">Termination Date</Label>
+              <Label htmlFor="edit-terminationDate">{t('employees.terminationDate')}</Label>
               <Input
                 id="edit-terminationDate"
                 type="date"
@@ -604,7 +604,7 @@ export function EmployeeList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-status">Status</Label>
+              <Label htmlFor="edit-status">{t('employees.status')}</Label>
               <Select
                 value={formData.status}
                 onValueChange={(val: 'active' | 'terminated') =>
@@ -615,8 +615,8 @@ export function EmployeeList() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="active">{t('employees.active')}</SelectItem>
+                  <SelectItem value="terminated">{t('employees.terminated')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -630,9 +630,9 @@ export function EmployeeList() {
                 setEditingEmployee(null);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleUpdate}>Update Employee</Button>
+            <Button onClick={handleUpdate}>{t('employees.update')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

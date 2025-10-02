@@ -20,12 +20,12 @@ export function Payslips() {
 
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find((e) => e.id === employeeId);
-    return employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown';
+    return employee ? `${employee.firstName} ${employee.lastName}` : t('common.unknown');
   };
 
   const getCompanyName = (companyId: string) => {
     const company = companies.find((c) => c.id === companyId);
-    return company?.name || 'Unknown';
+    return company?.name || t('common.unknown');
   };
 
   return (
@@ -35,7 +35,7 @@ export function Payslips() {
           {t('nav.payslips')}
         </h1>
         <p className="text-muted-foreground">
-          {t('dashboard.viewAllPayslips') || 'View and manage all payslips'}
+          {t('payslips.viewAndManage')}
         </p>
       </div>
 
@@ -47,7 +47,7 @@ export function Payslips() {
           {accessiblePayslips.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                {t('payslips.noPayslips') || 'No payslips found'}
+                {t('payslips.noPayslips')}
               </p>
             </div>
           ) : (
@@ -57,9 +57,9 @@ export function Payslips() {
                   <TableHead>{t('payslips.period')}</TableHead>
                   <TableHead>{t('companies.name')}</TableHead>
                   <TableHead>{t('payslips.employee')}</TableHead>
-                  <TableHead>{t('payslips.gross') || 'Gross'}</TableHead>
-                  <TableHead>{t('payslips.net') || 'Net'}</TableHead>
-                  <TableHead>{t('employees.status')}</TableHead>
+                  <TableHead>{t('payslips.gross')}</TableHead>
+                  <TableHead>{t('payslips.net')}</TableHead>
+                  <TableHead>{t('payslips.status')}</TableHead>
                   <TableHead>{t('employees.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -74,21 +74,21 @@ export function Payslips() {
                     <TableCell>€{payslip.earnings.grossMonthly.toLocaleString()}</TableCell>
                     <TableCell>€{payslip.netPay.toLocaleString()}</TableCell>
                     <TableCell>
-                      <Badge variant="default">Paid</Badge>
+                      <Badge variant="default">{t('payslips.paid')}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button size="sm" variant="outline">
                           <Eye size={16} className="mr-2" />
-                          {t('dashboard.viewDetails') || 'View'}
+                          {t('payslips.view')}
                         </Button>
                         <Button size="sm" variant="outline">
                           <Download size={16} className="mr-2" />
-                          PDF
+                          {t('payslips.downloadPDF')}
                         </Button>
                         <Button size="sm" variant="outline">
                           <FileSpreadsheet size={16} className="mr-2" />
-                          Excel
+                          {t('payslips.downloadExcel')}
                         </Button>
                       </div>
                     </TableCell>

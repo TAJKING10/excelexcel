@@ -23,13 +23,13 @@ export function Profile() {
 
   const handleSave = () => {
     if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
-      toast({ title: 'Error', description: 'All fields are required', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('profile.allFieldsRequired'), variant: 'destructive' });
       return;
     }
 
     if (user) {
       updateUser(user.id, form);
-      toast({ title: 'Success', description: 'Profile updated successfully' });
+      toast({ title: t('common.success'), description: t('profile.updatedSuccess') });
       setIsEditing(false);
     }
   };
@@ -47,10 +47,10 @@ export function Profile() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-3xl font-bold text-foreground">
-          {t('nav.profile') || 'Profile'}
+          {t('nav.profile')}
         </h1>
         <p className="text-muted-foreground">
-          Manage your personal information and account settings
+          {t('profile.subtitle')}
         </p>
       </div>
 
@@ -68,7 +68,7 @@ export function Profile() {
               </div>
             </div>
             <Badge variant={user?.role === 'SUPER_ADMIN' ? 'default' : 'secondary'}>
-              {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Employee'}
+              {user?.role === 'SUPER_ADMIN' ? t('profile.superAdmin') : t('profile.employee')}
             </Badge>
           </div>
         </CardHeader>
@@ -79,11 +79,11 @@ export function Profile() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
+              <CardTitle>{t('profile.personalInfo')}</CardTitle>
+              <CardDescription>{t('profile.updateDetails')}</CardDescription>
             </div>
             {!isEditing && (
-              <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
+              <Button onClick={() => setIsEditing(true)}>{t('profile.editProfile')}</Button>
             )}
           </div>
         </CardHeader>
@@ -123,10 +123,10 @@ export function Profile() {
             <div className="flex gap-2 pt-4">
               <Button onClick={handleSave}>
                 <Save className="mr-2 h-4 w-4" />
-                Save Changes
+                {t('profile.saveChanges')}
               </Button>
               <Button variant="outline" onClick={handleCancel}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           )}
@@ -136,31 +136,31 @@ export function Profile() {
       {/* Account Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Account Information</CardTitle>
-          <CardDescription>View your account details</CardDescription>
+          <CardTitle>{t('profile.accountInfo')}</CardTitle>
+          <CardDescription>{t('profile.viewAccountDetails')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Username</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">{t('profile.username')}</p>
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <p className="text-foreground">{user?.username}</p>
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Email</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">{t('employees.email')}</p>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <p className="text-foreground">{user?.email}</p>
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Role</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">{t('profile.role')}</p>
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
                 <p className="text-foreground">
-                  {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Employee'}
+                  {user?.role === 'SUPER_ADMIN' ? t('profile.superAdmin') : t('profile.employee')}
                 </p>
               </div>
             </div>
@@ -172,12 +172,12 @@ export function Profile() {
       {user?.role === 'EMPLOYEE' && user?.access && (
         <Card>
           <CardHeader>
-            <CardTitle>Access Permissions</CardTitle>
-            <CardDescription>Companies and individuals you have access to</CardDescription>
+            <CardTitle>{t('profile.accessPermissions')}</CardTitle>
+            <CardDescription>{t('profile.accessDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Accessible Companies</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">{t('profile.accessibleCompanies')}</p>
               <div className="flex flex-wrap gap-2">
                 {user.access.companyIds.map((id) => (
                   <Badge key={id} variant="outline">{id}</Badge>
@@ -185,7 +185,7 @@ export function Profile() {
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Accessible Individuals</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">{t('profile.accessibleIndividuals')}</p>
               <div className="flex flex-wrap gap-2">
                 {user.access.individualIds?.map((id) => (
                   <Badge key={id} variant="outline">{id}</Badge>

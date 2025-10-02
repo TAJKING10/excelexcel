@@ -32,7 +32,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
     if (user?.firstName && user?.lastName) {
       return `${user.firstName} ${user.lastName}`
     }
-    return user?.username || 'User'
+    return user?.username || t('users.user')
   }
 
   return (

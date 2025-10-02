@@ -43,7 +43,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     return [
       { path: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
       { path: '/payslips', icon: FileText, label: t('nav.payslips') },
-      { path: '/profile', icon: UserCircle, label: t('nav.profile') || 'Profile' },
+      { path: '/profile', icon: UserCircle, label: t('nav.profile') },
     ]
   }
 

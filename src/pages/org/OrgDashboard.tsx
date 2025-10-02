@@ -43,7 +43,7 @@ export function OrgDashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <p className="text-muted-foreground">
-          {t('dashboard.noCompany') || 'No company associated with your account'}
+          {t('dashboard.noCompany')}
         </p>
       </div>
     );
@@ -61,7 +61,7 @@ export function OrgDashboard() {
 
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find((e) => e.id === employeeId);
-    return employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown';
+    return employee ? `${employee.firstName} ${employee.lastName}` : t('common.unknown');
   };
 
   // Current month stats
@@ -105,10 +105,10 @@ export function OrgDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">
-          {company?.name || t('nav.dashboard') || 'Dashboard'}
+          {company?.name || t('nav.dashboard')}
         </h1>
         <p className="text-muted-foreground">
-          {t('dashboard.orgWelcome') || 'Company dashboard overview'}
+          {t('dashboard.orgWelcome')}
         </p>
       </div>
 
@@ -116,25 +116,25 @@ export function OrgDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={Users}
-          title={t('dashboard.totalEmployees') || 'Total Employees'}
+          title={t('dashboard.totalEmployees')}
           value={analytics.totalEmployees}
-          subtitle={`${analytics.activeEmployees} ${t('dashboard.active') || 'active'}`}
+          subtitle={`${analytics.activeEmployees} ${t('dashboard.active')}`}
           onClick={() => navigate('/employees')}
         />
         <StatCard
           icon={Users}
-          title={t('dashboard.activeEmployees') || 'Active Employees'}
+          title={t('dashboard.activeEmployees')}
           value={analytics.activeEmployees}
         />
         <StatCard
           icon={CreditCard}
-          title={t('dashboard.monthlyPayroll') || 'Monthly Payroll'}
+          title={t('dashboard.monthlyPayroll')}
           value={`${company?.currency || 'EUR'} ${currentMonthPayroll.toLocaleString()}`}
-          subtitle={t('dashboard.currentMonth') || 'Current month'}
+          subtitle={t('dashboard.currentMonth')}
         />
         <StatCard
           icon={TrendingUp}
-          title={t('dashboard.socialCharges') || 'Social Charges'}
+          title={t('dashboard.socialCharges')}
           value={`${company?.currency || 'EUR'} ${analytics.totalSocialCharges.toLocaleString()}`}
         />
       </div>
@@ -144,7 +144,7 @@ export function OrgDashboard() {
         {/* Net vs Gross */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('analytics.netVsGross') || 'Net vs Gross Salary'}</CardTitle>
+            <CardTitle>{t('analytics.netVsGross')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -158,14 +158,14 @@ export function OrgDashboard() {
                   type="monotone"
                   dataKey="gross"
                   stroke="#3b82f6"
-                  name={t('analytics.gross') || 'Gross'}
+                  name={t('analytics.gross')}
                   strokeWidth={2}
                 />
                 <Line
                   type="monotone"
                   dataKey="net"
                   stroke="#10b981"
-                  name={t('analytics.net') || 'Net'}
+                  name={t('analytics.net')}
                   strokeWidth={2}
                 />
               </LineChart>
@@ -176,7 +176,7 @@ export function OrgDashboard() {
         {/* Contributions */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('analytics.contributions') || 'Social Contributions'}</CardTitle>
+            <CardTitle>{t('analytics.contributions')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -190,25 +190,25 @@ export function OrgDashboard() {
                   dataKey="maladie"
                   stackId="a"
                   fill="#3b82f6"
-                  name={t('analytics.maladie') || 'Health'}
+                  name={t('analytics.maladie')}
                 />
                 <Bar
                   dataKey="pension"
                   stackId="a"
                   fill="#8b5cf6"
-                  name={t('analytics.pension') || 'Pension'}
+                  name={t('analytics.pension')}
                 />
                 <Bar
                   dataKey="sante"
                   stackId="a"
                   fill="#10b981"
-                  name={t('analytics.sante') || 'Health Care'}
+                  name={t('analytics.sante')}
                 />
                 <Bar
                   dataKey="accident"
                   stackId="a"
                   fill="#f59e0b"
-                  name={t('analytics.accident') || 'Accident'}
+                  name={t('analytics.accident')}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -219,19 +219,19 @@ export function OrgDashboard() {
       {/* Recent Payslips */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t('dashboard.recentPayslips') || 'Recent Payslips'}</CardTitle>
+          <CardTitle>{t('dashboard.recentPayslips')}</CardTitle>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate('/payslips')}
             >
-              {t('dashboard.viewAll') || 'View All'}
+              {t('dashboard.viewAll')}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button size="sm" onClick={() => navigate('/payslips/create')}>
               <Plus className="mr-2 h-4 w-4" />
-              {t('payslips.create') || 'Create Payslip'}
+              {t('payslips.create')}
             </Button>
           </div>
         </CardHeader>
@@ -239,23 +239,23 @@ export function OrgDashboard() {
           {recentPayslips.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
-                {t('dashboard.noPayslips') || 'No payslips found'}
+                {t('dashboard.noPayslips')}
               </p>
               <Button className="mt-4" onClick={() => navigate('/payslips/create')}>
                 <Plus className="mr-2 h-4 w-4" />
-                {t('payslips.createFirst') || 'Create your first payslip'}
+                {t('payslips.createFirst')}
               </Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('payslips.period') || 'Period'}</TableHead>
-                  <TableHead>{t('payslips.employee') || 'Employee'}</TableHead>
-                  <TableHead>{t('payslips.gross') || 'Gross'}</TableHead>
-                  <TableHead>{t('payslips.net') || 'Net'}</TableHead>
-                  <TableHead>{t('dashboard.createdAt') || 'Created'}</TableHead>
-                  <TableHead>{t('employees.actions') || 'Actions'}</TableHead>
+                  <TableHead>{t('payslips.period')}</TableHead>
+                  <TableHead>{t('payslips.employee')}</TableHead>
+                  <TableHead>{t('payslips.gross')}</TableHead>
+                  <TableHead>{t('payslips.net')}</TableHead>
+                  <TableHead>{t('dashboard.createdAt')}</TableHead>
+                  <TableHead>{t('employees.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -298,12 +298,12 @@ export function OrgDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <Users className="mr-2 h-5 w-5" />
-              {t('dashboard.manageEmployees') || 'Manage Employees'}
+              {t('dashboard.manageEmployees')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.manageEmployeesDesc') || 'View and manage your employees'}
+              {t('dashboard.manageEmployeesDesc')}
             </p>
           </CardContent>
         </Card>
@@ -312,12 +312,12 @@ export function OrgDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <CreditCard className="mr-2 h-5 w-5" />
-              {t('dashboard.managePayslips') || 'Manage Payslips'}
+              {t('dashboard.managePayslips')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.managePayslipsDesc') || 'Create and view payslips'}
+              {t('dashboard.managePayslipsDesc')}
             </p>
           </CardContent>
         </Card>
@@ -326,12 +326,12 @@ export function OrgDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <TrendingUp className="mr-2 h-5 w-5" />
-              {t('dashboard.viewAnalytics') || 'View Analytics'}
+              {t('dashboard.viewAnalytics')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.viewAnalyticsDesc') || 'View detailed company analytics'}
+              {t('dashboard.viewAnalyticsDesc')}
             </p>
           </CardContent>
         </Card>

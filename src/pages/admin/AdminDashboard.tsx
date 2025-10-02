@@ -72,12 +72,12 @@ export function AdminDashboard() {
 
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find((e) => e.id === employeeId);
-    return employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown';
+    return employee ? `${employee.firstName} ${employee.lastName}` : t('common.unknown');
   };
 
   const getCompanyName = (companyId: string) => {
     const company = companies.find((c) => c.id === companyId);
-    return company?.name || 'Unknown';
+    return company?.name || t('common.unknown');
   };
 
   // Chart data - Companies growth
@@ -157,34 +157,34 @@ export function AdminDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">
-          {t('nav.dashboard') || 'Dashboard'}
+          {t('nav.dashboard')}
         </h1>
         <p className="text-muted-foreground">
-          {t('dashboard.adminWelcome') || 'Welcome to the admin dashboard'}
+          {t('dashboard.adminWelcome')}
         </p>
       </div>
 
       {/* Quick Actions */}
       <Card className="bg-muted/50">
         <CardHeader>
-          <CardTitle className="text-base">{t('dashboard.quickActions') || 'Quick Actions'}</CardTitle>
+          <CardTitle className="text-base">{t('dashboard.quickActions')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate('/admin/individuals/create')}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Individual
+            {t('dashboard.addIndividual')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => navigate('/admin/payslips/create')}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Payslip
+            {t('payslips.create')}
           </Button>
           <Button variant="outline" size="sm">
             <Upload className="h-4 w-4 mr-2" />
-            Import Excel
+            {t('payslips.import')}
           </Button>
           <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-2" />
-            Export Template
+            {t('payslips.exportTemplate')}
           </Button>
         </CardContent>
       </Card>
@@ -193,31 +193,31 @@ export function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={UserCog}
-          title={t('dashboard.advensysStaff') || 'Advensys Staff'}
+          title={t('dashboard.advensysStaff')}
           value={totalAdvensysStaff}
-          subtitle={t('dashboard.manageEmployeeAccess') || 'Manage employee access'}
+          subtitle={t('dashboard.manageEmployeeAccess')}
           onClick={() => navigate('/admin/users')}
         />
         <StatCard
           icon={Building2}
-          title={t('dashboard.manageClientCompanies') || 'Client Companies'}
+          title={t('dashboard.manageClientCompanies')}
           value={totalCompanies}
-          subtitle={t('dashboard.allCompanies') || 'All companies'}
+          subtitle={t('dashboard.allCompanies')}
           onClick={() => navigate('/admin/companies')}
         />
         <StatCard
           icon={FileText}
-          title={t('nav.payslips') || 'Payslips'}
+          title={t('nav.payslips')}
           value={monthlyPayslips}
-          subtitle={`${t('dashboard.thisMonth') || 'this month'} (${totalPayslips} total)`}
+          subtitle={`${t('dashboard.thisMonth')} (${totalPayslips} ${t('common.total')})`}
           delta={{ value: payslipsDelta, percent: payslipsDeltaPercent.toString() }}
           onClick={() => navigate(`/admin/payslips?period=${currentYear}-${String(currentMonth).padStart(2, '0')}`)}
         />
         <StatCard
           icon={TrendingUp}
-          title={t('companies.monthlyPayroll') || 'Total Payroll'}
+          title={t('companies.monthlyPayroll')}
           value={`€${totalPayroll.toLocaleString()}`}
-          subtitle={t('dashboard.allCompanies') || 'All companies'}
+          subtitle={t('dashboard.allCompanies')}
         />
       </div>
 
@@ -226,7 +226,7 @@ export function AdminDashboard() {
         {/* Companies & Employees Growth */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('dashboard.growth') || 'Growth Overview'}</CardTitle>
+            <CardTitle>{t('dashboard.growth')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -240,14 +240,14 @@ export function AdminDashboard() {
                   type="monotone"
                   dataKey="companies"
                   stroke="#3b82f6"
-                  name={t('nav.companies') || 'Companies'}
+                  name={t('nav.companies')}
                   strokeWidth={2}
                 />
                 <Line
                   type="monotone"
                   dataKey="employees"
                   stroke="#10b981"
-                  name={t('nav.employees') || 'Employees'}
+                  name={t('nav.employees')}
                   strokeWidth={2}
                 />
               </LineChart>
@@ -258,7 +258,7 @@ export function AdminDashboard() {
         {/* Payslips per Month */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('dashboard.payslipsPerMonth') || 'Payslips per Month'}</CardTitle>
+            <CardTitle>{t('dashboard.payslipsPerMonth')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -271,7 +271,7 @@ export function AdminDashboard() {
                 <Bar
                   dataKey="count"
                   fill="#8b5cf6"
-                  name={t('nav.payslips') || 'Payslips'}
+                  name={t('nav.payslips')}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -282,13 +282,13 @@ export function AdminDashboard() {
       {/* Recent Activity */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t('dashboard.recentActivity') || 'Recent Activity'}</CardTitle>
+          <CardTitle>{t('dashboard.recentActivity')}</CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/payslips')}
           >
-            {t('dashboard.viewAll') || 'View All'}
+            {t('dashboard.viewAll')}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardHeader>
@@ -296,18 +296,18 @@ export function AdminDashboard() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('payslips.period') || 'Period'}</TableHead>
-                <TableHead>{t('payslips.employee') || 'Employee'}</TableHead>
-                <TableHead>{t('payslips.company') || 'Company'}</TableHead>
-                <TableHead>{t('dashboard.createdAt') || 'Created'}</TableHead>
-                <TableHead>{t('employees.actions') || 'Actions'}</TableHead>
+                <TableHead>{t('payslips.period')}</TableHead>
+                <TableHead>{t('payslips.employee')}</TableHead>
+                <TableHead>{t('payslips.company')}</TableHead>
+                <TableHead>{t('dashboard.createdAt')}</TableHead>
+                <TableHead>{t('employees.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recentPayslips.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    {t('dashboard.noRecentActivity') || 'No recent activity'}
+                    {t('dashboard.noRecentActivity')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -323,7 +323,7 @@ export function AdminDashboard() {
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm">
-                        {t('dashboard.view') || 'View'}
+                        {t('dashboard.view')}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -337,13 +337,13 @@ export function AdminDashboard() {
       {/* Companies Analytics Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Companies Analytics</CardTitle>
+          <CardTitle>{t('dashboard.companiesAnalytics')}</CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/admin/companies')}
           >
-            {t('dashboard.viewAll') || 'View All'}
+            {t('dashboard.viewAll')}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardHeader>
@@ -351,12 +351,12 @@ export function AdminDashboard() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Total Employees</TableHead>
-                <TableHead>Active</TableHead>
-                <TableHead>Monthly Payroll</TableHead>
-                <TableHead>Social Charges</TableHead>
-                <TableHead>{t('employees.actions') || 'Actions'}</TableHead>
+                <TableHead>{t('companies.name')}</TableHead>
+                <TableHead>{t('companies.totalEmployees')}</TableHead>
+                <TableHead>{t('companies.activeEmployees')}</TableHead>
+                <TableHead>{t('companies.monthlyPayroll')}</TableHead>
+                <TableHead>{t('companies.socialCharges')}</TableHead>
+                <TableHead>{t('employees.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -375,7 +375,7 @@ export function AdminDashboard() {
                       size="sm"
                       onClick={() => navigate(`/admin/companies/${company.id}`)}
                     >
-                      {t('dashboard.view') || 'View'}
+                      {t('dashboard.view')}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -391,12 +391,12 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <UserCog className="mr-2 h-5 w-5" />
-              {t('dashboard.manageAdvensysStaff') || 'Manage Advensys Staff'}
+              {t('dashboard.manageAdvensysStaff')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.manageAdvensysStaffDesc') || 'Add and manage Advensys employees and their access'}
+              {t('dashboard.manageAdvensysStaffDesc')}
             </p>
           </CardContent>
         </Card>
@@ -405,12 +405,12 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <Building2 className="mr-2 h-5 w-5" />
-              {t('dashboard.manageClientCompanies') || 'Manage Client Companies'}
+              {t('dashboard.manageClientCompanies')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.manageClientCompaniesDesc') || 'View and manage all client companies'}
+              {t('dashboard.manageClientCompaniesDesc')}
             </p>
           </CardContent>
         </Card>
@@ -419,12 +419,12 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <FileText className="mr-2 h-5 w-5" />
-              {t('dashboard.viewAllPayslips') || 'View All Payslips'}
+              {t('dashboard.viewAllPayslips')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.viewAllPayslipsDesc') || 'View all payslips across all companies'}
+              {t('dashboard.viewAllPayslipsDesc')}
             </p>
           </CardContent>
         </Card>

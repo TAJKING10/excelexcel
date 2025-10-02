@@ -93,22 +93,22 @@ export function EmployeeDashboard() {
   // Handlers for creating company and individual
   const handleAddCompany = () => {
     if (!companyForm.name.trim()) {
-      toast({ title: 'Error', description: 'Company name is required', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('companies.nameRequired'), variant: 'destructive' });
       return;
     }
     addCompany(companyForm);
-    toast({ title: 'Success', description: 'Company created successfully' });
+    toast({ title: t('common.success'), description: t('companies.createdSuccess') });
     setCompanyForm({ name: '', country: 'Luxembourg', currency: 'EUR' });
     setIsAddCompanyDialogOpen(false);
   };
 
   const handleAddIndividual = () => {
     if (!individualForm.firstName.trim() || !individualForm.lastName.trim()) {
-      toast({ title: 'Error', description: 'Name fields are required', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('individuals.nameRequired'), variant: 'destructive' });
       return;
     }
     addIndividual(individualForm);
-    toast({ title: 'Success', description: 'Individual created successfully' });
+    toast({ title: t('common.success'), description: t('individuals.createdSuccess') });
     setIndividualForm({ firstName: '', lastName: '', email: '', country: 'Luxembourg', currency: 'EUR', status: 'active' });
     setIsAddIndividualDialogOpen(false);
   };
@@ -412,9 +412,9 @@ export function EmployeeDashboard() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddCompanyDialogOpen(false)}>
-              {t('common.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleAddCompany}>{t('common.save') || 'Save'}</Button>
+            <Button onClick={handleAddCompany}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -497,17 +497,17 @@ export function EmployeeDashboard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="active">{t('employees.active')}</SelectItem>
+                  <SelectItem value="terminated">{t('employees.terminated')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddIndividualDialogOpen(false)}>
-              {t('common.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleAddIndividual}>{t('common.save') || 'Save'}</Button>
+            <Button onClick={handleAddIndividual}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

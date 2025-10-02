@@ -26,12 +26,12 @@ export function AdminShell() {
   const { user } = useAuthStore()
 
   const navItems = [
-    { path: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') || 'Dashboard' },
-    { path: '/admin/companies', icon: Building2, label: t('companies.title') || 'Companies' },
-    { path: '/admin/employees', icon: Users, label: t('employees.title') || 'Employees' },
-    { path: '/admin/individuals', icon: UserCheck, label: t('individuals.title') || 'Individuals' },
-    { path: '/admin/payslips', icon: FileText, label: t('payslips.title') || 'Payslips' },
-    { path: '/admin/users', icon: Shield, label: 'User Access' },
+    { path: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { path: '/admin/companies', icon: Building2, label: t('companies.title') },
+    { path: '/admin/employees', icon: Users, label: t('employees.title') },
+    { path: '/admin/individuals', icon: UserCheck, label: t('individuals.title') },
+    { path: '/admin/payslips', icon: FileText, label: t('payslips.title') },
+    { path: '/admin/users', icon: Shield, label: t('users.accessSummary') },
   ]
 
   return (
@@ -100,7 +100,7 @@ export function AdminShell() {
               )}
             >
               <Settings size={20} className="shrink-0" />
-              {!sidebarCollapsed && <span className="ml-3">{t('nav.settings') || 'Settings'}</span>}
+              {!sidebarCollapsed && <span className="ml-3">{t('nav.settings')}</span>}
             </Button>
           </Link>
         </div>

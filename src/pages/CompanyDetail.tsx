@@ -121,19 +121,19 @@ export function CompanyDetail() {
         <TabsList>
           <TabsTrigger value="overview">
             <Building2 className="h-4 w-4 mr-2" />
-            {t('companies.overview') || 'Overview'}
+            {t('companies.overview')}
           </TabsTrigger>
           <TabsTrigger value="employees">
             <Users className="h-4 w-4 mr-2" />
-            {t('nav.employees') || 'Employees'}
+            {t('nav.employees')}
           </TabsTrigger>
           <TabsTrigger value="payslips">
             <CreditCard className="h-4 w-4 mr-2" />
-            {t('nav.payslips') || 'Payslips'}
+            {t('nav.payslips')}
           </TabsTrigger>
           <TabsTrigger value="analytics">
             <TrendingUp className="h-4 w-4 mr-2" />
-            {t('companies.analytics') || 'Analytics'}
+            {t('companies.analytics')}
           </TabsTrigger>
         </TabsList>
 
@@ -142,23 +142,23 @@ export function CompanyDetail() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={Users}
-              title={t('dashboard.totalEmployees') || 'Total Employees'}
+              title={t('dashboard.totalEmployees')}
               value={analytics.totalEmployees}
-              subtitle={`${analytics.activeEmployees} ${t('dashboard.active') || 'active'}`}
+              subtitle={`${analytics.activeEmployees} ${t('dashboard.active')}`}
             />
             <StatCard
               icon={Users}
-              title={t('dashboard.activeEmployees') || 'Active Employees'}
+              title={t('dashboard.activeEmployees')}
               value={analytics.activeEmployees}
             />
             <StatCard
               icon={CreditCard}
-              title={t('dashboard.monthlyPayroll') || 'Monthly Payroll'}
+              title={t('dashboard.monthlyPayroll')}
               value={`${company.currency} ${analytics.monthlyPayroll.toLocaleString()}`}
             />
             <StatCard
               icon={TrendingUp}
-              title={t('dashboard.socialCharges') || 'Social Charges'}
+              title={t('dashboard.socialCharges')}
               value={`${company.currency} ${analytics.totalSocialCharges.toLocaleString()}`}
             />
           </div>
@@ -166,31 +166,31 @@ export function CompanyDetail() {
           {/* Company Info Card */}
           <Card>
             <CardHeader>
-              <CardTitle>{t('companies.information') || 'Company Information'}</CardTitle>
+              <CardTitle>{t('companies.information')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('companies.name') || 'Company Name'}
+                    {t('companies.name')}
                   </p>
                   <p className="text-foreground">{company.name}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('companies.country') || 'Country'}
+                    {t('companies.country')}
                   </p>
                   <p className="text-foreground">{company.country}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('companies.currency') || 'Currency'}
+                    {t('companies.currency')}
                   </p>
                   <p className="text-foreground">{company.currency}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('companies.createdAt') || 'Created At'}
+                    {t('companies.createdAt')}
                   </p>
                   <p className="text-foreground">
                     {new Date(company.createdAt).toLocaleDateString()}
@@ -206,7 +206,7 @@ export function CompanyDetail() {
           <div className="flex justify-end">
             <Button onClick={() => setIsAddEmployeeDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              {t('employees.add') || 'Add Employee'}
+              {t('employees.add')}
             </Button>
           </div>
           <EmployeeListFiltered companyId={companyId} />
@@ -217,7 +217,7 @@ export function CompanyDetail() {
           <div className="flex justify-end">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              {t('payslips.create') || 'Create Payslip'}
+              {t('payslips.create')}
             </Button>
           </div>
           <PayslipListFiltered companyId={companyId} />
@@ -307,9 +307,9 @@ export function CompanyDetail() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddEmployeeDialogOpen(false)}>
-              {t('common.cancel') || 'Cancel'}
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleAddEmployee}>{t('common.save') || 'Save'}</Button>
+            <Button onClick={handleAddEmployee}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -400,7 +400,7 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
 
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find((e) => e.id === employeeId);
-    return employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown';
+    return employee ? `${employee.firstName} ${employee.lastName}` : t('common.unknown');
   };
 
   return (
@@ -411,9 +411,7 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
       <CardContent>
         {filteredPayslips.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              {t('payslips.noPayslips') || 'No payslips found'}
-            </p>
+            <p className="text-muted-foreground">{t('payslips.noPayslips')}</p>
           </div>
         ) : (
           <Table>
@@ -421,8 +419,8 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
               <TableRow>
                 <TableHead>{t('payslips.period')}</TableHead>
                 <TableHead>{t('payslips.employee')}</TableHead>
-                <TableHead>{t('payslips.gross') || 'Gross'}</TableHead>
-                <TableHead>{t('payslips.net') || 'Net'}</TableHead>
+                <TableHead>{t('payslips.gross')}</TableHead>
+                <TableHead>{t('payslips.net')}</TableHead>
                 <TableHead>{t('employees.actions')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -439,11 +437,11 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                     <div className="flex space-x-2">
                       <Button size="sm" variant="outline">
                         <Download size={16} className="mr-2" />
-                        PDF
+                        {t('payslips.downloadPDF')}
                       </Button>
                       <Button size="sm" variant="outline">
                         <FileSpreadsheet size={16} className="mr-2" />
-                        Excel
+                        {t('payslips.downloadExcel')}
                       </Button>
                     </div>
                   </TableCell>
