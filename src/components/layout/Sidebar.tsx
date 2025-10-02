@@ -51,25 +51,25 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   return (
     <div className={cn(
-      "bg-white border-r border-[#eff6ff] transition-all duration-300 ease-in-out flex flex-col shadow-sm",
+      "bg-white border-r border-[#eff6ff] transition-all duration-300 ease-in-out flex flex-col shadow-sm dark:bg-[#0f172a] dark:border-[#1e293b]",
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="p-4 border-b border-[#eff6ff]">
+      <div className="p-4 border-b border-[#eff6ff] dark:border-[#1e293b]">
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#003ABD] to-[#00226E] rounded-lg flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#003ABD] to-[#00226E] rounded-lg flex items-center justify-center shadow-md dark:from-[#3b82f6] dark:to-[#1d4ed8]">
                 <span className="text-white font-extrabold text-lg">A</span>
               </div>
-              <span className="font-bold text-[#00226E] text-lg tracking-tight">{t('auth.title')}</span>
+              <span className="font-bold text-[#00226E] text-lg tracking-tight dark:text-[#f8fafc]">{t('auth.title')}</span>
             </div>
           )}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onToggle(!collapsed)}
-            className="text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff]"
+            className="text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] dark:text-[#cbd5e1] dark:hover:text-[#60a5fa] dark:hover:bg-[#1e293b]"
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </Button>
@@ -88,12 +88,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start h-11 text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] transition-advensys font-medium",
-                  isActive && "bg-[#eff6ff] text-[#003ABD] shadow-sm border-l-4 border-[#003ABD] rounded-l-none",
+                  "w-full justify-start h-11 text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] transition-advensys font-medium dark:text-[#94a3b8] dark:hover:text-[#60a5fa] dark:hover:bg-[#1e293b]",
+                  isActive && "bg-[#eff6ff] text-[#003ABD] shadow-sm border-l-4 border-[#003ABD] rounded-l-none dark:bg-[#1e293b] dark:text-[#60a5fa] dark:border-[#60a5fa]",
                   collapsed ? "px-2 justify-center" : "px-4"
                 )}
               >
-                <Icon size={20} className={cn("shrink-0", isActive && "text-[#003ABD]")} />
+                <Icon size={20} className={cn("shrink-0", isActive && "text-[#003ABD] dark:text-[#60a5fa]")} />
                 {!collapsed && <span className="ml-3">{item.label}</span>}
               </Button>
             </Link>
@@ -104,12 +104,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <Separator />
 
       {/* Bottom Actions */}
-      <div className="p-3 space-y-1 border-t border-[#eff6ff]">
+      <div className="p-3 space-y-1 border-t border-[#eff6ff] dark:border-[#1e293b]">
         <Link to="/settings">
           <Button
             variant="ghost"
             className={cn(
-              "w-full justify-start h-11 text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] transition-advensys font-medium",
+              "w-full justify-start h-11 text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] transition-advensys font-medium dark:text-[#94a3b8] dark:hover:text-[#60a5fa] dark:hover:bg-[#1e293b]",
               collapsed ? "px-2 justify-center" : "px-4"
             )}
           >
@@ -122,7 +122,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           variant="ghost"
           onClick={logout}
           className={cn(
-            "w-full justify-start h-11 text-[#64748B] hover:text-[#dc2626] hover:bg-red-50 transition-advensys font-medium",
+            "w-full justify-start h-11 text-[#64748B] hover:text-[#dc2626] hover:bg-red-50 transition-advensys font-medium dark:text-[#94a3b8] dark:hover:text-[#ef4444] dark:hover:bg-[#1e293b]",
             collapsed ? "px-2 justify-center" : "px-4"
           )}
         >

@@ -97,34 +97,52 @@
   }
 
   .dark {
-    --bg-primary:   #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary:  #334155;
-    --text-primary:   #f8fafc;
-    --text-secondary: #93c5fd;
-    --text-tertiary:  #cbd5e1;
-    --text-dark:      #e2e8f0;
-    --text-inverse:   #00226E;
+    /* Dark Mode - Brand Colors */
+    --primary-50:  #1e293b;
+    --primary-100: #0f172a;
+    --primary-200: #020617;
+    --primary-500: #60a5fa; /* Brighter blue for dark mode */
+    --primary-600: #3b82f6; /* Medium blue */
+    --primary-900: #1e3a8a;
 
+    --bg-primary:   #0f172a; /* Deep slate */
+    --bg-secondary: #1e293b; /* Lighter slate */
+    --bg-tertiary:  #334155; /* Card backgrounds */
+
+    --text-primary:   #f8fafc; /* White text */
+    --text-secondary: #93c5fd; /* Light blue */
+    --text-tertiary:  #cbd5e1; /* Muted text */
+    --text-dark:      #e2e8f0; /* Lighter muted */
+    --text-inverse:   #0f172a; /* For light backgrounds */
+
+    /* Shadows for dark mode */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-md: 0 4px 10px rgba(0,0,0,.4);
+    --shadow-lg: 0 12px 24px rgba(0,0,0,.5);
+
+    /* Focus ring for dark mode */
+    --focus-ring: 0 0 0 3px rgba(96, 165, 250, 0.5);
+
+    /* Shadcn compatibility */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
     --card: 222 47% 15%;
     --card-foreground: 210 40% 98%;
     --popover: 222 47% 15%;
     --popover-foreground: 210 40% 98%;
-    --primary: 220 100% 37%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
     --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
     --accent: 25 100% 68%;
-    --accent-foreground: 220 100% 22%;
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 220 100% 37%;
+    --border: 217 33% 25%;
+    --input: 217 33% 25%;
+    --ring: 217 91% 60%;
   }
 }
 

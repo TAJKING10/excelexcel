@@ -2,10 +2,11 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Menu, Settings, LogOut, Globe, User } from 'lucide-react'
+import { Menu, Settings, LogOut, Globe, User, Moon, Sun } from 'lucide-react'
 
 interface TopbarProps {
   onMenuToggle: () => void
@@ -14,6 +15,7 @@ interface TopbarProps {
 export function Topbar({ onMenuToggle }: TopbarProps) {
   const { t, i18n } = useTranslation()
   const { user, logout } = useAuthStore()
+  const { isDarkMode, toggleDarkMode } = useThemeStore()
 
   const handleLanguageChange = (lang: string) => {
     i18n.changeLanguage(lang)
@@ -51,6 +53,16 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Dark Mode Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleDarkMode}
+            className="text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] dark:text-[#cbd5e1] dark:hover:text-[#60a5fa] dark:hover:bg-[#1e293b]"
+          >
+            {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
+
           {/* Language Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
