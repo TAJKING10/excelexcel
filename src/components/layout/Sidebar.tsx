@@ -13,7 +13,8 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserCircle
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -32,14 +33,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       return [
         { path: '/admin', icon: LayoutDashboard, label: t('nav.dashboard') },
         { path: '/admin/companies', icon: Building2, label: t('nav.companies') },
+        { path: '/admin/individuals', icon: UserCircle, label: t('nav.individuals') },
         { path: '/admin/employees', icon: Users, label: t('nav.employees') },
         { path: '/admin/payslips', icon: FileText, label: t('nav.payslips') },
       ]
     }
 
-    // Employee role - only dashboard (everything else is in the dashboard)
+    // Employee role navigation
     return [
-      { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      { path: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
+      { path: '/payslips', icon: FileText, label: t('nav.payslips') },
+      { path: '/profile', icon: UserCircle, label: t('nav.profile') || 'Profile' },
     ]
   }
 

@@ -13,6 +13,7 @@ import { UserShell } from './components/layout/UserShell';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserAccessManagement } from './pages/admin/UserAccessManagement';
 import { CreatePayslip } from './pages/admin/CreatePayslip';
+import { Individuals as AdminIndividuals } from './pages/admin/Individuals';
 import { CompanyList } from './components/companies/CompanyList';
 import { CompanyDetail } from './pages/CompanyDetail';
 import { EmployeeList } from './components/employees/EmployeeList';
@@ -20,6 +21,8 @@ import { PayslipList } from './components/payslips/PayslipList';
 
 // Pages - Employee
 import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
+import { Payslips } from './pages/employee/Payslips';
+import { Profile } from './pages/employee/Profile';
 
 // Auth
 import LoginPage from './pages/LoginPage';
@@ -57,6 +60,7 @@ function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="companies" element={<CompanyList />} />
             <Route path="companies/:companyId" element={<CompanyDetail />} />
+            <Route path="individuals" element={<AdminIndividuals />} />
             <Route path="employees" element={<EmployeeList />} />
             <Route path="payslips" element={<PayslipList />} />
             <Route path="payslips/create" element={<CreatePayslip />} />
@@ -74,7 +78,8 @@ function App() {
             <Route index element={<EmployeeDashboard />} />
             <Route path="dashboard" element={<EmployeeDashboard />} />
             <Route path="companies/:companyId" element={<CompanyDetail />} />
-            <Route path="payslips" element={<PayslipList />} />
+            <Route path="payslips" element={<Payslips />} />
+            <Route path="profile" element={<Profile />} />
           </Route>
         )}
 

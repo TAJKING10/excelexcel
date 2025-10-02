@@ -6,6 +6,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  updateUser: (userId: string, updates: Partial<User>) => void;
 }
 
 const mockUsers: User[] = [
@@ -51,7 +52,7 @@ const mockUsers: User[] = [
   },
 ];
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   login: async (username: string, password: string) => {
@@ -69,5 +70,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
   logout: () => {
     set({ user: null, isAuthenticated: false });
+  },
+  updateUser: (userId: string, updates: Partial<User>) => {
+    const currentUser = get().user;
+    if (currentUser && currentUser.id === userId) {
+      set({ user: { ...currentUser, ...updates } });
+    }
   },
 }));
