@@ -53,10 +53,10 @@ export function EmployeeDashboard() {
       {/* Welcome Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">
-          Welcome, {user?.firstName}!
+          {t('dashboard.welcome')}, {user?.firstName}!
         </h1>
         <p className="text-muted-foreground">
-          Manage payslips for companies and individuals
+          {t('dashboard.managePayslips')}
         </p>
       </div>
 
@@ -66,13 +66,13 @@ export function EmployeeDashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary" />
-              Companies
+              {t('nav.companies')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{accessibleCompanies.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Companies you manage
+              {t('dashboard.companiesManaged')}
             </p>
           </CardContent>
         </Card>
@@ -81,13 +81,13 @@ export function EmployeeDashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
-              Employees
+              {t('nav.employees')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{accessibleEmployees.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Total employees
+              {t('dashboard.totalEmployees')}
             </p>
           </CardContent>
         </Card>
@@ -96,13 +96,13 @@ export function EmployeeDashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
-              Payslips
+              {t('nav.payslips')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{accessiblePayslips.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Total payslips created
+              {t('dashboard.totalPayslipsCreated')}
             </p>
           </CardContent>
         </Card>
@@ -113,11 +113,11 @@ export function EmployeeDashboard() {
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="companies" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            Companies
+            {t('nav.companies')}
           </TabsTrigger>
           <TabsTrigger value="individuals" className="flex items-center gap-2">
             <UserCircle className="h-4 w-4" />
-            Individuals
+            {t('nav.individuals')}
           </TabsTrigger>
         </TabsList>
 
@@ -126,27 +126,27 @@ export function EmployeeDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <div>
-                <CardTitle>Client Companies</CardTitle>
+                <CardTitle>{t('dashboard.clientCompanies')}</CardTitle>
                 <CardDescription>
-                  Create and manage companies, then add employees and payslips
+                  {t('dashboard.clientCompaniesDesc')}
                 </CardDescription>
               </div>
               <Button onClick={() => navigate('/companies/create')} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Company
+                {t('companies.add')}
               </Button>
             </CardHeader>
             <CardContent>
               {accessibleCompanies.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
                   <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Companies Yet</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t('dashboard.noCompaniesYet')}</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Start by creating your first company
+                    {t('dashboard.noCompaniesDesc')}
                   </p>
                   <Button onClick={() => navigate('/companies/create')}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Company
+                    {t('dashboard.createCompany')}
                   </Button>
                 </div>
               ) : (
@@ -170,13 +170,13 @@ export function EmployeeDashboard() {
                         </CardHeader>
                         <CardContent className="space-y-3">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Employees</span>
+                            <span className="text-muted-foreground">{t('nav.employees')}</span>
                             <Badge variant="secondary">
                               {stats.activeEmployees}/{stats.totalEmployees}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Payslips</span>
+                            <span className="text-muted-foreground">{t('nav.payslips')}</span>
                             <Badge variant="outline">{stats.totalPayslips}</Badge>
                           </div>
                           <Button
@@ -188,7 +188,7 @@ export function EmployeeDashboard() {
                               navigate(`/companies/${company.id}`);
                             }}
                           >
-                            View Details
+                            {t('dashboard.viewDetails')}
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                         </CardContent>
@@ -206,26 +206,26 @@ export function EmployeeDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <div>
-                <CardTitle>Individual Freelancers</CardTitle>
+                <CardTitle>{t('dashboard.individualFreelancers')}</CardTitle>
                 <CardDescription>
-                  Manage payslips for individual freelancers (not part of a company)
+                  {t('dashboard.individualFreelancersDesc')}
                 </CardDescription>
               </div>
               <Button onClick={() => navigate('/individuals/create')} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Individual
+                {t('individuals.add')}
               </Button>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12 border-2 border-dashed rounded-lg">
                 <UserCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Individuals Yet</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('dashboard.noIndividualsYet')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Add freelancers who work independently
+                  {t('dashboard.noIndividualsDesc')}
                 </p>
                 <Button onClick={() => navigate('/individuals/create')}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Individual
+                  {t('dashboard.addIndividual')}
                 </Button>
               </div>
             </CardContent>
@@ -236,20 +236,20 @@ export function EmployeeDashboard() {
       {/* Quick Actions */}
       <Card className="bg-muted/50">
         <CardHeader>
-          <CardTitle className="text-base">Quick Actions</CardTitle>
+          <CardTitle className="text-base">{t('dashboard.quickActions')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate('/companies/create')}>
             <Building2 className="h-4 w-4 mr-2" />
-            Create Company
+            {t('dashboard.createCompany')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => navigate('/payslips')}>
             <FileText className="h-4 w-4 mr-2" />
-            View All Payslips
+            {t('dashboard.viewAllPayslips')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => navigate('/individuals/create')}>
             <UserCircle className="h-4 w-4 mr-2" />
-            Add Individual
+            {t('dashboard.addIndividual')}
           </Button>
         </CardContent>
       </Card>

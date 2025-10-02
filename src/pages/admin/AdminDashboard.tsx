@@ -135,30 +135,30 @@ export function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={UserCog}
-          title={'Advensys Staff'}
+          title={t('dashboard.advensysStaff') || 'Advensys Staff'}
           value={totalAdvensysStaff}
-          subtitle={`Manage employee access`}
+          subtitle={t('dashboard.manageEmployeeAccess') || 'Manage employee access'}
           onClick={() => navigate('/admin/users')}
         />
         <StatCard
           icon={Building2}
-          title={'Client Companies'}
+          title={t('dashboard.manageClientCompanies') || 'Client Companies'}
           value={totalCompanies}
-          subtitle={`Manage all companies`}
+          subtitle={t('dashboard.allCompanies') || 'All companies'}
           onClick={() => navigate('/admin/companies')}
         />
         <StatCard
           icon={FileText}
-          title={'Total Payslips'}
+          title={t('nav.payslips') || 'Payslips'}
           value={totalPayslips}
-          subtitle={`${monthlyPayslips} this month`}
+          subtitle={`${monthlyPayslips} ${t('dashboard.thisMonth') || 'this month'}`}
           onClick={() => navigate('/admin/payslips')}
         />
         <StatCard
           icon={TrendingUp}
-          title={'Total Payroll'}
+          title={t('companies.monthlyPayroll') || 'Total Payroll'}
           value={`€${totalPayroll.toLocaleString()}`}
-          subtitle={`All companies`}
+          subtitle={t('dashboard.allCompanies') || 'All companies'}
         />
       </div>
 
@@ -332,12 +332,12 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <UserCog className="mr-2 h-5 w-5" />
-              Manage Advensys Staff
+              {t('dashboard.manageAdvensysStaff') || 'Manage Advensys Staff'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Add and manage Advensys employees and their access
+              {t('dashboard.manageAdvensysStaffDesc') || 'Add and manage Advensys employees and their access'}
             </p>
           </CardContent>
         </Card>
@@ -346,12 +346,12 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <Building2 className="mr-2 h-5 w-5" />
-              Manage Client Companies
+              {t('dashboard.manageClientCompanies') || 'Manage Client Companies'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              View and manage all client companies
+              {t('dashboard.manageClientCompaniesDesc') || 'View and manage all client companies'}
             </p>
           </CardContent>
         </Card>
@@ -360,12 +360,12 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <FileText className="mr-2 h-5 w-5" />
-              View All Payslips
+              {t('dashboard.viewAllPayslips') || 'View All Payslips'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              View all payslips across all companies
+              {t('dashboard.viewAllPayslipsDesc') || 'View all payslips across all companies'}
             </p>
           </CardContent>
         </Card>
