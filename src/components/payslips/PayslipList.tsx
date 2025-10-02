@@ -1,22 +1,28 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLanguageStore } from '@/stores/language'
 import { useDataStore } from '@/stores/data'
 import { useAuthStore } from '@/stores/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, Download, FileSpreadsheet, Edit, Trash2, Eye } from 'lucide-react'
+import { Plus, Download, FileSpreadsheet, Edit, Trash2, Eye, Filter } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { PayslipEditor } from './PayslipEditor'
 import { Payslip } from '@/types'
 
 export function PayslipList() {
+  const navigate = useNavigate()
   const { t } = useLanguageStore()
   const { payslips, employees, companies, updatePayslip, deletePayslip } = useDataStore()
   const { user } = useAuthStore()
   const [selectedPayslip, setSelectedPayslip] = useState<Payslip | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [filterCompanyId, setFilterCompanyId] = useState<string>('all')
+  const [filterEmployeeId, setFilterEmployeeId] = useState<string>('all')
 
   const getEmployeeName = (employeeId?: string) => {
     if (!employeeId) return 'Individual'
@@ -34,14 +40,36 @@ export function PayslipList() {
   const canDelete = user?.role === 'SUPER_ADMIN' || user?.access?.canDeletePayslips
   const canView = user?.role === 'SUPER_ADMIN' || user?.access?.canViewPayslips
 
-  // Filter payslips based on user access
+  // Filter employees based on company filter (for employee dropdown)
+  const availableEmployees = filterCompanyId !== 'all'
+    ? employees.filter(e => e.companyId === filterCompanyId)
+    : employees
+
+  // Filter payslips based on user access and filters
   const filteredPayslips = payslips.filter((payslip) => {
-    if (user?.role === 'SUPER_ADMIN') return true
-    if (user?.role === 'COMPANY_ADMIN' && user.companyId === payslip.companyId) return true
-    if (user?.employeeId === payslip.employeeId) return true
-    if (user?.access?.companyIds.includes(payslip.companyId)) return true
-    if (user?.access?.individualIds.includes(payslip.employeeId)) return true
-    return false
+    // Role-based access control
+    if (user?.role === 'SUPER_ADMIN') {
+      // SuperAdmin sees all
+    } else if (user?.role === 'EMPLOYEE' && user?.access) {
+      // Employee - check access to companies or individuals
+      const hasAccess = user.access.companyIds.includes(payslip.companyId) ||
+                       user.access.individualIds.includes(payslip.employeeId)
+      if (!hasAccess) return false
+    } else {
+      return false
+    }
+
+    // Company filter
+    if (filterCompanyId !== 'all' && payslip.companyId !== filterCompanyId) {
+      return false
+    }
+
+    // Employee filter
+    if (filterEmployeeId !== 'all' && payslip.employeeId !== filterEmployeeId) {
+      return false
+    }
+
+    return true
   })
 
   const handleEdit = (payslip: Payslip) => {
@@ -73,12 +101,71 @@ export function PayslipList() {
           </p>
         </div>
         {(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN') && (
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => {
+              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/org';
+              navigate(`${basePath}/payslips/create`);
+            }}
+          >
             <Plus size={16} className="mr-2" />
             {t('payslips.create')}
           </Button>
         )}
       </div>
+
+      {/* Filters */}
+      {(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN') && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter size={18} />
+              Filters
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {user?.role === 'SUPER_ADMIN' && (
+                <div className="space-y-2">
+                  <Label>Company</Label>
+                  <Select value={filterCompanyId} onValueChange={(val) => {
+                    setFilterCompanyId(val)
+                    setFilterEmployeeId('all') // Reset employee filter when company changes
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Companies</SelectItem>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>Employee</Label>
+                <Select value={filterEmployeeId} onValueChange={setFilterEmployeeId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Employees</SelectItem>
+                    {availableEmployees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.firstName} {employee.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="bg-card border-border">
         <CardHeader>

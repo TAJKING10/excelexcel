@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
+import { useAuthStore } from '@/stores/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +16,7 @@ export function CompanyDetail() {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
   const { t } = useLanguageStore();
+  const { user } = useAuthStore();
   const { companies, employees, getCompanyAnalytics } = useDataStore();
 
   if (!companyId) {
@@ -51,7 +53,7 @@ export function CompanyDetail() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/companies')}
+            onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? '/admin/companies' : '/')}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

@@ -5,13 +5,12 @@ import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { 
-  LayoutDashboard, 
-  Users, 
-  Building2, 
-  UserCheck, 
-  FileText, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  FileText,
+  Settings,
   LogOut,
   ChevronLeft,
   ChevronRight
@@ -25,15 +24,26 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation()
   const { t } = useLanguageStore()
-  const { logout } = useAuthStore()
+  const { logout, user } = useAuthStore()
 
-  const navItems = [
-    { path: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
-    { path: '/employees', icon: Users, label: t('nav.employees') },
-    { path: '/companies', icon: Building2, label: t('nav.companies') },
-    { path: '/individuals', icon: UserCheck, label: t('nav.individuals') },
-    { path: '/payslips', icon: FileText, label: t('nav.payslips') },
-  ]
+  // Navigation based on role
+  const getNavItems = () => {
+    if (user?.role === 'SUPER_ADMIN') {
+      return [
+        { path: '/admin', icon: LayoutDashboard, label: t('nav.dashboard') },
+        { path: '/admin/companies', icon: Building2, label: t('nav.companies') },
+        { path: '/admin/employees', icon: Users, label: t('nav.employees') },
+        { path: '/admin/payslips', icon: FileText, label: t('nav.payslips') },
+      ]
+    }
+
+    // Employee role - only dashboard (everything else is in the dashboard)
+    return [
+      { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    ]
+  }
+
+  const navItems = getNavItems()
 
   return (
     <div className={cn(

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
+import { useAuthStore } from '@/stores/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +13,7 @@ import {
   FileText,
   TrendingUp,
   ArrowRight,
-  Calendar,
+  UserCog,
 } from 'lucide-react';
 import {
   BarChart,
@@ -29,19 +30,20 @@ import {
 
 export function AdminDashboard() {
   const { t } = useLanguageStore();
-  const { companies, employees, individuals, payslips, getAllAnalytics } = useDataStore();
+  const { companies, employees, payslips, users, getAllAnalytics } = useDataStore();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuthStore();
 
   // Get comprehensive analytics
   const analytics = getAllAnalytics();
 
   // Calculate overview stats
   const totalCompanies = analytics.totalCompanies;
-  const totalIndividuals = analytics.totalIndividuals;
   const totalEmployees = analytics.totalEmployees;
   const activeEmployees = analytics.activeEmployees;
   const totalPayslips = analytics.totalPayslips;
   const totalPayroll = analytics.totalPayroll;
+  const totalAdvensysStaff = users.filter(u => u.role === 'EMPLOYEE').length;
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
   const monthlyPayslips = payslips.filter(
@@ -132,30 +134,31 @@ export function AdminDashboard() {
       {/* Overview Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
+          icon={UserCog}
+          title={'Advensys Staff'}
+          value={totalAdvensysStaff}
+          subtitle={`Manage employee access`}
+          onClick={() => navigate('/admin/users')}
+        />
+        <StatCard
           icon={Building2}
-          title={t('dashboard.totalCompanies') || 'Total Companies'}
+          title={'Client Companies'}
           value={totalCompanies}
-          subtitle={`${totalIndividuals} individuals`}
+          subtitle={`Manage all companies`}
           onClick={() => navigate('/admin/companies')}
         />
         <StatCard
-          icon={Users}
-          title={t('dashboard.totalEmployees') || 'Total Employees'}
-          value={totalEmployees}
-          subtitle={`${activeEmployees} ${t('dashboard.active') || 'active'}`}
-          onClick={() => navigate('/admin/employees')}
-        />
-        <StatCard
           icon={FileText}
-          title={t('dashboard.totalPayslips') || 'Total Payslips'}
+          title={'Total Payslips'}
           value={totalPayslips}
+          subtitle={`${monthlyPayslips} this month`}
           onClick={() => navigate('/admin/payslips')}
         />
         <StatCard
           icon={TrendingUp}
           title={'Total Payroll'}
           value={`€${totalPayroll.toLocaleString()}`}
-          subtitle={`${monthlyPayslips} this month`}
+          subtitle={`All companies`}
         />
       </div>
 
@@ -323,87 +326,32 @@ export function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* Individuals Section */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Individuals (Freelancers)</CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/admin/individuals')}
-          >
-            {t('dashboard.viewAll') || 'View All'}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Linked Company</TableHead>
-                <TableHead>{t('employees.actions') || 'Actions'}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {individuals.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    No individuals found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                individuals.map((individual) => (
-                  <TableRow key={individual.id}>
-                    <TableCell className="font-medium">
-                      {individual.firstName} {individual.lastName}
-                    </TableCell>
-                    <TableCell>{individual.email}</TableCell>
-                    <TableCell>
-                      {individual.companyId
-                        ? companies.find(c => c.id === individual.companyId)?.name || 'N/A'
-                        : 'Independent'}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        {t('dashboard.view') || 'View'}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/admin/companies')}>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/admin/users')}>
           <CardHeader>
             <CardTitle className="text-base flex items-center">
-              <Building2 className="mr-2 h-5 w-5" />
-              {t('dashboard.manageCompanies') || 'Manage Companies'}
+              <UserCog className="mr-2 h-5 w-5" />
+              Manage Advensys Staff
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.manageCompaniesDesc') || 'View and manage all companies'}
+              Add and manage Advensys employees and their access
             </p>
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/admin/employees')}>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/admin/companies')}>
           <CardHeader>
             <CardTitle className="text-base flex items-center">
-              <Users className="mr-2 h-5 w-5" />
-              {t('dashboard.manageEmployees') || 'Manage Employees'}
+              <Building2 className="mr-2 h-5 w-5" />
+              Manage Client Companies
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.manageEmployeesDesc') || 'View and manage all employees'}
+              View and manage all client companies
             </p>
           </CardContent>
         </Card>
@@ -412,12 +360,12 @@ export function AdminDashboard() {
           <CardHeader>
             <CardTitle className="text-base flex items-center">
               <FileText className="mr-2 h-5 w-5" />
-              {t('dashboard.managePayslips') || 'Manage Payslips'}
+              View All Payslips
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              {t('dashboard.managePayslipsDesc') || 'Create and manage payslips'}
+              View all payslips across all companies
             </p>
           </CardContent>
         </Card>

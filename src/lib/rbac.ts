@@ -3,15 +3,12 @@ import { Role } from '@/types';
 // RBAC Rules
 const rbacRules: Record<Role, string[]> = {
   SUPER_ADMIN: ['*'],
-  COMPANY_ADMIN: [
+  EMPLOYEE: [
     'dashboard',
-    'company:read',
-    'company:update',
-    'employees:*',
+    'companies:*',
     'payslips:*',
     'analytics:read',
   ],
-  EMPLOYEE: ['self:*', 'payslips:self', 'profile:*'],
 };
 
 // Check if role can access resource
@@ -36,23 +33,13 @@ export function canAccess(role: Role, resource: string): boolean {
 
 // Route access checks
 export function canAccessRoute(role: Role, path: string): boolean {
-  // Admin routes
+  // Admin routes - only super admin
   if (path.startsWith('/admin')) {
     return role === 'SUPER_ADMIN';
   }
 
-  // Company admin routes
-  if (path.startsWith('/org')) {
-    return role === 'SUPER_ADMIN' || role === 'COMPANY_ADMIN';
-  }
-
-  // Employee routes
-  if (path.startsWith('/me')) {
-    return true; // All authenticated users
-  }
-
-  // Dashboard accessible to all
-  if (path === '/dashboard' || path === '/') {
+  // Employee routes - accessible to all authenticated users
+  if (path === '/dashboard' || path === '/' || path.startsWith('/companies') || path.startsWith('/payslips')) {
     return true;
   }
 
@@ -64,11 +51,9 @@ export function getDefaultRoute(role: Role): string {
   switch (role) {
     case 'SUPER_ADMIN':
       return '/admin/dashboard';
-    case 'COMPANY_ADMIN':
-      return '/org/dashboard';
     case 'EMPLOYEE':
-      return '/me/dashboard';
+      return '/dashboard';
     default:
-      return '/';
+      return '/dashboard';
   }
 }

@@ -7,20 +7,16 @@ import { ProtectedRoute } from './components/guards/ProtectedRoute';
 
 // Layouts
 import { AdminShell } from './components/layout/AdminShell';
-import { OrgShell } from './components/layout/OrgShell';
 import { UserShell } from './components/layout/UserShell';
 
 // Pages - Admin
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserAccessManagement } from './pages/admin/UserAccessManagement';
+import { CreatePayslip } from './pages/admin/CreatePayslip';
 import { CompanyList } from './components/companies/CompanyList';
 import { CompanyDetail } from './pages/CompanyDetail';
 import { EmployeeList } from './components/employees/EmployeeList';
-import { IndividualList } from './components/individuals/IndividualList';
 import { PayslipList } from './components/payslips/PayslipList';
-
-// Pages - Org (Company Admin)
-import { OrgDashboard } from './pages/org/OrgDashboard';
 
 // Pages - Employee
 import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
@@ -47,62 +43,42 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Root redirect */}
-        <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-
         {/* SUPER_ADMIN Routes */}
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute requiredRole="SUPER_ADMIN" path="/admin">
-              <AdminShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="companies" element={<CompanyList />} />
-          <Route path="companies/:companyId" element={<CompanyDetail />} />
-          <Route path="employees" element={<EmployeeList />} />
-          <Route path="individuals" element={<IndividualList />} />
-          <Route path="payslips" element={<PayslipList />} />
-          <Route path="users" element={<UserAccessManagement />} />
-          <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
-        </Route>
+        {user.role === 'SUPER_ADMIN' && (
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute requiredRole="SUPER_ADMIN" path="/admin">
+                <AdminShell />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="companies" element={<CompanyList />} />
+            <Route path="companies/:companyId" element={<CompanyDetail />} />
+            <Route path="employees" element={<EmployeeList />} />
+            <Route path="payslips" element={<PayslipList />} />
+            <Route path="payslips/create" element={<CreatePayslip />} />
+            <Route path="users" element={<UserAccessManagement />} />
+            <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
+          </Route>
+        )}
 
-        {/* COMPANY_ADMIN Routes */}
-        <Route
-          path="/org/*"
-          element={
-            <ProtectedRoute requiredRole={['SUPER_ADMIN', 'COMPANY_ADMIN']} path="/org">
-              <OrgShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/org/dashboard" replace />} />
-          <Route path="dashboard" element={<OrgDashboard />} />
-          <Route path="employees" element={<EmployeeList />} />
-          <Route path="payslips" element={<PayslipList />} />
-          <Route path="analytics" element={<div className="p-6">Analytics (Coming Soon)</div>} />
-          <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
-        </Route>
+        {/* EMPLOYEE Routes (Advensys staff) */}
+        {user.role === 'EMPLOYEE' && (
+          <Route
+            path="/*"
+            element={<UserShell />}
+          >
+            <Route index element={<EmployeeDashboard />} />
+            <Route path="dashboard" element={<EmployeeDashboard />} />
+            <Route path="companies/:companyId" element={<CompanyDetail />} />
+            <Route path="payslips" element={<PayslipList />} />
+          </Route>
+        )}
 
-        {/* EMPLOYEE Routes */}
-        <Route
-          path="/me/*"
-          element={
-            <ProtectedRoute path="/me">
-              <UserShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/me/dashboard" replace />} />
-          <Route path="dashboard" element={<EmployeeDashboard />} />
-          <Route path="payslips" element={<PayslipList />} />
-          <Route path="profile" element={<div className="p-6">Profile (Coming Soon)</div>} />
-        </Route>
-
-        {/* Fallback */}
+        {/* Root redirect */}
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>
     </Router>

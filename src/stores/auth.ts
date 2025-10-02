@@ -19,25 +19,22 @@ const mockUsers: User[] = [
   },
   {
     id: '2',
-    username: 'companyadmin',
-    email: 'companyadmin@advensys.lu',
-    firstName: 'Company',
-    lastName: 'Manager',
-    role: 'COMPANY_ADMIN',
-    companyId: 'company-1',
-  },
-  {
-    id: '3',
     username: 'employee',
     email: 'employee@advensys.lu',
     firstName: 'John',
     lastName: 'Doe',
     role: 'EMPLOYEE',
-    companyId: 'company-1',
-    employeeId: 'emp-1',
+    access: {
+      companyIds: ['company-1', 'company-2'], // Can manage these companies
+      individualIds: ['ind-1'], // Can manage individual freelancers
+      canViewPayslips: true,
+      canEditPayslips: true,
+      canDeletePayslips: true,
+      canViewAnalytics: true,
+    },
   },
   {
-    id: '4',
+    id: '3',
     username: 'user1',
     email: 'user1@advensys.lu',
     firstName: 'Jane',
@@ -45,7 +42,7 @@ const mockUsers: User[] = [
     role: 'EMPLOYEE',
     access: {
       companyIds: ['company-1'],
-      individualIds: ['ind-1'],
+      individualIds: [],
       canViewPayslips: true,
       canEditPayslips: true,
       canDeletePayslips: false,

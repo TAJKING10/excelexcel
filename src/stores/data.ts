@@ -1,18 +1,9 @@
 import { create } from 'zustand';
 import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess } from '@/types';
 
-export interface Individual {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  companyId?: string;
-}
-
 interface DataState {
   companies: Company[];
   employees: Employee[];
-  individuals: Individual[];
   payslips: Payslip[];
   users: User[];
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
@@ -21,9 +12,6 @@ interface DataState {
   addEmployee: (employee: Omit<Employee, 'id'>) => void;
   updateEmployee: (id: string, employee: Partial<Employee>) => void;
   deleteEmployee: (id: string) => void;
-  addIndividual: (individual: Omit<Individual, 'id'>) => void;
-  updateIndividual: (id: string, individual: Partial<Individual>) => void;
-  deleteIndividual: (id: string) => void;
   addPayslip: (payslip: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updatePayslip: (id: string, payslip: Partial<Payslip>) => void;
   deletePayslip: (id: string) => void;
@@ -34,7 +22,6 @@ interface DataState {
   getCompanyAnalytics: (companyId: string) => CompanyAnalytics;
   getAllAnalytics: () => {
     totalCompanies: number;
-    totalIndividuals: number;
     totalEmployees: number;
     activeEmployees: number;
     totalPayslips: number;
@@ -108,16 +95,6 @@ const mockEmployees: Employee[] = [
     terminationDate: null,
     baseSalary: 4800,
     status: 'active',
-  },
-];
-
-const mockIndividuals: Individual[] = [
-  {
-    id: 'ind-1',
-    firstName: 'Jean',
-    lastName: 'Consultant',
-    email: 'jean.consultant@freelance.lu',
-    companyId: 'company-1',
   },
 ];
 
@@ -239,7 +216,6 @@ const mockPayslips: Payslip[] = [
 export const useDataStore = create<DataState>((set, get) => ({
   companies: mockCompanies,
   employees: mockEmployees,
-  individuals: mockIndividuals,
   payslips: mockPayslips,
   users: [],
 
@@ -274,21 +250,6 @@ export const useDataStore = create<DataState>((set, get) => ({
   deleteEmployee: (id) =>
     set((state) => ({
       employees: state.employees.filter((e) => e.id !== id),
-    })),
-
-  addIndividual: (individual) =>
-    set((state) => ({
-      individuals: [...state.individuals, { ...individual, id: `ind-${Date.now()}` }],
-    })),
-
-  updateIndividual: (id, individual) =>
-    set((state) => ({
-      individuals: state.individuals.map((i) => (i.id === id ? { ...i, ...individual } : i)),
-    })),
-
-  deleteIndividual: (id) =>
-    set((state) => ({
-      individuals: state.individuals.filter((i) => i.id !== id),
     })),
 
   addPayslip: (payslip) =>
@@ -395,7 +356,6 @@ export const useDataStore = create<DataState>((set, get) => ({
   getAllAnalytics: () => {
     const state = get();
     const totalCompanies = state.companies.length;
-    const totalIndividuals = state.individuals.length;
     const totalEmployees = state.employees.length;
     const activeEmployees = state.employees.filter((e) => e.status === 'active').length;
     const totalPayslips = state.payslips.length;
@@ -408,7 +368,6 @@ export const useDataStore = create<DataState>((set, get) => ({
 
     return {
       totalCompanies,
-      totalIndividuals,
       totalEmployees,
       activeEmployees,
       totalPayslips,

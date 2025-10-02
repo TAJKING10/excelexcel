@@ -1,5 +1,5 @@
 // User & Auth Types
-export type Role = 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'EMPLOYEE';
+export type Role = 'SUPER_ADMIN' | 'EMPLOYEE';
 
 export interface UserAccess {
   companyIds: string[]; // Companies the user has access to
@@ -17,9 +17,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: Role;
-  companyId?: string; // For COMPANY_ADMIN and EMPLOYEE
-  employeeId?: string; // For EMPLOYEE only
-  access?: UserAccess; // Access control for users
+  access?: UserAccess; // Access control for employees (managed by super admin)
 }
 
 // Company Types
