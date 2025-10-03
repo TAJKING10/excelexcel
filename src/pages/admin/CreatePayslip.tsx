@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDataStore } from '@/stores/data';
+import { DEFAULT_LU_TEMPLATE } from '@/lib/payrollTemplates';
+import { calculatePayslip } from '@/lib/luxembourgPayroll';
 import { useAuthStore } from '@/stores/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,18 +21,20 @@ import {
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { PayslipLine, LineType } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { LuxembourgPayslipDetail } from '@/components/payslips/LuxembourgPayslipDetail';
 
 export function CreatePayslip() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
-  const { companies, employees, addPayslip, savePayrollTemplate, getPayrollTemplate } = useDataStore();
+  const { companies, employees, payslips, addPayslip, savePayrollTemplate, getPayrollTemplate } = useDataStore();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [autoCalc, setAutoCalc] = useState<boolean>(true);
   const [lines, setLines] = useState<PayslipLine[]>([
     {
       id: '1',
@@ -95,6 +99,90 @@ export function CreatePayslip() {
     setLines([...lines, newLine]);
   };
 
+  const handleLoadDefaultTemplate = () => {
+    // Clone default template and assign fresh ids
+    const cloned = DEFAULT_LU_TEMPLATE.map((l) => ({
+      ...l,
+      id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      quantity: l.quantity ?? 1,
+      rate: 0,
+      amount: 0,
+    }));
+    setLines(cloned);
+    toast({ title: 'Loaded', description: 'Default Luxembourg template loaded' });
+  };
+
+  const matchCode = (text: string | undefined, code: string) => {
+    const norm = (s: string) => s.toUpperCase().trim();
+    return !!text && norm(text).includes(norm(code));
+  };
+
+  const applyAutoCalc = () => {
+    if (!autoCalc) return;
+    // Determine remuneration base from earnings totals
+    const earningsBase = lines
+      .filter((l) => l.type === 'earning')
+      .reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
+
+    if (!earningsBase || earningsBase <= 0) return;
+
+    const taxClass = selectedEmployee?.taxClass || 'Empl.';
+    const calc = calculatePayslip({ remunerationBase: earningsBase, taxClass });
+
+    const updated = lines.map((l) => {
+      const line = { ...l };
+      // Employee
+      if (matchCode(line.code, 'EE_MALADIE') || matchCode(line.label_fr, 'MALADIE') || matchCode(line.label_en, 'HEALTH')) {
+        line.amount = calc.employeeContrib.maladie;
+        line.rate = calc.employeeContrib.maladie;
+      } else if (matchCode(line.code, 'EE_PENSION') || matchCode(line.label_en, 'PENSION') || matchCode(line.label_fr, 'PENSION')) {
+        line.amount = calc.employeeContrib.pension;
+        line.rate = calc.employeeContrib.pension;
+      } else if (matchCode(line.code, 'EE_CI_CO2') || matchCode(line.label_en, 'CI-CO2') || matchCode(line.label_fr, 'CI-CO2')) {
+        line.amount = calc.employeeContrib.ciCo2;
+        line.rate = calc.employeeContrib.ciCo2;
+      } else if (matchCode(line.code, 'EE_CIS') || matchCode(line.label_en, 'CIS') || matchCode(line.label_fr, 'CIS')) {
+        line.amount = calc.employeeContrib.cis;
+        line.rate = calc.employeeContrib.cis;
+      } else if (matchCode(line.code, 'EE_CISSM') || matchCode(line.label_en, 'CISSM') || matchCode(line.label_fr, 'CISSM')) {
+        line.amount = calc.employeeContrib.cissm;
+        line.rate = calc.employeeContrib.cissm;
+      } else if (matchCode(line.code, 'TAX') || matchCode(line.label_en, 'TAX') || matchCode(line.label_fr, 'IMPÔT')) {
+        line.amount = calc.employeeContrib.incomeTax;
+        line.rate = calc.employeeContrib.incomeTax;
+      }
+
+      // Employer
+      if (matchCode(line.code, 'ER_MALADIE') || matchCode(line.label_fr, 'MALADIE') || matchCode(line.label_en, 'HEALTH')) {
+        line.amount = calc.employerContrib.maladie;
+        line.rate = calc.employerContrib.maladie;
+      } else if (matchCode(line.code, 'ER_PENSION') || matchCode(line.label_en, 'PENSION') || matchCode(line.label_fr, 'PENSION')) {
+        line.amount = calc.employerContrib.pension;
+        line.rate = calc.employerContrib.pension;
+      } else if (matchCode(line.code, 'ER_SANTE') || matchCode(line.label_en, 'SANTE') || matchCode(line.label_fr, 'SANTÉ')) {
+        line.amount = calc.employerContrib.sante;
+        line.rate = calc.employerContrib.sante;
+      } else if (matchCode(line.code, 'ER_ACCIDENT') || matchCode(line.label_en, 'ACCIDENT') || matchCode(line.label_fr, 'ACCIDENT')) {
+        line.amount = calc.employerContrib.accident;
+        line.rate = calc.employerContrib.accident;
+      }
+
+      return line;
+    });
+
+    // Only update if amounts changed materially to avoid loops
+    const prevTotal = lines.reduce((s, l) => s + (Number(l.amount) || 0), 0).toFixed(2);
+    const nextTotal = updated.reduce((s, l) => s + (Number(l.amount) || 0), 0).toFixed(2);
+    if (prevTotal !== nextTotal) {
+      setLines(updated);
+    }
+  };
+
+  useEffect(() => {
+    applyAutoCalc();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCalc, selectedEmployeeId, lines.length]);
+
   const handleDeleteLine = (lineId: string) => {
     if (lines.length > 1) {
       setLines(lines.filter((line) => line.id !== lineId));
@@ -102,47 +190,140 @@ export function CreatePayslip() {
   };
 
   const calculateTotals = () => {
+    const norm = (s: string) => (s || '').toUpperCase();
+
     const earnings = lines
       .filter((line) => line.type === 'earning')
-      .reduce((sum, line) => sum + line.amount, 0);
+      .reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
 
     const employeeDeductions = lines
       .filter((line) => line.type === 'deduction')
-      .reduce((sum, line) => sum + Math.abs(line.amount), 0);
+      .reduce((sum, line) => sum + Math.abs(Number(line.amount) || 0), 0);
 
     const employerContributions = lines
       .filter((line) => line.type === 'employer_contrib')
-      .reduce((sum, line) => sum + line.amount, 0);
+      .reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
 
     const maladie = lines
-      .filter((line) => line.code.includes('CNS-MAL') && line.type === 'deduction')
-      .reduce((sum, line) => sum + Math.abs(line.amount), 0);
+      .filter((line) => line.type === 'deduction')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('MAL') || c.includes('CNS') || lf.includes('MALADIE') || le.includes('HEALTH') || le.includes('MALADIE');
+      })
+      .reduce((sum, line) => sum + Math.abs(Number(line.amount) || 0), 0);
 
     const pension = lines
-      .filter((line) => line.code.includes('PENS') && line.type === 'deduction')
-      .reduce((sum, line) => sum + Math.abs(line.amount), 0);
+      .filter((line) => line.type === 'deduction')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('PENS') || lf.includes('PENSION') || le.includes('PENSION');
+      })
+      .reduce((sum, line) => sum + Math.abs(Number(line.amount) || 0), 0);
+
+    const ciCo2 = lines
+      .filter((line) => line.type === 'deduction')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('CO2') || c.includes('CI-CO2') || lf.includes('CO2') || le.includes('CO2');
+      })
+      .reduce((sum, line) => sum + Math.abs(Number(line.amount) || 0), 0);
+
+    const cis = lines
+      .filter((line) => line.type === 'deduction')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return (c.includes('CIS') && !c.includes('CISSM')) || lf.includes('CIS') || (le.includes('CIS') && !le.includes('CISSM'));
+      })
+      .reduce((sum, line) => sum + Math.abs(Number(line.amount) || 0), 0);
+
+    const cissm = lines
+      .filter((line) => line.type === 'deduction')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('CISSM') || lf.includes('CISSM') || le.includes('CISSM');
+      })
+      .reduce((sum, line) => sum + Math.abs(Number(line.amount) || 0), 0);
 
     const incomeTax = lines
-      .filter((line) => line.code.includes('IMP') && line.type === 'deduction')
-      .reduce((sum, line) => sum + Math.abs(line.amount), 0);
+      .filter((line) => line.type === 'deduction')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('IMP') || c.includes('TAX') || lf.includes('IMPÔT') || le.includes('TAX');
+      })
+      .reduce((sum, line) => sum + Math.abs(Number(line.amount) || 0), 0);
 
     const employerMaladie = lines
-      .filter((line) => line.code.includes('CNS-MAL') && line.type === 'employer_contrib')
-      .reduce((sum, line) => sum + line.amount, 0);
+      .filter((line) => line.type === 'employer_contrib')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('MAL') || c.includes('CNS') || lf.includes('MALADIE') || le.includes('HEALTH') || le.includes('MALADIE');
+      })
+      .reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
 
     const employerPension = lines
-      .filter((line) => line.code.includes('PENS') && line.type === 'employer_contrib')
-      .reduce((sum, line) => sum + line.amount, 0);
+      .filter((line) => line.type === 'employer_contrib')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('PENS') || lf.includes('PENSION') || le.includes('PENSION');
+      })
+      .reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
 
     const sante = lines
-      .filter((line) => line.code.includes('SANTE') && line.type === 'employer_contrib')
-      .reduce((sum, line) => sum + line.amount, 0);
+      .filter((line) => line.type === 'employer_contrib')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('SANTE') || lf.includes('SANTÉ') || le.includes('HEALTH');
+      })
+      .reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
 
     const accident = lines
-      .filter((line) => line.code.includes('ACC') && line.type === 'employer_contrib')
-      .reduce((sum, line) => sum + line.amount, 0);
+      .filter((line) => line.type === 'employer_contrib')
+      .filter((line) => {
+        const c = norm(line.code);
+        const lf = norm(line.label_fr);
+        const le = norm(line.label_en);
+        return c.includes('ACC') || lf.includes('ACCIDENT') || le.includes('ACCIDENT');
+      })
+      .reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
+
+    const deductionsOther = Math.max(
+      0,
+      employeeDeductions - (maladie + pension + incomeTax + ciCo2 + cis + cissm)
+    );
 
     const netPay = earnings - employeeDeductions;
+
+    // YTD from existing payslips + current preview
+    const existing = payslips.filter(
+      (p) => p.employeeId === selectedEmployeeId && p.period.year === year && p.period.month < month
+    );
+    const ytd = {
+      gross: existing.reduce((sum, p) => sum + (p.earnings?.grossMonthly || 0), 0) + earnings,
+      net: existing.reduce((sum, p) => sum + (p.netPay || 0), 0) + netPay,
+      employeeContribTotal:
+        existing.reduce((sum, p) => sum + (p.employeeContrib?.total || 0), 0) + employeeDeductions,
+      employerContribTotal:
+        existing.reduce((sum, p) => sum + (p.employerContrib?.socialSecurityTotal || 0), 0) + employerContributions,
+      taxes: existing.reduce((sum, p) => sum + (p.employeeContrib?.incomeTax || 0), 0) + incomeTax,
+    };
 
     return {
       earnings,
@@ -151,11 +332,16 @@ export function CreatePayslip() {
       netPay,
       maladie,
       pension,
+      ciCo2,
+      cis,
+      cissm,
+      deductionsOther,
       incomeTax,
       employerMaladie,
       employerPension,
       sante,
       accident,
+      ytd,
     };
   };
 
@@ -226,10 +412,10 @@ export function CreatePayslip() {
       employeeContrib: {
         maladie: totals.maladie,
         pension: totals.pension,
-        ciCo2: 14,
-        cis: 50,
-        cissm: 70,
-        deductions: totals.employeeDeductions - totals.maladie - totals.pension - totals.incomeTax - 14 - 50 - 70,
+        ciCo2: totals.ciCo2,
+        cis: totals.cis,
+        cissm: totals.cissm,
+        deductions: totals.deductionsOther,
         incomeTax: totals.incomeTax,
         total: totals.employeeDeductions,
       },
@@ -241,13 +427,7 @@ export function CreatePayslip() {
         socialSecurityTotal: totals.employerContributions,
       },
       netPay: totals.netPay,
-      ytd: {
-        gross: totals.earnings,
-        net: totals.netPay,
-        employeeContribTotal: totals.employeeDeductions,
-        employerContribTotal: totals.employerContributions,
-        taxes: totals.incomeTax,
-      },
+      ytd: totals.ytd,
       lines: lines,
     };
 
@@ -277,6 +457,9 @@ export function CreatePayslip() {
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={handleLoadTemplate}>
             Load Template
+          </Button>
+          <Button variant="secondary" onClick={handleLoadDefaultTemplate}>
+            Load Default
           </Button>
           <Button variant="secondary" onClick={handleSaveTemplate}>
             Save Template
@@ -459,10 +642,20 @@ export function CreatePayslip() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Payslip Lines</CardTitle>
-            <Button onClick={handleAddLine} size="sm">
-              <Plus size={16} className="mr-2" />
-              Add Line
-            </Button>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={autoCalc}
+                  onChange={(e) => setAutoCalc(e.target.checked)}
+                />
+                Auto-calc from base
+              </label>
+              <Button onClick={handleAddLine} size="sm">
+                <Plus size={16} className="mr-2" />
+                Add Line
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -556,6 +749,78 @@ export function CreatePayslip() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Preview (Excel-style monthly detail) */}
+      {selectedCompany && selectedEmployee && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Preview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LuxembourgPayslipDetail
+              payslip={{
+                employeeId: selectedEmployeeId,
+                companyId: selectedCompanyId,
+                period: { month, year },
+                employee: {
+                  id: selectedEmployee.id,
+                  firstName: selectedEmployee.firstName,
+                  lastName: selectedEmployee.lastName,
+                  email: selectedEmployee.email,
+                  class: selectedEmployee.class,
+                  hireDate: selectedEmployee.hireDate,
+                  terminationDate: selectedEmployee.terminationDate,
+                  matricule: selectedEmployee.matricule,
+                  identityNumber: selectedEmployee.identityNumber,
+                  address: selectedEmployee.address,
+                  city: selectedEmployee.city,
+                  postalCode: selectedEmployee.postalCode,
+                },
+                company: {
+                  id: selectedCompany.id,
+                  name: selectedCompany.name,
+                  country: selectedCompany.country,
+                  currency: selectedCompany.currency,
+                },
+                earnings: {
+                  remunerationBase: totals.earnings,
+                  grossMonthly: totals.earnings,
+                  cotisable: totals.earnings,
+                  imposable: totals.earnings - totals.employeeDeductions,
+                },
+                employeeContrib: {
+                  maladie: totals.maladie,
+                  pension: totals.pension,
+                  ciCo2: totals.ciCo2,
+                  cis: totals.cis,
+                  cissm: totals.cissm,
+                  deductions: totals.deductionsOther,
+                  incomeTax: totals.incomeTax,
+                  total: totals.employeeDeductions,
+                },
+                employerContrib: {
+                  maladie: totals.employerMaladie,
+                  pension: totals.employerPension,
+                  sante: totals.sante,
+                  accident: totals.accident,
+                  socialSecurityTotal: totals.employerContributions,
+                },
+                netPay: totals.netPay,
+                ytd: {
+                  gross: totals.earnings,
+                  net: totals.netPay,
+                  employeeContribTotal: totals.employeeDeductions,
+                  employerContribTotal: totals.employerContributions,
+                  taxes: totals.incomeTax,
+                },
+                lines: lines,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              }}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
