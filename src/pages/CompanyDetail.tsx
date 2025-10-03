@@ -14,7 +14,11 @@ import { useToast } from '@/hooks/use-toast';
 import { EmployeeList } from '@/components/employees/EmployeeList';
 import { PayslipList } from '@/components/payslips/PayslipList';
 import { CompanyAnalytics } from '@/components/analytics/CompanyAnalytics';
-import { ArrowLeft, Plus, Users, Building2, CreditCard, TrendingUp } from 'lucide-react';
+import { LuxembourgPayslipDetail } from '@/components/payslips/LuxembourgPayslipDetail';
+import { ArrowLeft, Plus, Users, Building2, CreditCard, TrendingUp, MoreHorizontal, Edit, Trash2, RotateCcw, Download, FileSpreadsheet, Eye } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Company } from '@/types';
 
 export function CompanyDetail() {
@@ -321,10 +325,6 @@ export function CompanyDetail() {
 function EmployeeListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
   const { employees } = useDataStore();
-  const { Badge } = require('@/components/ui/badge');
-  const { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } = require('@/components/ui/table');
-  const { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } = require('@/components/ui/dropdown-menu');
-  const { MoreHorizontal, Edit, Trash2, RotateCcw } = require('lucide-react');
 
   const filteredEmployees = employees.filter((e) => e.companyId === companyId);
 
@@ -393,8 +393,8 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
 function PayslipListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
   const { payslips, employees } = useDataStore();
-  const { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } = require('@/components/ui/table');
-  const { Download, FileSpreadsheet } = require('lucide-react');
+  const [selectedPayslip, setSelectedPayslip] = useState<string | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
   const filteredPayslips = payslips.filter((p) => p.companyId === companyId);
 
@@ -403,54 +403,75 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
     return employee ? `${employee.firstName} ${employee.lastName}` : t('common.unknown');
   };
 
+  const handleViewPayslip = (payslipId: string) => {
+    setSelectedPayslip(payslipId);
+    setViewDialogOpen(true);
+  };
+
+  const selectedPayslipData = payslips.find((p) => p.id === selectedPayslip);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('payslips.title')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {filteredPayslips.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">{t('payslips.noPayslips')}</p>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('payslips.period')}</TableHead>
-                <TableHead>{t('payslips.employee')}</TableHead>
-                <TableHead>{t('payslips.gross')}</TableHead>
-                <TableHead>{t('payslips.net')}</TableHead>
-                <TableHead>{t('employees.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPayslips.map((payslip) => (
-                <TableRow key={payslip.id}>
-                  <TableCell>
-                    {payslip.period.month}/{payslip.period.year}
-                  </TableCell>
-                  <TableCell>{getEmployeeName(payslip.employeeId)}</TableCell>
-                  <TableCell>€{payslip.earnings.grossMonthly.toLocaleString()}</TableCell>
-                  <TableCell>€{payslip.netPay.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Download size={16} className="mr-2" />
-                        {t('payslips.downloadPDF')}
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <FileSpreadsheet size={16} className="mr-2" />
-                        {t('payslips.downloadExcel')}
-                      </Button>
-                    </div>
-                  </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('payslips.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filteredPayslips.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">{t('payslips.noPayslips')}</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('payslips.period')}</TableHead>
+                  <TableHead>{t('payslips.employee')}</TableHead>
+                  <TableHead>{t('payslips.gross')}</TableHead>
+                  <TableHead>{t('payslips.net')}</TableHead>
+                  <TableHead>{t('employees.actions')}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {filteredPayslips.map((payslip) => (
+                  <TableRow key={payslip.id}>
+                    <TableCell>
+                      {String(payslip.period.month).padStart(2, '0')}/{payslip.period.year}
+                    </TableCell>
+                    <TableCell>{getEmployeeName(payslip.employeeId)}</TableCell>
+                    <TableCell>€{payslip.earnings.grossMonthly.toLocaleString()}</TableCell>
+                    <TableCell>€{payslip.netPay.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline" onClick={() => handleViewPayslip(payslip.id)}>
+                          <Eye size={16} className="mr-2" />
+                          Voir
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Download size={16} className="mr-2" />
+                          PDF
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Payslip Detail Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Fiche de Paie</DialogTitle>
+          </DialogHeader>
+          {selectedPayslipData && (
+            <LuxembourgPayslipDetail payslip={selectedPayslipData} />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
