@@ -38,8 +38,15 @@ export function canAccessRoute(role: Role, path: string): boolean {
     return role === 'SUPER_ADMIN';
   }
 
+  // Org routes removed
+
   // Employee routes - accessible to all authenticated users
-  if (path === '/dashboard' || path === '/' || path.startsWith('/companies') || path.startsWith('/payslips')) {
+  if (
+    path === '/dashboard' ||
+    path === '/' ||
+    path.startsWith('/companies') ||
+    path.startsWith('/payslips')
+  ) {
     return true;
   }
 

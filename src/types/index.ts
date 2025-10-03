@@ -17,6 +17,8 @@ export interface User {
   firstName: string;
   lastName: string;
   role: Role;
+  // Company Admins are associated with a single company
+  companyId?: string;
   access?: UserAccess; // Access control for employees (managed by super admin)
 }
 

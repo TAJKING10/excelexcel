@@ -44,17 +44,15 @@ export function CreatePayslip() {
     },
   ]);
 
-  // Set default company for Company Admin
+  // Guard: only Super Admin can access this page
   useEffect(() => {
-    if (user?.role === 'COMPANY_ADMIN' && user.companyId) {
-      setSelectedCompanyId(user.companyId);
+    if (user && user.role !== 'SUPER_ADMIN') {
+      navigate('/payslips');
     }
-  }, [user]);
+  }, [user, navigate]);
 
-  // Filter companies based on user role
-  const availableCompanies = user?.role === 'SUPER_ADMIN'
-    ? companies
-    : companies.filter((c) => c.id === user?.companyId);
+  // Companies available to Super Admin (page restricted by guard)
+  const availableCompanies = companies;
 
   const filteredEmployees = selectedCompanyId
     ? employees.filter((e) => e.companyId === selectedCompanyId && e.status === 'active')
@@ -235,8 +233,7 @@ export function CreatePayslip() {
       description: 'Payslip created successfully',
     });
 
-    const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/org';
-    navigate(`${basePath}/payslips`);
+    navigate('/admin/payslips');
   };
 
   return (
@@ -271,7 +268,7 @@ export function CreatePayslip() {
               <Select
                 value={selectedCompanyId}
                 onValueChange={setSelectedCompanyId}
-                disabled={user?.role === 'COMPANY_ADMIN'}
+                disabled={false}
               >
                 <SelectTrigger id="company">
                   <SelectValue placeholder="Select company" />

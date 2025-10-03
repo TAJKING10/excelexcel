@@ -127,10 +127,6 @@ export default function LoginPage() {
                   <span className="text-xs opacity-70">SUPER_ADMIN</span>
                 </div>
                 <div className="flex justify-between items-center p-2 bg-background dark:bg-gray-600 rounded">
-                  <span className="font-medium dark:text-gray-200">companyadmin</span>
-                  <span className="text-xs opacity-70">COMPANY_ADMIN</span>
-                </div>
-                <div className="flex justify-between items-center p-2 bg-background dark:bg-gray-600 rounded">
                   <span className="font-medium dark:text-gray-200">employee</span>
                   <span className="text-xs opacity-70">EMPLOYEE</span>
                 </div>

@@ -92,6 +92,8 @@ function App() {
           </Route>
         )}
 
+        {/* COMPANY_ADMIN Routes removed */}
+
         {/* Root redirect */}
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>

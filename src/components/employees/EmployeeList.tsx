@@ -107,7 +107,7 @@ export function EmployeeList() {
 
   const resetForm = () => {
     setFormData({
-      companyId: user?.role === 'COMPANY_ADMIN' ? user.companyId || '' : '',
+      companyId: '',
       firstName: '',
       lastName: '',
       email: '',
@@ -254,7 +254,7 @@ export function EmployeeList() {
             {filteredEmployees.length} {t('employees.count')}
           </p>
         </div>
-        {(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN') && (
+        {user?.role === 'SUPER_ADMIN' && (
           <Button
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {
@@ -383,7 +383,7 @@ export function EmployeeList() {
                             <FileText size={16} className="mr-2" />
                             Fiche de Paie Annuelle
                           </DropdownMenuItem>
-                          {(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN') && (
+                          {user?.role === 'SUPER_ADMIN' && (
                             <>
                               <DropdownMenuItem
                                 className="text-foreground hover:bg-muted"
@@ -431,7 +431,7 @@ export function EmployeeList() {
               <Select
                 value={formData.companyId}
                 onValueChange={(val) => setFormData({ ...formData, companyId: val })}
-                disabled={user?.role === 'COMPANY_ADMIN'}
+                disabled={false}
               >
                 <SelectTrigger id="add-company">
                   <SelectValue placeholder={t('companies.select')} />

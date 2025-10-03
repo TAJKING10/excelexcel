@@ -100,12 +100,11 @@ export function PayslipList() {
             {canDelete && ' Can Delete'}
           </p>
         </div>
-        {(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN') && (
+        {user?.role === 'SUPER_ADMIN' && (
           <Button
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {
-              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/org';
-              navigate(`${basePath}/payslips/create`);
+              navigate('/admin/payslips/create');
             }}
           >
             <Plus size={16} className="mr-2" />
@@ -115,7 +114,7 @@ export function PayslipList() {
       </div>
 
       {/* Filters */}
-      {(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN') && (
+      {user?.role === 'SUPER_ADMIN' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
