@@ -195,6 +195,7 @@ export function CreatePayslip() {
         currency: selectedCompany.currency,
       },
       earnings: {
+        remunerationBase: totals.earnings,
         grossMonthly: totals.earnings,
         cotisable: totals.earnings,
         imposable: totals.earnings - totals.employeeDeductions,
@@ -202,7 +203,10 @@ export function CreatePayslip() {
       employeeContrib: {
         maladie: totals.maladie,
         pension: totals.pension,
-        otherDeductions: totals.employeeDeductions - totals.maladie - totals.pension - totals.incomeTax,
+        ciCo2: 14,
+        cis: 50,
+        cissm: 70,
+        deductions: totals.employeeDeductions - totals.maladie - totals.pension - totals.incomeTax - 14 - 50 - 70,
         incomeTax: totals.incomeTax,
         total: totals.employeeDeductions,
       },

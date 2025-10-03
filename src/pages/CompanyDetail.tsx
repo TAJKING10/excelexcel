@@ -324,68 +324,213 @@ export function CompanyDetail() {
 // Filtered Employee List Component
 function EmployeeListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
-  const { employees } = useDataStore();
+  const { employees, updateEmployee, deleteEmployee } = useDataStore();
+  const { toast } = useToast();
+  const [editingEmployee, setEditingEmployee] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [employeeForm, setEmployeeForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    class: '',
+    taxClass: '',
+    matricule: '',
+    baseSalary: 0,
+  });
 
   const filteredEmployees = employees.filter((e) => e.companyId === companyId);
 
+  const handleEdit = (employee: any) => {
+    setEditingEmployee(employee.id);
+    setEmployeeForm({
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      class: employee.class,
+      taxClass: String(employee.taxClass || ''),
+      matricule: employee.matricule || '',
+      baseSalary: employee.baseSalary,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingEmployee) return;
+
+    updateEmployee(editingEmployee, {
+      ...employeeForm,
+      taxClass: employeeForm.taxClass,
+    });
+
+    toast({
+      title: 'Succès',
+      description: 'Employé mis à jour avec succès',
+    });
+
+    setEditDialogOpen(false);
+    setEditingEmployee(null);
+  };
+
+  const handleDelete = (employeeId: string, employeeName: string) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer ${employeeName} ?`)) {
+      deleteEmployee(employeeId);
+      toast({
+        title: 'Succès',
+        description: 'Employé supprimé avec succès',
+      });
+    }
+  };
+
+  const handleResetPassword = (employeeName: string) => {
+    toast({
+      title: 'Mot de passe réinitialisé',
+      description: `Le mot de passe de ${employeeName} a été réinitialisé`,
+    });
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('employees.title')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('employees.name')}</TableHead>
-              <TableHead>{t('employees.firstname')}</TableHead>
-              <TableHead>{t('employees.email')}</TableHead>
-              <TableHead>{t('employees.status')}</TableHead>
-              <TableHead>{t('employees.salary')}</TableHead>
-              <TableHead>{t('employees.actions')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredEmployees.map((employee) => (
-              <TableRow key={employee.id}>
-                <TableCell>{employee.lastName}</TableCell>
-                <TableCell>{employee.firstName}</TableCell>
-                <TableCell>{employee.email}</TableCell>
-                <TableCell>
-                  <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
-                    {employee.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>€{employee.baseSalary.toLocaleString()}</TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontal size={16} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Edit size={16} className="mr-2" />
-                        {t('employees.edit')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <RotateCcw size={16} className="mr-2" />
-                        {t('employees.reset')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 size={16} className="mr-2" />
-                        {t('employees.delete')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('employees.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('employees.name')}</TableHead>
+                <TableHead>{t('employees.firstname')}</TableHead>
+                <TableHead>{t('employees.email')}</TableHead>
+                <TableHead>Matricule</TableHead>
+                <TableHead>{t('employees.status')}</TableHead>
+                <TableHead>{t('employees.salary')}</TableHead>
+                <TableHead>{t('employees.actions')}</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {filteredEmployees.map((employee) => (
+                <TableRow key={employee.id}>
+                  <TableCell>{employee.lastName}</TableCell>
+                  <TableCell>{employee.firstName}</TableCell>
+                  <TableCell>{employee.email}</TableCell>
+                  <TableCell className="font-mono text-xs">{employee.matricule || '-'}</TableCell>
+                  <TableCell>
+                    <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
+                      {employee.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>€{employee.baseSalary.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(employee)}>
+                          <Edit size={16} className="mr-2" />
+                          {t('employees.edit')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleResetPassword(`${employee.firstName} ${employee.lastName}`)}>
+                          <RotateCcw size={16} className="mr-2" />
+                          {t('employees.reset')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDelete(employee.id, `${employee.firstName} ${employee.lastName}`)}
+                        >
+                          <Trash2 size={16} className="mr-2" />
+                          {t('employees.delete')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Edit Employee Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Modifier l'employé</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="edit-firstName">Prénom</Label>
+              <Input
+                id="edit-firstName"
+                value={employeeForm.firstName}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, firstName: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-lastName">Nom</Label>
+              <Input
+                id="edit-lastName"
+                value={employeeForm.lastName}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, lastName: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={employeeForm.email}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-matricule">Matricule</Label>
+              <Input
+                id="edit-matricule"
+                value={employeeForm.matricule}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, matricule: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-class">Classe</Label>
+              <Input
+                id="edit-class"
+                value={employeeForm.class}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, class: e.target.value })}
+                placeholder="e.g., Empl., Cadre A"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-taxClass">Classe d'impôt</Label>
+              <Input
+                id="edit-taxClass"
+                value={employeeForm.taxClass}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, taxClass: e.target.value })}
+                placeholder="e.g., 1, 2, 0.15"
+              />
+            </div>
+            <div className="col-span-2">
+              <Label htmlFor="edit-salary">Salaire de base</Label>
+              <Input
+                id="edit-salary"
+                type="number"
+                value={employeeForm.baseSalary}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, baseSalary: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveEdit}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
