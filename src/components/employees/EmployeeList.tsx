@@ -35,14 +35,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Edit, Trash2, RotateCcw, Filter } from 'lucide-react';
+import { Plus, MoreHorizontal, Edit, Trash2, RotateCcw, Filter, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Employee } from '@/types';
+import { useNavigate } from 'react-router-dom';
 
 export function EmployeeList() {
   const { t } = useLanguageStore();
   const { toast } = useToast();
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const { employees, companies, addEmployee, updateEmployee, deleteEmployee } = useDataStore();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -374,6 +376,13 @@ export function EmployeeList() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-foreground hover:bg-muted"
+                            onClick={() => navigate(`/admin/employees/${employee.id}/annual-payslip`)}
+                          >
+                            <FileText size={16} className="mr-2" />
+                            Fiche de Paie Annuelle
+                          </DropdownMenuItem>
                           {(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN') && (
                             <>
                               <DropdownMenuItem

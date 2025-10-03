@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual } from '@/types';
+import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis } from '@/types';
+import { generateAnnualPayslip } from '@/lib/luxembourgPayroll';
 
 interface DataState {
   companies: Company[];
   employees: Employee[];
   payslips: Payslip[];
+  annualPayslips: AnnualPayslip[];
   users: User[];
   individuals: Individual[];
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
@@ -32,6 +34,10 @@ interface DataState {
     totalPayroll: number;
     companiesData: Array<{ company: Company; analytics: CompanyAnalytics }>;
   };
+  // Annual payslip methods
+  generateEmployeeAnnualPayslip: (employeeId: string, year: number) => AnnualPayslip;
+  getEmployeeAnnualPayslip: (employeeId: string, year: number) => AnnualPayslip | undefined;
+  getCompanyAnnualAnalysis: (companyId: string, year: number) => CompanyAnnualAnalysis;
 }
 
 const mockCompanies: Company[] = [
@@ -346,6 +352,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   companies: mockCompanies,
   employees: mockEmployees,
   payslips: mockPayslips,
+  annualPayslips: [],
   users: [],
   individuals: mockIndividuals,
 
@@ -521,6 +528,110 @@ export const useDataStore = create<DataState>((set, get) => ({
       totalPayslips,
       totalPayroll,
       companiesData,
+    };
+  },
+
+  // Annual payslip methods
+  generateEmployeeAnnualPayslip: (employeeId: string, year: number): AnnualPayslip => {
+    const state = get();
+    const employee = state.employees.find((e) => e.id === employeeId);
+    if (!employee) {
+      throw new Error(`Employee ${employeeId} not found`);
+    }
+
+    const company = state.companies.find((c) => c.id === employee.companyId);
+    if (!company) {
+      throw new Error(`Company ${employee.companyId} not found`);
+    }
+
+    // Check if already exists
+    const existing = state.annualPayslips.find(
+      (p) => p.employeeId === employeeId && p.year === year
+    );
+    if (existing) {
+      return existing;
+    }
+
+    // Generate new annual payslip
+    const annualPayslip = generateAnnualPayslip(
+      {
+        employeeId,
+        year,
+        baseSalary: employee.baseSalary,
+        taxClass: employee.taxClass,
+        workingHoursPerMonth: 173,
+      },
+      employee,
+      company
+    );
+
+    // Store it
+    set((state) => ({
+      annualPayslips: [...state.annualPayslips, annualPayslip],
+    }));
+
+    return annualPayslip;
+  },
+
+  getEmployeeAnnualPayslip: (employeeId: string, year: number): AnnualPayslip | undefined => {
+    const state = get();
+    let payslip = state.annualPayslips.find(
+      (p) => p.employeeId === employeeId && p.year === year
+    );
+
+    // Auto-generate if not found
+    if (!payslip) {
+      try {
+        payslip = get().generateEmployeeAnnualPayslip(employeeId, year);
+      } catch (error) {
+        console.error('Failed to generate annual payslip:', error);
+      }
+    }
+
+    return payslip;
+  },
+
+  getCompanyAnnualAnalysis: (companyId: string, year: number): CompanyAnnualAnalysis => {
+    const state = get();
+    const company = state.companies.find((c) => c.id === companyId);
+    if (!company) {
+      throw new Error(`Company ${companyId} not found`);
+    }
+
+    const employees = state.employees.filter((e) => e.companyId === companyId);
+    const activeEmployees = employees.filter((e) => e.status === 'active');
+
+    // Generate annual payslips for all employees
+    const employeePayslips: AnnualPayslip[] = employees.map((employee) => {
+      return get().getEmployeeAnnualPayslip(employee.id, year) as AnnualPayslip;
+    }).filter(Boolean);
+
+    // Calculate totals
+    const totals = employeePayslips.reduce(
+      (acc, payslip) => {
+        acc.totalGrossSalary += payslip.recapitulation.totalGrossSalary;
+        acc.totalNetSalary += payslip.recapitulation.totalNetSalary;
+        acc.totalEmployeeContributions += payslip.recapitulation.totalEmployeeContributions;
+        acc.totalEmployerContributions += payslip.recapitulation.totalEmployerContributions;
+        acc.totalTaxes += payslip.recapitulation.totalTaxes;
+        return acc;
+      },
+      {
+        totalGrossSalary: 0,
+        totalNetSalary: 0,
+        totalEmployeeContributions: 0,
+        totalEmployerContributions: 0,
+        totalTaxes: 0,
+      }
+    );
+
+    return {
+      companyId,
+      year,
+      totalEmployees: employees.length,
+      activeEmployees: activeEmployees.length,
+      ...totals,
+      employeePayslips,
     };
   },
 }));

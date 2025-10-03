@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { EmployeeList } from '@/components/employees/EmployeeList';
 import { PayslipList } from '@/components/payslips/PayslipList';
 import { CompanyAnalytics } from '@/components/analytics/CompanyAnalytics';
+import { CompanyAnnualAnalytics } from '@/components/analytics/CompanyAnnualAnalytics';
 import { LuxembourgPayslipDetail } from '@/components/payslips/LuxembourgPayslipDetail';
 import { ArrowLeft, Plus, Users, Building2, CreditCard, TrendingUp, MoreHorizontal, Edit, Trash2, RotateCcw, Download, FileSpreadsheet, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -139,6 +140,10 @@ export function CompanyDetail() {
             <TrendingUp className="h-4 w-4 mr-2" />
             {t('companies.analytics')}
           </TabsTrigger>
+          <TabsTrigger value="annual-analysis">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Analyse Annuelle
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -230,6 +235,11 @@ export function CompanyDetail() {
         {/* Analytics Tab */}
         <TabsContent value="analytics">
           <CompanyAnalytics companyId={companyId} />
+        </TabsContent>
+
+        {/* Annual Analysis Tab */}
+        <TabsContent value="annual-analysis">
+          <CompanyAnnualAnalytics companyId={companyId} />
         </TabsContent>
       </Tabs>
 

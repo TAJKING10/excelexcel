@@ -128,6 +128,7 @@ export interface PayslipLine {
 
 export interface MonthlyPayslipData {
   monthName: string; // "J", "F", "M", etc. or full month name
+  monthNumber: number; // 1-12
   days: string; // "1-31", "1-29", etc.
   daysImposable: number; // Jours impos.
   status: string; // "Empl.", "-", etc.
@@ -136,6 +137,57 @@ export interface MonthlyPayslipData {
   employeeContrib: EmployeeContrib;
   workingHours: WorkingHours;
   netPay: number;
+}
+
+// Annual Payslip with all 12 months
+export interface AnnualPayslip {
+  id: string;
+  employeeId: string;
+  companyId: string;
+  year: number;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    class: string;
+    hireDate: string;
+    terminationDate: string | null;
+    matricule?: string;
+    identityNumber?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    anciennete?: string; // Seniority date display
+  };
+  company: {
+    id: string;
+    name: string;
+    country: string;
+    currency: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    registrationNumber?: string;
+  };
+  monthlyData: MonthlyPayslipData[]; // All 12 months
+  annualTotals: {
+    earnings: Earnings;
+    employeeContrib: EmployeeContrib;
+    employerContrib: EmployerContrib;
+    workingHours: WorkingHours;
+    netPay: number;
+  };
+  recapitulation: {
+    totalHoursWorked: number;
+    totalGrossSalary: number;
+    totalNetSalary: number;
+    totalEmployeeContributions: number;
+    totalEmployerContributions: number;
+    totalTaxes: number;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Payslip {
@@ -216,4 +268,18 @@ export interface ExcelImportResult {
   employeesUpdated: number;
   payslipsCreated: number;
   errors: string[];
+}
+
+// Analysis Types
+export interface CompanyAnnualAnalysis {
+  companyId: string;
+  year: number;
+  totalEmployees: number;
+  activeEmployees: number;
+  totalGrossSalary: number;
+  totalNetSalary: number;
+  totalEmployeeContributions: number;
+  totalEmployerContributions: number;
+  totalTaxes: number;
+  employeePayslips: AnnualPayslip[];
 }

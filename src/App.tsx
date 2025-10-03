@@ -25,6 +25,9 @@ import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
 import { Payslips } from './pages/employee/Payslips';
 import { Profile } from './pages/employee/Profile';
 
+// Annual Payslips
+import AnnualPayslipPage from './pages/AnnualPayslipPage';
+
 // Auth
 import LoginPage from './pages/LoginPage';
 
@@ -64,6 +67,7 @@ function App() {
             <Route path="individuals" element={<AdminIndividuals />} />
             <Route path="individuals/:individualId" element={<IndividualDetail />} />
             <Route path="employees" element={<EmployeeList />} />
+            <Route path="employees/:employeeId/annual-payslip" element={<AnnualPayslipPage />} />
             <Route path="payslips" element={<PayslipList />} />
             <Route path="payslips/create" element={<CreatePayslip />} />
             <Route path="users" element={<UserAccessManagement />} />

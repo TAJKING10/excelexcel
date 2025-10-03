@@ -1,0 +1,360 @@
+{
+  "workbook_structure": {
+    "total_sheets": 12,
+    "employee_sheets": [
+      "Miodrag MILIC",
+      "BERTHE Alexandra",
+      "SANDRI Sandro",
+      "JAUD Jean Paul",
+      "REBELO MATOS Daniel Filipe",
+      "BALDE Binta",
+      "Omigie Evbaguehize Stella",
+      "BEZGUBOV Tatiana",
+      "RIFFAUD Jean François",
+      "BROERING Lucas José"
+    ],
+    "summary_sheets": [
+      "Salaire globale +  Maladie",
+      "Part Patronales"
+    ]
+  },
+
+  "employee_sheet_structure": {
+    "header_section": {
+      "row_2": "Title: LIVRE DE PAIE | Year: 2024 | Description",
+      "row_4": "Company: Groupe Advensys Luxembourg SA",
+      "row_5": "Company Address: Duarrefstrooss 49, Ancienneté label and date, Employee Matricule, Name, Employee Number",
+      "row_6": "Company postal: L-9964 HULDANGE, Entrée label and date, Employee address",
+      "row_7": "Company registration: 2015 22 06 748, Sortie label and date, Employee postal"
+    },
+
+    "monthly_data_section": {
+      "header_row": 9,
+      "data_rows": "10-21 (January=10, February=11, ..., December=21)",
+      "total_row": 22,
+      "columns": [
+        {"letter": "A", "index": 1, "name": "Jours", "description": "Month identifier (J 1-31, F 1-29, etc.)"},
+        {"letter": "B", "index": 2, "name": "Jours impos.", "description": "Taxable days (typically 25)"},
+        {"letter": "C", "index": 3, "name": "Stat.", "description": "Status (Empl. for employee)"},
+        {"letter": "D", "index": 4, "name": "Classe - %", "description": "Tax class and percentage"},
+        {"letter": "E", "index": 5, "name": "Rémun. Base", "description": "Base remuneration"},
+        {"letter": "F", "index": 6, "name": "Brut Mensuel", "description": "Monthly gross salary"},
+        {"letter": "G", "index": 7, "name": "Cotisable", "description": "Taxable amount for social security (=F)"},
+        {"letter": "H", "index": 8, "name": "Maladie", "description": "Health insurance contribution (employee)"},
+        {"letter": "I", "index": 9, "name": "Pension", "description": "Pension contribution (employee, 8% of Cotisable)"},
+        {"letter": "J", "index": 10, "name": "CI-CO2", "description": "CI-CO2 tax"},
+        {"letter": "K", "index": 11, "name": "Déductions", "description": "Other deductions"},
+        {"letter": "L", "index": 12, "name": "Imposable", "description": "Taxable income"},
+        {"letter": "M", "index": 13, "name": "Impots", "description": "Income tax"},
+        {"letter": "N", "index": 14, "name": "CIS", "description": "CIS contribution"},
+        {"letter": "O", "index": 15, "name": "CISSM", "description": "CISSM contribution"},
+        {"letter": "P", "index": 16, "name": "Salaire Net", "description": "Net salary"}
+      ]
+    },
+
+    "recapitulation_section": {
+      "description": "Right side of the sheet, showing hours breakdown and summary",
+      "header_row_25": "Heures | Normal | Suppl. | Congés | Férié extra | Congés familliale (COVID-19) | Maladie | RECAPITULATION ANNEE",
+      "header_row_26": "Imposable | Impot | NET (columns H, J, K)",
+      "data_rows": "27-38 (January=27, February=28, ..., December=38)",
+      "total_row": 39,
+      "columns": [
+        {"letter": "A", "index": 1, "name": "Month", "description": "Month identifier (J, F, M, etc.)"},
+        {"letter": "B", "index": 2, "name": "Normal", "description": "Normal hours worked (typically 173)"},
+        {"letter": "C", "index": 3, "name": "Suppl.", "description": "Supplementary hours"},
+        {"letter": "D", "index": 4, "name": "Congés", "description": "Leave days"},
+        {"letter": "E", "index": 5, "name": "Férié extra", "description": "Extra holidays"},
+        {"letter": "F", "index": 6, "name": "Congés familliale", "description": "Family leave (COVID-19)"},
+        {"letter": "G", "index": 7, "name": "Maladie", "description": "Sick leave"},
+        {"letter": "H", "index": 8, "name": "Imposable", "description": "Taxable income (references L from monthly data)"},
+        {"letter": "J", "index": 10, "name": "Impot", "description": "Income tax (references M from monthly data)"},
+        {"letter": "K", "index": 11, "name": "NET", "description": "Net salary (references P from monthly data)"}
+      ]
+    }
+  },
+
+  "formulas": {
+    "monthly_data_formulas": {
+      "G_Cotisable": {
+        "formula": "=F{row}",
+        "example": "=F10 for January",
+        "description": "Copy of Brut Mensuel"
+      },
+      "H_Maladie": {
+        "formula": "=71.99+6.43",
+        "result": 78.42,
+        "description": "Employee health insurance contribution (fixed sum)",
+        "note": "This value varies by employee - appears to be employee-specific"
+      },
+      "K_Deductions": {
+        "formula": "=33+460",
+        "result": 493,
+        "description": "Sum of various deductions",
+        "note": "Changes for different tax classes (e.g., just 33 for class 2 in Nov/Dec)"
+      }
+    },
+
+    "annual_totals_row_22": {
+      "description": "Sum all months (rows 10-21) for each column",
+      "formula_pattern": "=SUM(E10:E21)",
+      "columns_with_totals": ["E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"]
+    },
+
+    "recapitulation_formulas": {
+      "monthly_references": {
+        "H_Imposable": {
+          "formula": "=L{monthly_row}",
+          "example": "=L10 for January (row 27)",
+          "description": "References Imposable from monthly data"
+        },
+        "J_Impot": {
+          "formula": "=M{monthly_row}",
+          "example": "=M10 for January (row 27)",
+          "description": "References Impots from monthly data"
+        },
+        "K_NET": {
+          "formula": "=P{monthly_row}",
+          "example": "=P10 for January (row 27)",
+          "description": "References Salaire Net from monthly data"
+        }
+      },
+      "annual_total_row_39": {
+        "description": "Sum all months (rows 27-38) for recapitulation columns",
+        "formula_pattern": "=SUM(B27:B38)",
+        "columns_with_totals": ["B", "C", "D", "E", "F", "G", "H", "J", "K"]
+      }
+    }
+  },
+
+  "summary_sheets": {
+    "salaire_globale_maladie": {
+      "name": "Salaire globale +  Maladie",
+      "purpose": "Aggregate all employees' monthly payroll data",
+      "structure": "Rows 10-21 for months, Row 22 for annual total",
+      "columns": [
+        {"letter": "A", "name": "Mois", "values": ["JAN", "FEV", "MAR", "AVR", "MAI", "JUIN", "JUIL", "AOÛ", "SEP", "OCT", "NOV", "DEC"]},
+        {"letter": "B", "name": "Brut Mensuel", "formula": "Sum all employees' F column"},
+        {"letter": "C", "name": "Cotisable", "formula": "Sum all employees' G column"},
+        {"letter": "D", "name": "Maladie", "formula": "Sum all employees' H column"},
+        {"letter": "E", "name": "Pension", "formula": "Sum all employees' I column"},
+        {"letter": "H", "name": "Déductions", "formula": "Sum all employees' K column"},
+        {"letter": "I", "name": "Imposable", "formula": "Sum all employees' L column"},
+        {"letter": "J", "name": "Impôt", "formula": "Sum all employees' M column"},
+        {"letter": "K", "name": "Salaire Net", "formula": "Sum all employees' P column"},
+        {"letter": "M", "name": "Imposable", "formula": "=I10 (copy)"},
+        {"letter": "O", "name": "Impôt", "formula": "=J10 (copy)"},
+        {"letter": "P", "name": "Crédits", "formula": "Sum all employees' J+N+O columns (CI-CO2, CIS, CISSM)"}
+      ],
+      "formula_example_B10": "='Miodrag MILIC'!F10+'BERTHE Alexandra'!F10+'SANDRI Sandro'!F10+'JAUD Jean Paul'!F10+'REBELO MATOS Daniel Filipe'!F10+'BALDE Binta'!F10+'Omigie Evbaguehize Stella'!F10+'BEZGUBOV Tatiana'!F10+'RIFFAUD Jean François '!F10+'BROERING Lucas José '!F10"
+    },
+
+    "part_patronales": {
+      "name": "Part Patronales",
+      "purpose": "Calculate employer social security contributions",
+      "structure": "Rows 10-21 for months, Row 22 for annual total",
+      "columns": [
+        {"letter": "A", "name": "Mois"},
+        {"letter": "B", "name": "Coti. Maladie", "formula": "='Salaire globale +  Maladie'!C10"},
+        {"letter": "C", "name": "Coti. Pension", "formula": "=B10"},
+        {"letter": "D", "name": "Coti. Santé", "formula": "=C10"},
+        {"letter": "E", "name": "Coti. Accident", "formula": "=D10"},
+        {"letter": "G", "name": "Maladie", "formula": "='Salaire globale +  Maladie'!D10"},
+        {"letter": "H", "name": "Pension", "formula": "='Salaire globale +  Maladie'!E10"},
+        {"letter": "I", "name": "Santé", "formula": "=D10*0.11/100", "rate": "0.11%"},
+        {"letter": "J", "name": "Accident", "formula": "=E10*0.75/100", "rate": "0.75%"},
+        {"letter": "K", "name": "Total Mensuel", "formula": "=G10+H10+I10+J10"},
+        {"letter": "M", "name": "Total Sécurité Sociale", "formula": "=K10"}
+      ]
+    }
+  },
+
+  "calculation_rates": {
+    "employee_contributions": {
+      "pension": {
+        "rate": "8%",
+        "base": "Cotisable (column G)",
+        "formula": "I = G * 0.08",
+        "example": "2570.935 * 0.08 = 205.67"
+      },
+      "maladie": {
+        "description": "Employee health insurance",
+        "note": "Appears to be employee-specific calculation",
+        "examples": [
+          "71.99 + 6.43 = 78.42 (Miodrag MILIC)",
+          "71.99 + 6.43 = 78.42 (BERTHE Alexandra)",
+          "414.8 (SANDRI Sandro - different calculation)"
+        ]
+      }
+    },
+
+    "employer_contributions": {
+      "sante": {
+        "rate": "0.11%",
+        "base": "Cotisable",
+        "formula": "I10 = D10 * 0.11/100"
+      },
+      "accident": {
+        "rate": "0.75%",
+        "base": "Cotisable",
+        "formula": "J10 = E10 * 0.75/100"
+      }
+    },
+
+    "fixed_contributions": {
+      "CI-CO2": {
+        "values": [0, 14],
+        "note": "Varies by employee"
+      },
+      "CIS": {
+        "values": [0, 50],
+        "note": "Varies by employee"
+      },
+      "CISSM": {
+        "values": [0, 70, "variable"],
+        "note": "Varies by employee, some have variable amounts"
+      }
+    }
+  },
+
+  "tax_classes_observed": [
+    "0.15",
+    "1",
+    "1A",
+    "2",
+    "2-15%",
+    "15% - 2"
+  ],
+
+  "sample_employee_data": {
+    "Miodrag_MILIC": {
+      "matricule": "1989 11 24 004 47",
+      "anciennete": "2017-04-07",
+      "employee_number": "N° 1",
+      "january_2024": {
+        "jours": "J 1-31",
+        "jours_impos": 25,
+        "status": "Empl.",
+        "classe": "15% - 2",
+        "remun_base": 2570.935,
+        "brut_mensuel": 2570.935,
+        "cotisable": 2570.935,
+        "maladie": 78.42,
+        "pension": 205.67,
+        "ci_co2": 14,
+        "deductions": 493,
+        "imposable": 1793.84,
+        "impots": 269.08,
+        "cis": 50,
+        "cissm": 70,
+        "salaire_net": 2659
+      },
+      "annual_2024": {
+        "remun_base": 30851.22,
+        "brut_mensuel": 30851.22,
+        "cotisable": 30851.22,
+        "maladie": 941.04,
+        "pension": 2468.04,
+        "ci_co2": 168,
+        "deductions": 4996,
+        "imposable": 22446.08,
+        "impots": 2701.18,
+        "cis": 600,
+        "cissm": 840,
+        "salaire_net": 31555.41
+      }
+    },
+    "BERTHE_Alexandra": {
+      "matricule": "Not visible in standard cells",
+      "anciennete": "2021-09-16",
+      "employee_number": "Not visible",
+      "january_2024": {
+        "classe": "1",
+        "remun_base": 2570.93,
+        "brut_mensuel": 2570.93,
+        "deductions": 0,
+        "imposable": 2286.84,
+        "impots": 149.3,
+        "salaire_net": 1244.54
+      }
+    },
+    "SANDRI_Sandro": {
+      "anciennete": "2024-10-01",
+      "january_2024": {
+        "classe": "0.15",
+        "remun_base": 13600,
+        "brut_mensuel": 13600,
+        "maladie": 414.8,
+        "pension": 1088,
+        "ci_co2": 0,
+        "deductions": 575.5,
+        "imposable": 11521.7,
+        "impots": 1728.26,
+        "cis": 0,
+        "cissm": 0,
+        "salaire_net": 10131.54
+      }
+    }
+  },
+
+  "monthly_row_mapping": {
+    "January": 10,
+    "February": 11,
+    "March": 12,
+    "April": 13,
+    "May": 14,
+    "June": 15,
+    "July": 16,
+    "August": 17,
+    "September": 18,
+    "October": 19,
+    "November": 20,
+    "December": 21,
+    "Annual_Total": 22
+  },
+
+  "recapitulation_row_mapping": {
+    "January": 27,
+    "February": 28,
+    "March": 29,
+    "April": 30,
+    "May": 31,
+    "June": 32,
+    "July": 33,
+    "August": 34,
+    "September": 35,
+    "October": 36,
+    "November": 37,
+    "December": 38,
+    "Annual_Total": 39
+  },
+
+  "implementation_notes": {
+    "key_calculations": [
+      "Cotisable = Brut Mensuel (always equal)",
+      "Pension = Cotisable * 0.08 (8%)",
+      "Maladie = Employee-specific value (appears to be based on employee profile)",
+      "Deductions = Varies by tax class (e.g., 33+460=493 for class '15%-2', just 33 for class '2' in Nov/Dec)",
+      "Net Salary calculation involves: Brut - Maladie - Pension - CI-CO2 - Deductions - Impots - CIS - CISSM"
+    ],
+    "data_entry_requirements": [
+      "Employee metadata: Name, Matricule, Ancienneté, Entry date, Address",
+      "Monthly data: Base salary, Tax class, Taxable days",
+      "Variable fields: Maladie rate, CI-CO2, CIS, CISSM (employee-specific)",
+      "Deductions: Tax class dependent",
+      "Hours breakdown: Normal hours, Overtime, Leave, Holidays, Sick leave"
+    ],
+    "automated_calculations": [
+      "Cotisable (=Brut Mensuel)",
+      "Pension (8% of Cotisable)",
+      "Annual totals (SUM of monthly values)",
+      "Recapitulation references (link to monthly data)",
+      "Summary sheets (aggregate all employees)",
+      "Employer contributions (based on aggregated data)"
+    ],
+    "tax_class_impact": [
+      "Tax class affects deductions amount",
+      "Tax class affects imposable amount calculation",
+      "Different classes: 0.15, 1, 1A, 2, 2-15%, 15%-2"
+    ]
+  }
+}

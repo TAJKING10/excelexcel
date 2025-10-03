@@ -10,7 +10,9 @@
       "Bash(npx tsc:*)",
       "Read(//c/**)",
       "Bash(npx vite:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []

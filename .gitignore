@@ -14,3 +14,4 @@ build/
 *.local.*
 .env*
 !.env.example
+~$Groupe Advensys Luxembourg SA - Livre de paie 2024.xlsx

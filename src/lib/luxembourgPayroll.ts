@@ -1,19 +1,17 @@
 import type { Earnings, EmployeeContrib, EmployerContrib } from '@/types';
 
-// Luxembourg Social Security Rates (2024)
+// Luxembourg Social Security Rates (2024) - Based on Advensys Excel
 export const LUXEMBOURG_RATES = {
   // Employee contributions
   employee: {
-    maladie: 0.0305, // 3.05% (Health insurance)
-    pension: 0.08, // 8% (Pension)
+    pension: 0.08, // 8% (Pension) - from Excel formula
     ciCo2: 14, // Fixed amount CI-CO2
   },
-  // Employer contributions
+  // Employer contributions (from Excel analysis)
   employer: {
-    maladie: 0.0305, // 3.05%
-    pension: 0.08, // 8%
-    sante: 0.04, // 4% (Santé - additional health)
-    accident: 0.01, // 1% (Accident insurance)
+    sante: 0.0011, // 0.11% (Santé) - calculated from Excel data
+    accident: 0.0075, // 0.75% (Accident insurance) - calculated from Excel data
+    pension: 0.08, // 8% matching employee pension
   },
   // Additional employee charges
   cis: 50, // Fixed CIS amount
@@ -22,9 +20,21 @@ export const LUXEMBOURG_RATES = {
 
 /**
  * Calculate employee health insurance contribution (Maladie)
+ * Note: This is employee-specific in the Excel, using formulas like "71.99+6.43"
+ * For now, we'll use a default calculation, but this should be overridden per employee
  */
-export function calculateMaladie(cotisable: number): number {
-  return parseFloat((cotisable * LUXEMBOURG_RATES.employee.maladie).toFixed(2));
+export function calculateMaladie(cotisable: number, customFormula?: string): number {
+  if (customFormula) {
+    // Evaluate simple formulas like "71.99+6.43"
+    try {
+      const result = eval(customFormula);
+      return parseFloat(result.toFixed(2));
+    } catch {
+      // Fall back to default
+    }
+  }
+  // Default: use a percentage (this should be configured per employee)
+  return parseFloat((cotisable * 0.03).toFixed(2));
 }
 
 /**
@@ -149,13 +159,22 @@ export function calculateEmployeeContributions(
 
 /**
  * Calculate all employer contributions
+ * Based on Excel formulas from Advensys
  */
 export function calculateEmployerContributions(
-  cotisable: number
+  cotisable: number,
+  employeeMaladie: number = 0
 ): EmployerContrib {
-  const maladie = parseFloat((cotisable * LUXEMBOURG_RATES.employer.maladie).toFixed(2));
+  // Employer contributions match employee for pension
   const pension = parseFloat((cotisable * LUXEMBOURG_RATES.employer.pension).toFixed(2));
+
+  // Maladie: employer contribution equals employee contribution (from Excel analysis)
+  const maladie = employeeMaladie;
+
+  // Santé: 0.11% of cotisable
   const sante = parseFloat((cotisable * LUXEMBOURG_RATES.employer.sante).toFixed(2));
+
+  // Accident: 0.75% of cotisable
   const accident = parseFloat((cotisable * LUXEMBOURG_RATES.employer.accident).toFixed(2));
 
   const socialSecurityTotal = maladie + pension + sante + accident;
@@ -201,13 +220,13 @@ export function calculatePayslip(
 ): PayslipCalculationResult {
   // In Luxembourg, typically:
   // Brut Mensuel = Rémun. Base
-  // Cotisable = Brut Mensuel
+  // Cotisable = Brut Mensuel (from Excel: Cotisable (G) = Brut Mensuel (F))
   // Imposable = Cotisable (before deductions)
 
   const earnings: Earnings = {
     remunerationBase: input.remunerationBase,
     grossMonthly: input.remunerationBase,
-    cotisable: input.remunerationBase,
+    cotisable: input.remunerationBase, // G = F
     imposable: input.remunerationBase,
   };
 
@@ -217,7 +236,10 @@ export function calculatePayslip(
     input.additionalDeductions || 0
   );
 
-  const employerContrib = calculateEmployerContributions(earnings.cotisable);
+  const employerContrib = calculateEmployerContributions(
+    earnings.cotisable,
+    employeeContrib.maladie
+  );
 
   const netPay = calculateNetPay(earnings.grossMonthly, employeeContrib);
 
@@ -332,4 +354,176 @@ export function calculateAnnualTotals(payslips: PayslipCalculationResult[]): Ann
   });
 
   return totals;
+}
+
+/**
+ * Get days in month for a given year
+ */
+export function getDaysInMonth(month: number, year: number): string {
+  const lastDay = new Date(year, month, 0).getDate();
+  return `1-${lastDay}`;
+}
+
+/**
+ * Generate monthly payslip data for a full year
+ */
+export interface GenerateAnnualPayslipInput {
+  employeeId: string;
+  year: number;
+  baseSalary: number;
+  taxClass: string | number;
+  additionalDeductions?: number;
+  maladieFormula?: string;
+  workingHoursPerMonth?: number;
+}
+
+import type { MonthlyPayslipData, AnnualPayslip, Employee, Company } from '@/types';
+
+export function generateAnnualPayslip(
+  input: GenerateAnnualPayslipInput,
+  employee: Employee,
+  company: Company
+): AnnualPayslip {
+  const monthlyData: MonthlyPayslipData[] = [];
+  let annualTotalsEarnings = { remunerationBase: 0, grossMonthly: 0, cotisable: 0, imposable: 0 };
+  let annualTotalsEmployeeContrib = { maladie: 0, pension: 0, ciCo2: 0, cis: 0, cissm: 0, deductions: 0, incomeTax: 0, total: 0 };
+  let annualTotalsEmployerContrib = { maladie: 0, pension: 0, sante: 0, accident: 0, socialSecurityTotal: 0 };
+  let annualTotalsNetPay = 0;
+  let annualTotalsWorkingHours = {
+    normalHours: 0,
+    supplementaryHours: 0,
+    holidays: 0,
+    publicHolidayExtra: 0,
+    familyLeave: 0,
+    paternityLeave: 0,
+    sickLeave: 0,
+    unemployment: 0
+  };
+
+  // Generate payslip for each month (1-12)
+  for (let month = 1; month <= 12; month++) {
+    const payslip = calculatePayslip({
+      remunerationBase: input.baseSalary,
+      taxClass: input.taxClass,
+      additionalDeductions: input.additionalDeductions
+    });
+
+    const monthData: MonthlyPayslipData = {
+      monthName: getMonthAbbreviation(month),
+      monthNumber: month,
+      days: getDaysInMonth(month, input.year),
+      daysImposable: new Date(input.year, month, 0).getDate(), // Days in month
+      status: 'Empl.', // Employment status
+      taxClass: input.taxClass,
+      earnings: payslip.earnings,
+      employeeContrib: payslip.employeeContrib,
+      workingHours: {
+        normalHours: input.workingHoursPerMonth || 173,
+        supplementaryHours: 0,
+        holidays: 0,
+        publicHolidayExtra: 0,
+        familyLeave: 0,
+        paternityLeave: 0,
+        sickLeave: 0,
+        unemployment: 0
+      },
+      netPay: payslip.netPay
+    };
+
+    monthlyData.push(monthData);
+
+    // Add to annual totals
+    annualTotalsEarnings.remunerationBase += payslip.earnings.remunerationBase;
+    annualTotalsEarnings.grossMonthly += payslip.earnings.grossMonthly;
+    annualTotalsEarnings.cotisable += payslip.earnings.cotisable;
+    annualTotalsEarnings.imposable += payslip.earnings.imposable;
+
+    annualTotalsEmployeeContrib.maladie += payslip.employeeContrib.maladie;
+    annualTotalsEmployeeContrib.pension += payslip.employeeContrib.pension;
+    annualTotalsEmployeeContrib.ciCo2 += payslip.employeeContrib.ciCo2;
+    annualTotalsEmployeeContrib.cis += payslip.employeeContrib.cis;
+    annualTotalsEmployeeContrib.cissm += payslip.employeeContrib.cissm;
+    annualTotalsEmployeeContrib.deductions += payslip.employeeContrib.deductions;
+    annualTotalsEmployeeContrib.incomeTax += payslip.employeeContrib.incomeTax;
+    annualTotalsEmployeeContrib.total += payslip.employeeContrib.total;
+
+    annualTotalsEmployerContrib.maladie += payslip.employerContrib.maladie;
+    annualTotalsEmployerContrib.pension += payslip.employerContrib.pension;
+    annualTotalsEmployerContrib.sante += payslip.employerContrib.sante;
+    annualTotalsEmployerContrib.accident += payslip.employerContrib.accident;
+    annualTotalsEmployerContrib.socialSecurityTotal += payslip.employerContrib.socialSecurityTotal;
+
+    annualTotalsNetPay += payslip.netPay;
+
+    annualTotalsWorkingHours.normalHours += monthData.workingHours.normalHours;
+  }
+
+  // Round all annual totals
+  annualTotalsEarnings.remunerationBase = parseFloat(annualTotalsEarnings.remunerationBase.toFixed(2));
+  annualTotalsEarnings.grossMonthly = parseFloat(annualTotalsEarnings.grossMonthly.toFixed(2));
+  annualTotalsEarnings.cotisable = parseFloat(annualTotalsEarnings.cotisable.toFixed(2));
+  annualTotalsEarnings.imposable = parseFloat(annualTotalsEarnings.imposable.toFixed(2));
+
+  annualTotalsEmployeeContrib.maladie = parseFloat(annualTotalsEmployeeContrib.maladie.toFixed(2));
+  annualTotalsEmployeeContrib.pension = parseFloat(annualTotalsEmployeeContrib.pension.toFixed(2));
+  annualTotalsEmployeeContrib.ciCo2 = parseFloat(annualTotalsEmployeeContrib.ciCo2.toFixed(2));
+  annualTotalsEmployeeContrib.cis = parseFloat(annualTotalsEmployeeContrib.cis.toFixed(2));
+  annualTotalsEmployeeContrib.cissm = parseFloat(annualTotalsEmployeeContrib.cissm.toFixed(2));
+  annualTotalsEmployeeContrib.deductions = parseFloat(annualTotalsEmployeeContrib.deductions.toFixed(2));
+  annualTotalsEmployeeContrib.incomeTax = parseFloat(annualTotalsEmployeeContrib.incomeTax.toFixed(2));
+  annualTotalsEmployeeContrib.total = parseFloat(annualTotalsEmployeeContrib.total.toFixed(2));
+
+  annualTotalsEmployerContrib.maladie = parseFloat(annualTotalsEmployerContrib.maladie.toFixed(2));
+  annualTotalsEmployerContrib.pension = parseFloat(annualTotalsEmployerContrib.pension.toFixed(2));
+  annualTotalsEmployerContrib.sante = parseFloat(annualTotalsEmployerContrib.sante.toFixed(2));
+  annualTotalsEmployerContrib.accident = parseFloat(annualTotalsEmployerContrib.accident.toFixed(2));
+  annualTotalsEmployerContrib.socialSecurityTotal = parseFloat(annualTotalsEmployerContrib.socialSecurityTotal.toFixed(2));
+
+  annualTotalsNetPay = parseFloat(annualTotalsNetPay.toFixed(2));
+
+  return {
+    id: `annual-${input.employeeId}-${input.year}`,
+    employeeId: input.employeeId,
+    companyId: employee.companyId,
+    year: input.year,
+    employee: {
+      id: employee.id,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      class: employee.class,
+      hireDate: employee.hireDate,
+      terminationDate: employee.terminationDate,
+      matricule: employee.matricule,
+      identityNumber: employee.identityNumber,
+      address: employee.address,
+      city: employee.city,
+      postalCode: employee.postalCode,
+      anciennete: employee.hireDate
+    },
+    company: {
+      id: company.id,
+      name: company.name,
+      country: company.country,
+      currency: company.currency
+    },
+    monthlyData,
+    annualTotals: {
+      earnings: annualTotalsEarnings,
+      employeeContrib: annualTotalsEmployeeContrib,
+      employerContrib: annualTotalsEmployerContrib,
+      workingHours: annualTotalsWorkingHours,
+      netPay: annualTotalsNetPay
+    },
+    recapitulation: {
+      totalHoursWorked: annualTotalsWorkingHours.normalHours,
+      totalGrossSalary: annualTotalsEarnings.grossMonthly,
+      totalNetSalary: annualTotalsNetPay,
+      totalEmployeeContributions: annualTotalsEmployeeContrib.total,
+      totalEmployerContributions: annualTotalsEmployerContrib.socialSecurityTotal,
+      totalTaxes: annualTotalsEmployeeContrib.incomeTax
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
 }
