@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDataStore } from '@/stores/data';
@@ -529,3 +529,5 @@ export function CreatePayslip() {
     </div>
   );
 }
+
+export default CreatePayslip;

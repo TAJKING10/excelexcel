@@ -8,6 +8,10 @@ export default defineConfig({
   plugins: [react()],
   publicDir: "./static",
   base: "./",
+  server: {
+    port: 3002,
+    host: true,
+  },
   css: {
     postcss: {
       plugins: [tailwind()],

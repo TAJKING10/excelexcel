@@ -12,13 +12,14 @@ import { UserShell } from './components/layout/UserShell';
 // Pages - Admin
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserAccessManagement } from './pages/admin/UserAccessManagement';
-import { CreatePayslip } from './pages/admin/CreatePayslip';
+import CreatePayslip from './pages/admin/CreatePayslip';
 import { Individuals as AdminIndividuals } from './pages/admin/Individuals';
 import { CompanyList } from './components/companies/CompanyList';
 import { CompanyDetail } from './pages/CompanyDetail';
 import { IndividualDetail } from './pages/IndividualDetail';
 import { EmployeeList } from './components/employees/EmployeeList';
 import { PayslipList } from './components/payslips/PayslipList';
+import { AnnualPayslipList } from './components/payslips/AnnualPayslipList';
 
 // Pages - Employee
 import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
@@ -69,6 +70,7 @@ function App() {
             <Route path="employees" element={<EmployeeList />} />
             <Route path="employees/:employeeId/annual-payslip" element={<AnnualPayslipPage />} />
             <Route path="payslips" element={<PayslipList />} />
+            <Route path="payslips/annual" element={<AnnualPayslipList />} />
             <Route path="payslips/create" element={<CreatePayslip />} />
             <Route path="users" element={<UserAccessManagement />} />
             <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />

@@ -14,7 +14,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  UserCircle
+  UserCircle,
+  FileSpreadsheet
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -36,6 +37,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         { path: '/admin/individuals', icon: UserCircle, label: t('nav.individuals') },
         { path: '/admin/employees', icon: Users, label: t('nav.employees') },
         { path: '/admin/payslips', icon: FileText, label: t('nav.payslips') },
+        { path: '/admin/payslips/annual', icon: FileSpreadsheet, label: 'Fiches Annuelles' },
       ]
     }
 
