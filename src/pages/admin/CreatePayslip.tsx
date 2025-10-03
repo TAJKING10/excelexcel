@@ -25,7 +25,7 @@ export function CreatePayslip() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
-  const { companies, employees, addPayslip } = useDataStore();
+  const { companies, employees, addPayslip, savePayrollTemplate, getPayrollTemplate } = useDataStore();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
@@ -161,6 +161,31 @@ export function CreatePayslip() {
 
   const totals = calculateTotals();
 
+  const handleLoadTemplate = () => {
+    if (!selectedCompanyId) {
+      toast({ title: 'Error', description: 'Select a company first', variant: 'destructive' });
+      return;
+    }
+    const templateLines = getPayrollTemplate(selectedCompanyId);
+    if (!templateLines || templateLines.length === 0) {
+      toast({ title: 'Info', description: 'No template found for this company' });
+      return;
+    }
+    // Clone and assign fresh ids
+    const cloned = templateLines.map((l) => ({ ...l, id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }));
+    setLines(cloned);
+    toast({ title: 'Loaded', description: 'Company template loaded' });
+  };
+
+  const handleSaveTemplate = () => {
+    if (!selectedCompanyId) {
+      toast({ title: 'Error', description: 'Select a company first', variant: 'destructive' });
+      return;
+    }
+    savePayrollTemplate(selectedCompanyId, lines);
+    toast({ title: 'Saved', description: 'Company template saved' });
+  };
+
   const handleSave = () => {
     if (!selectedCompanyId || !selectedEmployeeId) {
       toast({
@@ -249,10 +274,18 @@ export function CreatePayslip() {
             <p className="text-muted-foreground">Create a new payslip</p>
           </div>
         </div>
-        <Button onClick={handleSave} className="bg-primary text-primary-foreground">
-          <Save size={16} className="mr-2" />
-          {t('actions.save')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={handleLoadTemplate}>
+            Load Template
+          </Button>
+          <Button variant="secondary" onClick={handleSaveTemplate}>
+            Save Template
+          </Button>
+          <Button onClick={handleSave} className="bg-primary text-primary-foreground">
+            <Save size={16} className="mr-2" />
+            {t('actions.save')}
+          </Button>
+        </div>
       </div>
 
       {/* Selection Section */}

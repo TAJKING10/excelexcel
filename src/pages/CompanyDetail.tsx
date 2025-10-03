@@ -17,6 +17,7 @@ import { CompanyAnalytics } from '@/components/analytics/CompanyAnalytics';
 import { CompanyAnnualAnalytics } from '@/components/analytics/CompanyAnnualAnalytics';
 import { LuxembourgPayslipDetail } from '@/components/payslips/LuxembourgPayslipDetail';
 import { ArrowLeft, Plus, Users, Building2, CreditCard, TrendingUp, MoreHorizontal, Edit, Trash2, RotateCcw, Download, FileSpreadsheet, Eye } from 'lucide-react';
+import { AdvensysImportDialog } from '@/components/excel/AdvensysImportDialog';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -223,7 +224,9 @@ export function CompanyDetail() {
 
         {/* Payslips Tab */}
         <TabsContent value="payslips" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <AdvensysImportDialog companyId={companyId} onSuccess={() => {}}
+            />
             {user?.role === 'SUPER_ADMIN' && (
               <Button
                 onClick={() => {

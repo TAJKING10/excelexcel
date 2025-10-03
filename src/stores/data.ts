@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis } from '@/types';
+import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis, PayslipLine } from '@/types';
 import { generateAnnualPayslip } from '@/lib/luxembourgPayroll';
 
 interface DataState {
@@ -9,6 +9,7 @@ interface DataState {
   annualPayslips: AnnualPayslip[];
   users: User[];
   individuals: Individual[];
+  payrollTemplates?: Record<string, PayslipLine[]>;
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
   updateCompany: (id: string, company: Partial<Company>) => void;
   deleteCompany: (id: string) => void;
@@ -21,6 +22,8 @@ interface DataState {
   addPayslip: (payslip: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updatePayslip: (id: string, payslip: Partial<Payslip>) => void;
   deletePayslip: (id: string) => void;
+  savePayrollTemplate: (companyId: string, lines: PayslipLine[]) => void;
+  getPayrollTemplate: (companyId: string) => PayslipLine[];
   addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (id: string, user: Partial<User>) => void;
   updateUserAccess: (userId: string, access: UserAccess) => void;
@@ -355,6 +358,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   annualPayslips: [],
   users: [],
   individuals: mockIndividuals,
+  payrollTemplates: {},
 
   addCompany: (company) =>
     set((state) => ({
@@ -432,6 +436,17 @@ export const useDataStore = create<DataState>((set, get) => ({
       payslips: state.payslips.filter((p) => p.id !== id),
     })),
 
+  // Save and load reusable company payroll templates (structured lines)
+  savePayrollTemplate: (companyId: string, lines: PayslipLine[]) =>
+    set((state) => ({
+      payrollTemplates: { ...(state.payrollTemplates || {}), [companyId]: lines.map((l) => ({ ...l })) },
+    })),
+
+  getPayrollTemplate: (companyId: string): PayslipLine[] => {
+    const state = get();
+    return (state.payrollTemplates && state.payrollTemplates[companyId]) || [];
+  },
+
   addUser: (user) =>
     set((state) => ({
       users: [...state.users, { ...user, id: `user-${Date.now()}` }],
@@ -483,18 +498,37 @@ export const useDataStore = create<DataState>((set, get) => ({
       };
     });
 
-    const contributions = netVsGross.map((item) => ({
-      month: item.month,
-      maladie: Math.random() * 500 + 200,
-      pension: Math.random() * 800 + 400,
-      sante: Math.random() * 400 + 200,
-      accident: Math.random() * 150 + 50,
-    }));
+    // Monthly contributions (derived from employer contributions on payslips)
+    const contributions = netVsGross.map((item) => {
+      // Parse month/year back from the formatted string
+      const [monthAbbr, yearStr] = item.month.split(' ');
+      const parsedDate = new Date(`${monthAbbr} 1, ${yearStr}`);
+      const monthPayslips = payslips.filter(
+        (p) => p.period.month === parsedDate.getMonth() + 1 && p.period.year === parsedDate.getFullYear()
+      );
 
-    const taxes = netVsGross.map((item) => ({
-      month: item.month,
-      amount: Math.random() * 2000 + 1000,
-    }));
+      return {
+        month: item.month,
+        maladie: monthPayslips.reduce((sum, p) => sum + (p.employerContrib?.maladie || 0), 0),
+        pension: monthPayslips.reduce((sum, p) => sum + (p.employerContrib?.pension || 0), 0),
+        sante: monthPayslips.reduce((sum, p) => sum + (p.employerContrib?.sante || 0), 0),
+        accident: monthPayslips.reduce((sum, p) => sum + (p.employerContrib?.accident || 0), 0),
+      };
+    });
+
+    // Monthly taxes (derived from employee income tax on payslips)
+    const taxes = netVsGross.map((item) => {
+      const [monthAbbr, yearStr] = item.month.split(' ');
+      const parsedDate = new Date(`${monthAbbr} 1, ${yearStr}`);
+      const monthPayslips = payslips.filter(
+        (p) => p.period.month === parsedDate.getMonth() + 1 && p.period.year === parsedDate.getFullYear()
+      );
+
+      return {
+        month: item.month,
+        amount: monthPayslips.reduce((sum, p) => sum + (p.employeeContrib?.incomeTax || 0), 0),
+      };
+    });
 
     return {
       totalEmployees: employees.length,

@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, FileSpreadsheet, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import { importAdvensysExcel } from '@/lib/advensysExcelParser';
+import { parseAdvensysExcel } from '@/lib/advensysExcelParser';
 import { useDataStore } from '@/stores/data';
 
 interface AdvensysImportDialogProps {
@@ -31,7 +31,7 @@ export function AdvensysImportDialog({ companyId, onSuccess }: AdvensysImportDia
     errors: string[];
   } | null>(null);
 
-  const { addEmployee, addPayslip } = useDataStore();
+  const { addEmployee, addPayslip, addIndividual } = useDataStore();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -48,22 +48,166 @@ export function AdvensysImportDialog({ companyId, onSuccess }: AdvensysImportDia
     setProgressMessage('Démarrage de l\'import...');
 
     try {
-      const importResult = await importAdvensysExcel(
-        file,
-        companyId,
-        (progress, message) => {
-          setProgress(progress);
-          setProgressMessage(message);
+      setProgressMessage('Analyse du fichier Excel...');
+      const parsed = await parseAdvensysExcel(file, companyId);
+
+      let employeesCreated = 0;
+      let payslipsCreated = 0;
+
+      for (const entry of parsed.employees) {
+        const emp = entry.employee;
+        const firstName = (emp.firstName || '').trim();
+        const lastName = (emp.lastName || '').trim();
+        // Fallback email if not provided in Excel
+        const email = `${firstName}.${lastName}`
+          .replace(/\s+/g, '.')
+          .replace(/\.+/g, '.')
+          .toLowerCase() + '@advensys.lu';
+
+        // Base salary from first payslip remuneration base or gross
+        const baseSalary = entry.payslips?.[0]?.earnings?.remunerationBase
+          || entry.payslips?.[0]?.earnings?.grossMonthly
+          || 0;
+
+        // Create employee in store
+        addEmployee({
+          companyId,
+          firstName: firstName || 'Inconnu',
+          lastName: lastName || 'Inconnu',
+          email,
+          class: 'Empl.',
+          taxClass: (entry.payslips?.[0]?.monthlyData?.taxClass ?? 1) as any,
+          hireDate: new Date().toISOString().split('T')[0],
+          terminationDate: null,
+          baseSalary: Number(baseSalary) || 0,
+          status: 'active',
+          address: emp.address,
+          city: emp.city,
+          postalCode: emp.postalCode,
+          identityNumber: emp.identityNumber,
+          matricule: emp.matricule || '',
+        });
+
+        // Find the created employee by unique keys
+        const state = useDataStore.getState();
+        const createdEmployee = state.employees.find(
+          (e) => e.companyId === companyId && e.matricule === (emp.matricule || '') && e.firstName === firstName && e.lastName === lastName
+        ) || state.employees.find(
+          (e) => e.companyId === companyId && e.firstName === firstName && e.lastName === lastName && e.email === email
+        );
+
+        if (!createdEmployee) {
+          continue; // Skip if not found
         }
-      );
 
-      setResult(importResult);
+        employeesCreated++;
 
-      if (importResult.success) {
-        // In a real app, you would save to database here
-        // For now, we'll just show the success message
-        onSuccess?.();
+        // Create individual mirror profile
+        addIndividual({
+          firstName: createdEmployee.firstName,
+          lastName: createdEmployee.lastName,
+          email: createdEmployee.email,
+          country: 'Luxembourg',
+          currency: 'EUR',
+          status: 'active',
+        });
+
+        const updatedState = useDataStore.getState();
+        const createdIndividual = updatedState.individuals.find(
+          (i) => i.email === createdEmployee.email && i.firstName === createdEmployee.firstName && i.lastName === createdEmployee.lastName
+        );
+
+        // Persist payslips for employee and mirrored individual
+        for (const p of entry.payslips) {
+          // Employee payslip
+          addPayslip({
+            employeeId: createdEmployee.id,
+            companyId: companyId,
+            period: p.period,
+            employee: {
+              id: createdEmployee.id,
+              firstName: createdEmployee.firstName,
+              lastName: createdEmployee.lastName,
+              email: createdEmployee.email,
+              class: createdEmployee.class,
+              hireDate: createdEmployee.hireDate,
+              terminationDate: createdEmployee.terminationDate,
+              matricule: createdEmployee.matricule,
+              identityNumber: createdEmployee.identityNumber,
+              address: createdEmployee.address,
+              city: createdEmployee.city,
+              postalCode: createdEmployee.postalCode,
+            },
+            company: {
+              id: companyId,
+              name: useDataStore.getState().companies.find((c) => c.id === companyId)?.name || 'Entreprise',
+              country: 'Luxembourg',
+              currency: 'EUR',
+            },
+            monthlyData: p.monthlyData,
+            earnings: p.earnings,
+            employeeContrib: p.employeeContrib,
+            employerContrib: p.employerContrib,
+            workingHours: p.workingHours,
+            netPay: p.netPay,
+            ytd: p.ytd,
+            lines: p.lines || [],
+            credits: p.credits,
+          });
+          payslipsCreated++;
+
+          // Mirror payslip for individual (separate synthetic company)
+          if (createdIndividual) {
+            addPayslip({
+              employeeId: createdIndividual.id,
+              companyId: `individual-${createdIndividual.id}`,
+              period: p.period,
+              employee: {
+                id: createdIndividual.id,
+                firstName: createdIndividual.firstName,
+                lastName: createdIndividual.lastName,
+                email: createdIndividual.email,
+                class: 'Freelancer',
+                hireDate: createdEmployee.hireDate,
+                terminationDate: createdEmployee.terminationDate,
+                matricule: createdEmployee.matricule,
+                identityNumber: createdEmployee.identityNumber,
+                address: createdEmployee.address,
+                city: createdEmployee.city,
+                postalCode: createdEmployee.postalCode,
+              },
+              company: {
+                id: `individual-${createdIndividual.id}`,
+                name: 'Individuel',
+                country: 'Luxembourg',
+                currency: 'EUR',
+              },
+              monthlyData: p.monthlyData,
+              earnings: p.earnings,
+              employeeContrib: p.employeeContrib,
+              employerContrib: p.employerContrib,
+              workingHours: p.workingHours,
+              netPay: p.netPay,
+              ytd: p.ytd,
+              lines: p.lines || [],
+              credits: p.credits,
+            });
+          }
+        }
+
+        // Update progress per employee
+        setProgressMessage(`Import de ${createdEmployee.firstName} ${createdEmployee.lastName}`);
+        setProgress((employeesCreated / parsed.employees.length) * 100);
       }
+
+      setResult({
+        success: true,
+        employeesCreated,
+        payslipsCreated,
+        errors: [],
+      });
+
+      onSuccess?.();
     } catch (error) {
       setResult({
         success: false,
