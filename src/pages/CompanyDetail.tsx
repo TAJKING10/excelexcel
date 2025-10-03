@@ -219,7 +219,7 @@ export function CompanyDetail() {
         {/* Payslips Tab */}
         <TabsContent value="payslips" className="space-y-4">
           <div className="flex justify-end">
-            <Button>
+            <Button onClick={() => navigate('/admin/payslips/create')}>
               <Plus className="mr-2 h-4 w-4" />
               {t('payslips.create')}
             </Button>
