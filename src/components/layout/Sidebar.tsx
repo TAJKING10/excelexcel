@@ -37,6 +37,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         { path: '/admin/individuals', icon: UserCircle, label: t('nav.individuals') },
         { path: '/admin/employees', icon: Users, label: t('nav.employees') },
         { path: '/admin/payslips', icon: FileText, label: t('nav.payslips') },
+        { path: '/admin/payslips/explorer', icon: FileText, label: t('nav.explorer', { defaultValue: 'Explorer' }) },
         { path: '/admin/payslips/annual', icon: FileSpreadsheet, label: 'Fiches Annuelles' },
       ]
     }

@@ -21,6 +21,7 @@
     "companies": "Entreprises",
     "individuals": "Individus",
     "payslips": "Fiches de paie",
+    "explorer": "Explorateur de fiches",
     "myPayslips": "Mes fiches de paie",
     "profile": "Profil",
     "settings": "Paramètres",
@@ -89,6 +90,10 @@
     "total": "total",
     "cancel": "Annuler",
     "save": "Enregistrer",
+    "filters": "Filtres",
+    "results": "Résultats",
+    "all": "Tous",
+    "hide": "Masquer",
     "update": "Mettre à jour",
     "create": "Créer"
   },
@@ -352,5 +357,12 @@
     "accessibleIndividuals": "Individus accessibles",
     "allFieldsRequired": "Tous les champs sont requis",
     "updatedSuccess": "Profil mis à jour avec succès"
+  },
+  "explorer": {
+    "subtitle": "Filtrer, lire, comparer et exporter les fiches de paie",
+    "allCompanies": "Toutes les entreprises",
+    "allEmployees": "Tous les employés",
+    "netMin": "Net min",
+    "netMax": "Net max"
   }
 }

@@ -212,6 +212,16 @@ export function PayslipList() {
                             <Eye size={16} />
                           </Button>
                         )}
+                        {payslip.employeeId && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => navigate(`/admin/employees/${payslip.employeeId}/annual-payslip`)}
+                            title="Fiche de Paie Annuelle"
+                          >
+                            <FileSpreadsheet size={16} />
+                          </Button>
+                        )}
                         {canEdit && (
                           <Button
                             size="sm"

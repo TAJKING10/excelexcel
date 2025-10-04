@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, UserCircle, CreditCard, TrendingUp, FileText, Download, FileSpreadsheet } from 'lucide-react';
+import { formatCurrency } from '@/lib/luxembourgPayroll';
+import { generatePayslipPDF } from '@/lib/pdf';
 
 export function IndividualDetail() {
   const { individualId } = useParams<{ individualId: string }>();
@@ -219,19 +221,19 @@ export function IndividualDetail() {
         <StatCard
           icon={CreditCard}
           title="Total Net (YTD)"
-          value={`${individual.currency} ${ytdNet.toLocaleString()}`}
+          value={formatCurrency(ytdNet)}
           subtitle={`${ytdPayslips.length} payslips this year`}
         />
         <StatCard
           icon={FileText}
           title="Last Payslip"
-          value={lastPayslip ? `${individual.currency} ${lastPayslip.netPay.toLocaleString()}` : 'N/A'}
+          value={lastPayslip ? formatCurrency(lastPayslip.netPay) : 'N/A'}
           subtitle={lastPayslip ? `${String(lastPayslip.period.month).padStart(2, '0')}/${lastPayslip.period.year}` : 'No payslips yet'}
         />
         <StatCard
           icon={TrendingUp}
           title="YTD Gross"
-          value={`${individual.currency} ${ytdGross.toLocaleString()}`}
+          value={formatCurrency(ytdGross)}
           subtitle={`Year ${currentYear}`}
         />
       </div>
@@ -276,11 +278,11 @@ export function IndividualDetail() {
                         <TableCell>
                           {String(payslip.period.month).padStart(2, '0')}/{payslip.period.year}
                         </TableCell>
-                        <TableCell>€{payslip.earnings.grossMonthly.toLocaleString()}</TableCell>
-                        <TableCell>€{payslip.netPay.toLocaleString()}</TableCell>
+                        <TableCell>{formatCurrency(payslip.earnings.grossMonthly)}</TableCell>
+                        <TableCell>{formatCurrency(payslip.netPay)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
                               <Download size={16} className="mr-2" />
                               PDF
                             </Button>

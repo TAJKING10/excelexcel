@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDataStore } from '@/stores/data';
 import { DEFAULT_LU_TEMPLATE } from '@/lib/payrollTemplates';
-import { calculatePayslip } from '@/lib/luxembourgPayroll';
+import { calculatePayslip, LUXEMBOURG_RATES, formatCurrency } from '@/lib/luxembourgPayroll';
 import { useAuthStore } from '@/stores/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,8 @@ import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { PayslipLine, LineType } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { LuxembourgPayslipDetail } from '@/components/payslips/LuxembourgPayslipDetail';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
 export function CreatePayslip() {
   const { t } = useTranslation();
@@ -35,6 +37,7 @@ export function CreatePayslip() {
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [autoCalc, setAutoCalc] = useState<boolean>(true);
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [lines, setLines] = useState<PayslipLine[]>([
     {
       id: '1',
@@ -64,6 +67,65 @@ export function CreatePayslip() {
 
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId);
+
+  // Auto-load company template or default when company changes
+  useEffect(() => {
+    if (!selectedCompanyId) return;
+    // If lines still at initial state or empty, load template
+    const hasOnlyInitial = lines.length <= 1 && lines[0]?.code === 'SAL-BASE';
+    if (!hasOnlyInitial) return;
+    const companyTemplate = getPayrollTemplate(selectedCompanyId);
+    const source = companyTemplate && companyTemplate.length > 0 ? companyTemplate : DEFAULT_LU_TEMPLATE;
+    const cloned = source.map((l) => ({
+      ...l,
+      id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      quantity: l.quantity ?? 1,
+      rate: 0,
+      amount: 0,
+    }));
+    setLines(cloned);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCompanyId]);
+
+  // Prefill base salary from selected employee into earnings lines
+  useEffect(() => {
+    if (!selectedEmployee) return;
+    const base = Number(selectedEmployee.baseSalary) || 0;
+    if (base <= 0) return;
+    const updated = lines.map((l) => {
+      const isBase = (
+        (l.type === 'earning') &&
+        (l.code?.toUpperCase().includes('SAL-BASE') ||
+         l.code?.toUpperCase().includes('GROSS') ||
+         l.label_en?.toUpperCase().includes('BASE SALARY') ||
+         l.label_fr?.toUpperCase().includes('SALAIRE'))
+      );
+      if (isBase) {
+        return { ...l, rate: base, amount: base };
+      }
+      return l;
+    });
+    setLines(updated);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEmployeeId]);
+
+  // Helpers for base salary line
+  const isBaseLine = (l: PayslipLine) => (
+    (l.type === 'earning') &&
+    (l.code?.toUpperCase().includes('SAL-BASE') ||
+     l.code?.toUpperCase().includes('GROSS') ||
+     l.label_en?.toUpperCase().includes('BASE SALARY') ||
+     l.label_fr?.toUpperCase().includes('SALAIRE'))
+  );
+
+  const baseLine = lines.find(isBaseLine);
+  const baseSalaryValue: number = baseLine ? Number(baseLine.amount) || 0 : 0;
+
+  const handleBaseSalaryChange = (val: string) => {
+    const next = parseFloat(val) || 0;
+    setLines((prev) => prev.map((l) => (isBaseLine(l) ? { ...l, rate: next, amount: next } : l)));
+    setAutoCalc(true);
+  };
 
   const handleLineChange = (lineId: string, field: keyof PayslipLine, value: any) => {
     setLines((prevLines) =>
@@ -347,6 +409,54 @@ export function CreatePayslip() {
 
   const totals = calculateTotals();
 
+  // Formula chip text for transparency
+  const getFormulaChip = (line: PayslipLine) => {
+    const base = totals.earnings;
+    const up = (s?: string) => (s || '').toUpperCase();
+    const c = up(line.code);
+    const le = up(line.label_en);
+    const lf = up(line.label_fr);
+
+    // Employee side
+    if (line.type === 'deduction') {
+      if (c.includes('EE_MALADIE') || lf.includes('MALADIE') || le.includes('HEALTH')) {
+        return `Maladie = base × 3%`;
+      }
+      if (c.includes('EE_PENSION') || lf.includes('PENSION') || le.includes('PENSION')) {
+        return `Pension = base × ${(LUXEMBOURG_RATES.employee.pension * 100).toFixed(2)}%`;
+      }
+      if (c.includes('EE_CI_CO2') || le.includes('CI-CO2') || lf.includes('CI-CO2')) {
+        return `CI-CO2 = fixe ${LUXEMBOURG_RATES.employee.ciCo2}`;
+      }
+      if ((c.includes('EE_CIS') && !c.includes('CISSM')) || le.includes('CIS') || (lf.includes('CIS') && !lf.includes('CISSM'))) {
+        return `CIS = fixe ${LUXEMBOURG_RATES.cis}`;
+      }
+      if (c.includes('EE_CISSM') || le.includes('CISSM') || lf.includes('CISSM')) {
+        return `CISSM = fixe ${LUXEMBOURG_RATES.cissm}`;
+      }
+      if (c.includes('TAX') || le.includes('TAX') || lf.includes('IMPÔT')) {
+        return `Impôt = barème classe ${selectedEmployee?.taxClass ?? '1'}`;
+      }
+    }
+
+    // Employer side
+    if (line.type === 'employer_contrib') {
+      if (c.includes('ER_PENSION') || lf.includes('PENSION') || le.includes('PENSION')) {
+        return `Pension (ER) = base × ${(LUXEMBOURG_RATES.employer.pension * 100).toFixed(2)}%`;
+      }
+      if (c.includes('ER_SANTE') || lf.includes('SANTÉ') || le.includes('SANTE')) {
+        return `Santé (ER) = base × ${(LUXEMBOURG_RATES.employer.sante * 100).toFixed(2)}%`;
+      }
+      if (c.includes('ER_ACCIDENT') || lf.includes('ACCIDENT') || le.includes('ACCIDENT')) {
+        return `Accident (ER) = base × ${(LUXEMBOURG_RATES.employer.accident * 100).toFixed(2)}%`;
+      }
+      if (c.includes('ER_MALADIE') || lf.includes('MALADIE') || le.includes('HEALTH')) {
+        return `Maladie (ER) = même montant que salarié`;
+      }
+    }
+    return '';
+  };
+
   const handleLoadTemplate = () => {
     if (!selectedCompanyId) {
       toast({ title: 'Error', description: 'Select a company first', variant: 'destructive' });
@@ -477,7 +587,7 @@ export function CreatePayslip() {
           <CardTitle>Payslip Information</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Company Selection */}
             <div className="space-y-2">
               <Label htmlFor="company">Company *</Label>
@@ -549,6 +659,22 @@ export function CreatePayslip() {
                 max={2050}
               />
             </div>
+
+            {/* Base Salary (primary input) */}
+            <div className="space-y-2">
+              <Label htmlFor="base">Base Salary *</Label>
+              <Input
+                id="base"
+                type="number"
+                value={baseSalaryValue || ''}
+                onChange={(e) => handleBaseSalaryChange(e.target.value)}
+                min={0}
+                step={0.01}
+                placeholder={selectedEmployee ? `${selectedEmployee.baseSalary}` : '0.00'}
+                disabled={!selectedCompanyId || !selectedEmployeeId}
+              />
+              <p className="text-xs text-muted-foreground">Changes auto-calculate contributions and taxes</p>
+            </div>
           </div>
 
           {/* Employee Info Display */}
@@ -592,7 +718,7 @@ export function CreatePayslip() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {selectedCompany?.currency} {totals.earnings.toFixed(2)}
+              {formatCurrency(totals.earnings)}
             </div>
           </CardContent>
         </Card>
@@ -605,7 +731,7 @@ export function CreatePayslip() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              {selectedCompany?.currency} {totals.employeeDeductions.toFixed(2)}
+              {formatCurrency(totals.employeeDeductions)}
             </div>
           </CardContent>
         </Card>
@@ -618,7 +744,7 @@ export function CreatePayslip() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {selectedCompany?.currency} {totals.employerContributions.toFixed(2)}
+              {formatCurrency(totals.employerContributions)}
             </div>
           </CardContent>
         </Card>
@@ -631,196 +757,226 @@ export function CreatePayslip() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {selectedCompany?.currency} {totals.netPay.toFixed(2)}
+              {formatCurrency(totals.netPay)}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Payslip Lines Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Payslip Lines</CardTitle>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={autoCalc}
-                  onChange={(e) => setAutoCalc(e.target.checked)}
-                />
-                Auto-calc from base
-              </label>
-              <Button onClick={handleAddLine} size="sm">
-                <Plus size={16} className="mr-2" />
-                Add Line
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">Code</TableHead>
-                <TableHead>Label (FR)</TableHead>
-                <TableHead>Label (EN)</TableHead>
-                <TableHead className="w-[100px]">Quantity</TableHead>
-                <TableHead className="w-[120px]">Rate</TableHead>
-                <TableHead className="w-[120px]">Amount</TableHead>
-                <TableHead className="w-[150px]">Type</TableHead>
-                <TableHead className="w-[80px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lines.map((line) => (
-                <TableRow key={line.id}>
-                  <TableCell>
-                    <Input
-                      value={line.code}
-                      onChange={(e) => handleLineChange(line.id, 'code', e.target.value)}
-                      placeholder="Code"
-                      className="h-8"
+      {/* Two-column: Advanced (lines) + Always-visible Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Advanced (Collapsible) */}
+        <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Lines (Advanced)</CardTitle>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={autoCalc}
+                      onChange={(e) => setAutoCalc(e.target.checked)}
                     />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={line.label_fr}
-                      onChange={(e) => handleLineChange(line.id, 'label_fr', e.target.value)}
-                      placeholder="French label"
-                      className="h-8"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={line.label_en}
-                      onChange={(e) => handleLineChange(line.id, 'label_en', e.target.value)}
-                      placeholder="English label"
-                      className="h-8"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={line.quantity}
-                      onChange={(e) => handleLineChange(line.id, 'quantity', e.target.value)}
-                      className="h-8"
-                      step="0.01"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={line.rate}
-                      onChange={(e) => handleLineChange(line.id, 'rate', e.target.value)}
-                      className="h-8"
-                      step="0.01"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {selectedCompany?.currency} {line.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    <select
-                      value={line.type}
-                      onChange={(e) => handleLineChange(line.id, 'type', e.target.value as LineType)}
-                      className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
-                    >
-                      <option value="earning">Earning</option>
-                      <option value="deduction">Deduction</option>
-                      <option value="employer_contrib">Employer Contrib</option>
-                      <option value="info">Info</option>
-                    </select>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDeleteLine(line.id)}
-                      disabled={lines.length === 1}
-                      className="h-8 w-8"
-                    >
-                      <Trash2 size={16} className="text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    Auto-calc from base
+                  </label>
+                  <Button onClick={handleAddLine} size="sm">
+                    <Plus size={16} className="mr-2" />
+                    Add Line
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-2">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent>
+                <TooltipProvider>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[120px]">Code</TableHead>
+                        <TableHead>Label (FR)</TableHead>
+                        <TableHead>Label (EN)</TableHead>
+                        <TableHead className="w-[100px]">Quantity</TableHead>
+                        <TableHead className="w-[120px]">Rate</TableHead>
+                        <TableHead className="w-[160px]">Amount</TableHead>
+                        <TableHead className="w-[150px]">Type</TableHead>
+                        <TableHead className="w-[80px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lines.map((line) => (
+                        <TableRow key={line.id}>
+                          <TableCell>
+                            <Input
+                              value={line.code}
+                              onChange={(e) => handleLineChange(line.id, 'code', e.target.value)}
+                              placeholder="Code"
+                              className="h-8"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={line.label_fr}
+                              onChange={(e) => handleLineChange(line.id, 'label_fr', e.target.value)}
+                              placeholder="French label"
+                              className="h-8"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={line.label_en}
+                              onChange={(e) => handleLineChange(line.id, 'label_en', e.target.value)}
+                              placeholder="English label"
+                              className="h-8"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={line.quantity}
+                              onChange={(e) => handleLineChange(line.id, 'quantity', e.target.value)}
+                              className="h-8"
+                              step="0.01"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={line.rate}
+                              onChange={(e) => handleLineChange(line.id, 'rate', e.target.value)}
+                              className="h-8"
+                              step="0.01"
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex flex-col">
+                              <span>{formatCurrency(line.amount)}</span>
+                              {autoCalc && !!getFormulaChip(line) && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="mt-1 inline-block rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground cursor-help">
+                                      {getFormulaChip(line)}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Base: {formatCurrency(totals.earnings)}
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <select
+                              value={line.type}
+                              onChange={(e) => handleLineChange(line.id, 'type', e.target.value as LineType)}
+                              className="h-8 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                            >
+                              <option value="earning">Earning</option>
+                              <option value="deduction">Deduction</option>
+                              <option value="employer_contrib">Employer Contrib</option>
+                              <option value="info">Info</option>
+                            </select>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteLine(line.id)}
+                              disabled={lines.length === 1}
+                              className="h-8 w-8"
+                            >
+                              <Trash2 size={16} className="text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TooltipProvider>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
-      {/* Preview (Excel-style monthly detail) */}
-      {selectedCompany && selectedEmployee && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Preview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LuxembourgPayslipDetail
-              payslip={{
-                employeeId: selectedEmployeeId,
-                companyId: selectedCompanyId,
-                period: { month, year },
-                employee: {
-                  id: selectedEmployee.id,
-                  firstName: selectedEmployee.firstName,
-                  lastName: selectedEmployee.lastName,
-                  email: selectedEmployee.email,
-                  class: selectedEmployee.class,
-                  hireDate: selectedEmployee.hireDate,
-                  terminationDate: selectedEmployee.terminationDate,
-                  matricule: selectedEmployee.matricule,
-                  identityNumber: selectedEmployee.identityNumber,
-                  address: selectedEmployee.address,
-                  city: selectedEmployee.city,
-                  postalCode: selectedEmployee.postalCode,
-                },
-                company: {
-                  id: selectedCompany.id,
-                  name: selectedCompany.name,
-                  country: selectedCompany.country,
-                  currency: selectedCompany.currency,
-                },
-                earnings: {
-                  remunerationBase: totals.earnings,
-                  grossMonthly: totals.earnings,
-                  cotisable: totals.earnings,
-                  imposable: totals.earnings - totals.employeeDeductions,
-                },
-                employeeContrib: {
-                  maladie: totals.maladie,
-                  pension: totals.pension,
-                  ciCo2: totals.ciCo2,
-                  cis: totals.cis,
-                  cissm: totals.cissm,
-                  deductions: totals.deductionsOther,
-                  incomeTax: totals.incomeTax,
-                  total: totals.employeeDeductions,
-                },
-                employerContrib: {
-                  maladie: totals.employerMaladie,
-                  pension: totals.employerPension,
-                  sante: totals.sante,
-                  accident: totals.accident,
-                  socialSecurityTotal: totals.employerContributions,
-                },
-                netPay: totals.netPay,
-                ytd: {
-                  gross: totals.earnings,
-                  net: totals.netPay,
-                  employeeContribTotal: totals.employeeDeductions,
-                  employerContribTotal: totals.employerContributions,
-                  taxes: totals.incomeTax,
-                },
-                lines: lines,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              }}
-            />
-          </CardContent>
-        </Card>
-      )}
+        {/* Always-visible Preview */}
+        {selectedCompany && selectedEmployee && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LuxembourgPayslipDetail
+                payslip={{
+                  employeeId: selectedEmployeeId,
+                  companyId: selectedCompanyId,
+                  period: { month, year },
+                  employee: {
+                    id: selectedEmployee.id,
+                    firstName: selectedEmployee.firstName,
+                    lastName: selectedEmployee.lastName,
+                    email: selectedEmployee.email,
+                    class: selectedEmployee.class,
+                    hireDate: selectedEmployee.hireDate,
+                    terminationDate: selectedEmployee.terminationDate,
+                    matricule: selectedEmployee.matricule,
+                    identityNumber: selectedEmployee.identityNumber,
+                    address: selectedEmployee.address,
+                    city: selectedEmployee.city,
+                    postalCode: selectedEmployee.postalCode,
+                  },
+                  company: {
+                    id: selectedCompany.id,
+                    name: selectedCompany.name,
+                    country: selectedCompany.country,
+                    currency: selectedCompany.currency,
+                  },
+                  earnings: {
+                    remunerationBase: totals.earnings,
+                    grossMonthly: totals.earnings,
+                    cotisable: totals.earnings,
+                    imposable: totals.earnings - totals.employeeDeductions,
+                  },
+                  employeeContrib: {
+                    maladie: totals.maladie,
+                    pension: totals.pension,
+                    ciCo2: totals.ciCo2,
+                    cis: totals.cis,
+                    cissm: totals.cissm,
+                    deductions: totals.deductionsOther,
+                    incomeTax: totals.incomeTax,
+                    total: totals.employeeDeductions,
+                  },
+                  employerContrib: {
+                    maladie: totals.employerMaladie,
+                    pension: totals.employerPension,
+                    sante: totals.sante,
+                    accident: totals.accident,
+                    socialSecurityTotal: totals.employerContributions,
+                  },
+                  netPay: totals.netPay,
+                  ytd: {
+                    gross: totals.earnings,
+                    net: totals.netPay,
+                    employeeContribTotal: totals.employeeDeductions,
+                    employerContribTotal: totals.employerContributions,
+                    taxes: totals.incomeTax,
+                  },
+                  lines: lines,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

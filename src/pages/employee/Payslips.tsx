@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Download, FileSpreadsheet, Eye, TrendingUp } from 'lucide-react';
+import { formatCurrency } from '@/lib/luxembourgPayroll';
+import { generatePayslipPDF } from '@/lib/pdf';
 import { LuxembourgPayslipDetail } from '@/components/payslips/LuxembourgPayslipDetail';
 import { AnnualRecapitulation } from '@/components/payroll/AnnualRecapitulation';
 import {
@@ -108,8 +110,8 @@ export function Payslips() {
                         </TableCell>
                         <TableCell>{getCompanyName(payslip.companyId)}</TableCell>
                         <TableCell>{getEmployeeName(payslip.employeeId)}</TableCell>
-                        <TableCell>€{payslip.earnings.grossMonthly.toLocaleString()}</TableCell>
-                        <TableCell>€{payslip.netPay.toLocaleString()}</TableCell>
+                        <TableCell>{formatCurrency(payslip.earnings.grossMonthly)}</TableCell>
+                        <TableCell>{formatCurrency(payslip.netPay)}</TableCell>
                         <TableCell>
                           <Badge variant="default">{t('payslips.paid')}</Badge>
                         </TableCell>
@@ -123,7 +125,7 @@ export function Payslips() {
                               <Eye size={16} className="mr-2" />
                               {t('payslips.view')}
                             </Button>
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
                               <Download size={16} className="mr-2" />
                               PDF
                             </Button>

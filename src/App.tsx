@@ -20,6 +20,7 @@ import { IndividualDetail } from './pages/IndividualDetail';
 import { EmployeeList } from './components/employees/EmployeeList';
 import { PayslipList } from './components/payslips/PayslipList';
 import { AnnualPayslipList } from './components/payslips/AnnualPayslipList';
+import Explorer from './pages/payslips/Explorer';
 
 // Pages - Employee
 import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
@@ -72,6 +73,7 @@ function App() {
             <Route path="payslips" element={<PayslipList />} />
             <Route path="payslips/annual" element={<AnnualPayslipList />} />
             <Route path="payslips/create" element={<CreatePayslip />} />
+            <Route path="payslips/explorer" element={<Explorer />} />
             <Route path="users" element={<UserAccessManagement />} />
             <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
           </Route>

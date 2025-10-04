@@ -21,6 +21,7 @@
     "companies": "Companies",
     "individuals": "Individuals",
     "payslips": "Payslips",
+    "explorer": "Payslip Explorer",
     "myPayslips": "My Payslips",
     "profile": "Profile",
     "settings": "Settings",
@@ -89,6 +90,10 @@
     "total": "total",
     "cancel": "Cancel",
     "save": "Save",
+    "filters": "Filters",
+    "results": "Results",
+    "all": "All",
+    "hide": "Hide",
     "update": "Update",
     "create": "Create"
   },
@@ -352,5 +357,12 @@
     "accessibleIndividuals": "Accessible Individuals",
     "allFieldsRequired": "All fields are required",
     "updatedSuccess": "Profile updated successfully"
+  },
+  "explorer": {
+    "subtitle": "Filter, read, compare, and export payslips",
+    "allCompanies": "All companies",
+    "allEmployees": "All employees",
+    "netMin": "Net min",
+    "netMax": "Net max"
   }
 }

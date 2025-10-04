@@ -17,6 +17,8 @@ import { CompanyAnalytics } from '@/components/analytics/CompanyAnalytics';
 import { CompanyAnnualAnalytics } from '@/components/analytics/CompanyAnnualAnalytics';
 import { LuxembourgPayslipDetail } from '@/components/payslips/LuxembourgPayslipDetail';
 import { ArrowLeft, Plus, Users, Building2, CreditCard, TrendingUp, MoreHorizontal, Edit, Trash2, RotateCcw, Download, FileSpreadsheet, Eye } from 'lucide-react';
+import { formatCurrency } from '@/lib/luxembourgPayroll';
+import { generatePayslipPDF } from '@/lib/pdf';
 import { AdvensysImportDialog } from '@/components/excel/AdvensysImportDialog';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -343,6 +345,7 @@ export function CompanyDetail() {
 // Filtered Employee List Component
 function EmployeeListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
+  const navigate = useNavigate();
   const { employees, updateEmployee, deleteEmployee } = useDataStore();
   const { toast } = useToast();
   const [editingEmployee, setEditingEmployee] = useState<string | null>(null);
@@ -447,6 +450,10 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigate(`/admin/employees/${employee.id}/annual-payslip`)}>
+                          <FileSpreadsheet size={16} className="mr-2" />
+                          Fiche de Paie Annuelle
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEdit(employee)}>
                           <Edit size={16} className="mr-2" />
                           {t('employees.edit')}
@@ -556,6 +563,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
 // Filtered Payslip List Component
 function PayslipListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
+  const navigate = useNavigate();
   const { payslips, employees } = useDataStore();
   const [selectedPayslip, setSelectedPayslip] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -603,15 +611,19 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                       {String(payslip.period.month).padStart(2, '0')}/{payslip.period.year}
                     </TableCell>
                     <TableCell>{getEmployeeName(payslip.employeeId)}</TableCell>
-                    <TableCell>€{payslip.earnings.grossMonthly.toLocaleString()}</TableCell>
-                    <TableCell>€{payslip.netPay.toLocaleString()}</TableCell>
+                    <TableCell>{formatCurrency(payslip.earnings.grossMonthly)}</TableCell>
+                    <TableCell>{formatCurrency(payslip.netPay)}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => handleViewPayslip(payslip.id)}>
                           <Eye size={16} className="mr-2" />
                           Voir
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => navigate(`/admin/employees/${payslip.employeeId}/annual-payslip`)}>
+                          <FileSpreadsheet size={16} className="mr-2" />
+                          Annuelle
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
                           <Download size={16} className="mr-2" />
                           PDF
                         </Button>
