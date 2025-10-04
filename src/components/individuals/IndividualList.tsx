@@ -34,6 +34,10 @@ export function IndividualList() {
     country: 'Luxembourg',
     currency: 'EUR',
     status: 'active' as 'active' | 'terminated',
+    baseSalary: 0,
+    taxClass: 2,
+    matricule: '',
+    address: '',
   })
 
   const resetForm = () => {
@@ -44,6 +48,10 @@ export function IndividualList() {
       country: 'Luxembourg',
       currency: 'EUR',
       status: 'active',
+      baseSalary: 0,
+      taxClass: 2,
+      matricule: '',
+      address: '',
     })
   }
 
@@ -87,6 +95,10 @@ export function IndividualList() {
       country: individual.country,
       currency: individual.currency,
       status: individual.status,
+      baseSalary: individual.baseSalary || 0,
+      taxClass: individual.taxClass || 2,
+      matricule: individual.matricule || '',
+      address: individual.address || '',
     })
     setIsEditDialogOpen(true)
   }
@@ -249,6 +261,47 @@ export function IndividualList() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="add-baseSalary">Base Salary (Monthly)</Label>
+              <Input
+                id="add-baseSalary"
+                type="number"
+                value={form.baseSalary}
+                onChange={(e) => setForm({ ...form, baseSalary: parseFloat(e.target.value) || 0 })}
+                placeholder="5500"
+              />
+            </div>
+            <div>
+              <Label htmlFor="add-taxClass">Tax Class</Label>
+              <Select value={String(form.taxClass)} onValueChange={(value) => setForm({ ...form, taxClass: parseInt(value) })}>
+                <SelectTrigger id="add-taxClass">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Class 1</SelectItem>
+                  <SelectItem value="1a">Class 1a</SelectItem>
+                  <SelectItem value="2">Class 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="add-matricule">Matricule (Optional)</Label>
+              <Input
+                id="add-matricule"
+                value={form.matricule}
+                onChange={(e) => setForm({ ...form, matricule: e.target.value })}
+                placeholder="1989 11 24 004 47"
+              />
+            </div>
+            <div>
+              <Label htmlFor="add-address">Address (Optional)</Label>
+              <Input
+                id="add-address"
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="52, Grand-Rue"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsAddDialogOpen(false); resetForm(); }}>
@@ -329,6 +382,47 @@ export function IndividualList() {
                   <SelectItem value="terminated">Terminated</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-baseSalary">Base Salary (Monthly)</Label>
+              <Input
+                id="edit-baseSalary"
+                type="number"
+                value={form.baseSalary}
+                onChange={(e) => setForm({ ...form, baseSalary: parseFloat(e.target.value) || 0 })}
+                placeholder="5500"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-taxClass">Tax Class</Label>
+              <Select value={String(form.taxClass)} onValueChange={(value) => setForm({ ...form, taxClass: parseInt(value) })}>
+                <SelectTrigger id="edit-taxClass">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Class 1</SelectItem>
+                  <SelectItem value="1a">Class 1a</SelectItem>
+                  <SelectItem value="2">Class 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="edit-matricule">Matricule (Optional)</Label>
+              <Input
+                id="edit-matricule"
+                value={form.matricule}
+                onChange={(e) => setForm({ ...form, matricule: e.target.value })}
+                placeholder="1989 11 24 004 47"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-address">Address (Optional)</Label>
+              <Input
+                id="edit-address"
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                placeholder="52, Grand-Rue"
+              />
             </div>
           </div>
           <DialogFooter>

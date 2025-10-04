@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, UserCircle, CreditCard, TrendingUp, FileText, Download, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Plus, UserCircle, CreditCard, TrendingUp, FileText, Download, FileSpreadsheet, Edit } from 'lucide-react';
 import { formatCurrency } from '@/lib/luxembourgPayroll';
 import { generatePayslipPDF } from '@/lib/pdf';
 
@@ -210,9 +210,9 @@ export function IndividualDetail() {
             </p>
           </div>
         </div>
-        <Button onClick={() => setIsCreatePayslipDialogOpen(true)}>
+        <Button onClick={() => navigate(`/admin/payslips/create-annual/${individualId}`)}>
           <Plus className="mr-2 h-4 w-4" />
-          Créer fiche de paie
+          Créer fiche de paie annuelle
         </Button>
       </div>
 
@@ -282,13 +282,26 @@ export function IndividualDetail() {
                         <TableCell>{formatCurrency(payslip.netPay)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
-                              <Download size={16} className="mr-2" />
-                              PDF
-                            </Button>
-                            <Button size="sm" variant="outline">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/admin/individuals/${individualId}/annual-payslip`)}
+                              title="View Annual Payslip"
+                            >
                               <FileSpreadsheet size={16} className="mr-2" />
-                              Excel
+                              Annuelle
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/admin/payslips/create-annual/${individualId}`)}
+                              title="Edit Annual Payslip"
+                            >
+                              <Edit size={16} className="mr-2" />
+                              Edit
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
+                              <Download size={16} />
                             </Button>
                           </div>
                         </TableCell>

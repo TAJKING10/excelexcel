@@ -41,6 +41,10 @@ export interface Individual {
   currency: string;
   status: 'active' | 'terminated';
   createdAt: string;
+  baseSalary?: number;
+  taxClass?: number;
+  matricule?: string;
+  address?: string;
 }
 
 // Employee Types

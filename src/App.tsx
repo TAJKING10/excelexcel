@@ -69,6 +69,7 @@ function App() {
             <Route path="companies/:companyId" element={<CompanyDetail />} />
             <Route path="individuals" element={<AdminIndividuals />} />
             <Route path="individuals/:individualId" element={<IndividualDetail />} />
+            <Route path="individuals/:individualId/annual-payslip" element={<AnnualPayslipPage />} />
             <Route path="employees" element={<EmployeeList />} />
             <Route path="employees/:employeeId/annual-payslip" element={<AnnualPayslipPage />} />
             <Route path="payslips" element={<PayslipList />} />

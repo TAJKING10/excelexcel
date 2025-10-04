@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 export default function AnnualPayslipPage() {
-  const { employeeId } = useParams<{ employeeId: string }>();
+  const { employeeId, individualId } = useParams<{ employeeId?: string; individualId?: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -19,10 +19,15 @@ export default function AnnualPayslipPage() {
 
   const getEmployeeAnnualPayslip = useDataStore((state) => state.getEmployeeAnnualPayslip);
   const employees = useDataStore((state) => state.employees);
+  const individuals = useDataStore((state) => state.individuals);
 
-  const employee = employees.find((e) => e.id === employeeId);
-  const annualPayslip = employeeId
-    ? getEmployeeAnnualPayslip(employeeId, selectedYear)
+  const personId = employeeId || individualId;
+  const employee = employees.find((e) => e.id === personId);
+  const individual = individuals.find((i) => i.id === personId);
+  const person = employee || individual;
+
+  const annualPayslip = personId
+    ? getEmployeeAnnualPayslip(personId, selectedYear)
     : undefined;
 
   // Generate year options (last 5 years)
@@ -38,13 +43,13 @@ export default function AnnualPayslipPage() {
     alert('Excel export coming soon!');
   };
 
-  if (!employee) {
+  if (!person) {
     return (
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">
-              {t('employee.not_found', 'Employé non trouvé')}
+              {t('employee.not_found', employeeId ? 'Employé non trouvé' : 'Individuel non trouvé')}
             </p>
           </CardContent>
         </Card>
@@ -80,7 +85,7 @@ export default function AnnualPayslipPage() {
               {t('payslip.annual_title', 'Fiche de Paie Annuelle')}
             </h1>
             <p className="text-muted-foreground">
-              {employee.firstName} {employee.lastName}
+              {person.firstName} {person.lastName}
             </p>
           </div>
         </div>
@@ -99,7 +104,7 @@ export default function AnnualPayslipPage() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" onClick={() => navigate(`/admin/payslips/create-annual/${employeeId}`)}>
+          <Button variant="outline" onClick={() => navigate(`/admin/payslips/create-annual/${personId}`)}>
             <Edit className="mr-2 h-4 w-4" />
             {t('common.edit', 'Edit')}
           </Button>

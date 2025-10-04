@@ -46,12 +46,16 @@ export function CreateAnnualPayslip() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
-  const { companies, employees, addPayslip, payslips, updatePayslip } = useDataStore();
+  const { companies, employees, individuals, addPayslip, payslips, updatePayslip } = useDataStore();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(employeeId || '');
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [autoCalc, setAutoCalc] = useState<boolean>(false);
+
+  // Check if this is an individual or employee
+  const isIndividual = individuals.some((i) => i.id === employeeId);
+  const individual = individuals.find((i) => i.id === employeeId);
 
   // Initialize 12 months with zeros
   const [monthsData, setMonthsData] = useState<MonthData[]>(() =>
@@ -94,10 +98,20 @@ export function CreateAnnualPayslip() {
     ? employees.filter((e) => e.companyId === selectedCompanyId && e.status === 'active')
     : employees.filter((e) => e.status === 'active');
 
-  const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId);
+  const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId) || individual;
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
 
-  // Load existing payslips when editing
+  // Auto-select company if employee passed via URL
+  useEffect(() => {
+    if (employeeId && !isIndividual) {
+      const emp = employees.find((e) => e.id === employeeId);
+      if (emp) {
+        setSelectedCompanyId(emp.companyId);
+      }
+    }
+  }, [employeeId, employees, isIndividual]);
+
+  // Load existing payslips when editing OR auto-populate for individuals
   useEffect(() => {
     if (selectedEmployee) {
       // Try to load existing payslips for this employee and year
@@ -136,43 +150,45 @@ export function CreateAnnualPayslip() {
           return month;
         });
         setMonthsData(newMonthsData);
-      } else if (autoCalc) {
-        // Auto-generate if no existing payslips and auto-calc is on
-        const baseSalary = selectedEmployee.baseSalary;
-        const taxClass = String(selectedEmployee.taxClass || '2');
+      } else {
+        // Auto-populate for NEW payslips if baseSalary exists
+        const baseSalary = (selectedEmployee as any).baseSalary;
+        const taxClass = String((selectedEmployee as any).taxClass || '2');
 
-        const newMonthsData = monthsData.map((month) => {
-          const calc = calculatePayslip({
-            remunerationBase: baseSalary,
-            taxClass: taxClass,
+        if (baseSalary && baseSalary > 0) {
+          const newMonthsData = monthsData.map((month) => {
+            const calc = calculatePayslip({
+              remunerationBase: baseSalary,
+              taxClass: taxClass,
+            });
+
+            return {
+              ...month,
+              taxClass: taxClass,
+              remunerationBase: baseSalary,
+              grossMonthly: calc.earnings.grossMonthly,
+              cotisable: calc.earnings.cotisable,
+              maladie: calc.employeeContrib.maladie,
+              pension: calc.employeeContrib.pension,
+              ciCo2: calc.employeeContrib.ciCo2,
+              deductions: calc.employeeContrib.deductions,
+              imposable: calc.earnings.imposable,
+              incomeTax: calc.employeeContrib.incomeTax,
+              cis: calc.employeeContrib.cis,
+              cissm: calc.employeeContrib.cissm,
+              netPay: calc.netPay,
+              employerMaladie: calc.employerContrib.maladie,
+              employerPension: calc.employerContrib.pension,
+              employerSante: calc.employerContrib.sante,
+              employerAccident: calc.employerContrib.accident,
+              employerTotal: calc.employerContrib.socialSecurityTotal,
+            };
           });
-
-          return {
-            ...month,
-            taxClass: taxClass,
-            remunerationBase: baseSalary,
-            grossMonthly: calc.earnings.grossMonthly,
-            cotisable: calc.earnings.cotisable,
-            maladie: calc.employeeContrib.maladie,
-            pension: calc.employeeContrib.pension,
-            ciCo2: calc.employeeContrib.ciCo2,
-            deductions: calc.employeeContrib.deductions,
-            imposable: calc.earnings.imposable,
-            incomeTax: calc.employeeContrib.incomeTax,
-            cis: calc.employeeContrib.cis,
-            cissm: calc.employeeContrib.cissm,
-            netPay: calc.netPay,
-            employerMaladie: calc.employerContrib.maladie,
-            employerPension: calc.employerContrib.pension,
-            employerSante: calc.employerContrib.sante,
-            employerAccident: calc.employerContrib.accident,
-            employerTotal: calc.employerContrib.socialSecurityTotal,
-          };
-        });
-        setMonthsData(newMonthsData);
+          setMonthsData(newMonthsData);
+        }
       }
     }
-  }, [selectedEmployee, year, autoCalc]);
+  }, [selectedEmployee, year]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -284,16 +300,28 @@ export function CreateAnnualPayslip() {
   };
 
   const handleSave = () => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
-      toast({
-        title: 'Error',
-        description: 'Please select a company and employee',
-        variant: 'destructive',
-      });
-      return;
-    }
+    // Validation: For individuals, only need individual selected; for employees, need company too
+    if (isIndividual) {
+      if (!selectedEmployeeId || !selectedEmployee) {
+        toast({
+          title: 'Error',
+          description: 'Individual not found',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (!selectedCompanyId || !selectedEmployeeId) {
+        toast({
+          title: 'Error',
+          description: 'Please select a company and employee',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    if (!selectedCompany || !selectedEmployee) return;
+      if (!selectedCompany || !selectedEmployee) return;
+    }
 
     // Create or update individual monthly payslips
     let created = 0;
@@ -308,22 +336,22 @@ export function CreateAnnualPayslip() {
 
         const payslipData = {
           employeeId: selectedEmployeeId,
-          companyId: selectedCompanyId,
+          companyId: isIndividual ? `individual-${selectedEmployeeId}` : selectedCompanyId,
           period: { month: month.monthNumber, year },
           employee: {
             id: selectedEmployee.id,
             firstName: selectedEmployee.firstName,
             lastName: selectedEmployee.lastName,
             email: selectedEmployee.email,
-            class: selectedEmployee.class,
-            hireDate: selectedEmployee.hireDate,
-            terminationDate: selectedEmployee.terminationDate,
+            class: isIndividual ? 'Individual' : (selectedEmployee as any).class,
+            hireDate: isIndividual ? (selectedEmployee as any).createdAt : (selectedEmployee as any).hireDate,
+            terminationDate: null,
           },
           company: {
-            id: selectedCompany.id,
-            name: selectedCompany.name,
-            country: selectedCompany.country,
-            currency: selectedCompany.currency,
+            id: isIndividual ? `individual-${selectedEmployeeId}` : selectedCompany!.id,
+            name: isIndividual ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : selectedCompany!.name,
+            country: isIndividual ? (selectedEmployee as any).country : selectedCompany!.country,
+            currency: isIndividual ? (selectedEmployee as any).currency : selectedCompany!.currency,
           },
           earnings: {
             remunerationBase: month.remunerationBase,
@@ -417,71 +445,113 @@ export function CreateAnnualPayslip() {
           <CardTitle>Livre de Paie {year}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company">Company *</Label>
-              <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                <SelectTrigger id="company">
-                  <SelectValue placeholder="Select company" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableCompanies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {isIndividual ? (
+            // Individual mode - show individual info
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Individual</Label>
+                <div className="text-lg font-semibold">
+                  {selectedEmployee?.firstName} {selectedEmployee?.lastName}
+                </div>
+                <p className="text-sm text-muted-foreground">{selectedEmployee?.email}</p>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="employee">Employee *</Label>
-              <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={!selectedCompanyId}>
-                <SelectTrigger id="employee">
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredEmployees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      {employee.firstName} {employee.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label htmlFor="year">Year *</Label>
+                <Input
+                  id="year"
+                  type="number"
+                  value={year}
+                  onChange={(e) => setYear(parseInt(e.target.value) || new Date().getFullYear())}
+                  min={2020}
+                  max={2050}
+                />
+              </div>
             </div>
+          ) : (
+            // Employee mode - show company/employee selectors
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="company">Company *</Label>
+                <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                  <SelectTrigger id="company">
+                    <SelectValue placeholder="Select company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCompanies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="year">Year *</Label>
-              <Input
-                id="year"
-                type="number"
-                value={year}
-                onChange={(e) => setYear(parseInt(e.target.value) || new Date().getFullYear())}
-                min={2020}
-                max={2050}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="employee">Employee *</Label>
+                <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={!selectedCompanyId}>
+                  <SelectTrigger id="employee">
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredEmployees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.firstName} {employee.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="year">Year *</Label>
+                <Input
+                  id="year"
+                  type="number"
+                  value={year}
+                  onChange={(e) => setYear(parseInt(e.target.value) || new Date().getFullYear())}
+                  min={2020}
+                  max={2050}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {selectedEmployee && selectedCompany && (
+          {selectedEmployee && (isIndividual || selectedCompany) && (
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
               <div>
-                <p className="text-xs text-muted-foreground">employee.matricule</p>
-                <p className="font-medium">{selectedEmployee.matricule || '1989 11 24 004 47'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">employee.class</p>
-                <p className="font-medium">{selectedEmployee.class || 'Empl.'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">employee.hire_date</p>
+                <p className="text-xs text-muted-foreground">
+                  {isIndividual ? 'individual.id' : 'employee.matricule'}
+                </p>
                 <p className="font-medium">
-                  {selectedEmployee.hireDate ? new Date(selectedEmployee.hireDate).toLocaleDateString('fr-LU') : '-'}
+                  {isIndividual ? selectedEmployee.id.slice(0, 8) : (selectedEmployee as any).matricule || '1989 11 24 004 47'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">employee.address</p>
-                <p className="font-medium">{selectedEmployee.address || '52, Grand-Rue'}</p>
+                <p className="text-xs text-muted-foreground">
+                  {isIndividual ? 'individual.status' : 'employee.class'}
+                </p>
+                <p className="font-medium">
+                  {isIndividual ? (selectedEmployee as any).status : (selectedEmployee as any).class || 'Empl.'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  {isIndividual ? 'individual.created' : 'employee.hire_date'}
+                </p>
+                <p className="font-medium">
+                  {isIndividual
+                    ? new Date((selectedEmployee as any).createdAt).toLocaleDateString('fr-LU')
+                    : (selectedEmployee as any).hireDate ? new Date((selectedEmployee as any).hireDate).toLocaleDateString('fr-LU') : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  {isIndividual ? 'individual.country' : 'employee.address'}
+                </p>
+                <p className="font-medium">
+                  {isIndividual ? (selectedEmployee as any).country : (selectedEmployee as any).address || '52, Grand-Rue'}
+                </p>
               </div>
             </div>
           )}
