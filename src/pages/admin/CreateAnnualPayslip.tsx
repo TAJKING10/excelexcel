@@ -12,7 +12,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ArrowLeft, Save } from 'lucide-react';
 import { calculatePayslip, formatCurrency, getMonthNameFr } from '@/lib/luxembourgPayroll';
 import { useToast } from '@/hooks/use-toast';
-import type { MonthlyPayslipData } from '@/types';
 
 interface MonthData {
   monthNumber: number;
@@ -33,13 +32,11 @@ interface MonthData {
   cis: number;
   cissm: number;
   netPay: number;
-  // Employer contributions
   employerMaladie: number;
   employerPension: number;
   employerSante: number;
   employerAccident: number;
   employerTotal: number;
-  // Working hours
   normalHours: number;
 }
 
@@ -49,14 +46,12 @@ export function CreateAnnualPayslip() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthStore();
-  const { companies, employees, addPayslip } = useDataStore();
+  const { companies, employees, addPayslip, payslips, updatePayslip } = useDataStore();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(employeeId || '');
   const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [baseSalary, setBaseSalary] = useState<number>(0);
-  const [taxClass, setTaxClass] = useState<string>('2');
-  const [autoCalc, setAutoCalc] = useState<boolean>(true);
+  const [autoCalc, setAutoCalc] = useState<boolean>(false);
 
   // Initialize 12 months with zeros
   const [monthsData, setMonthsData] = useState<MonthData[]>(() =>
@@ -88,7 +83,6 @@ export function CreateAnnualPayslip() {
     }))
   );
 
-  // Guard: only Super Admin can access
   useEffect(() => {
     if (user && user.role !== 'SUPER_ADMIN') {
       navigate('/');
@@ -103,49 +97,82 @@ export function CreateAnnualPayslip() {
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId);
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
 
-  // Auto-fill from selected employee
+  // Load existing payslips when editing
   useEffect(() => {
     if (selectedEmployee) {
-      setBaseSalary(selectedEmployee.baseSalary);
-      setTaxClass(String(selectedEmployee.taxClass || '2'));
-      setSelectedCompanyId(selectedEmployee.companyId);
-    }
-  }, [selectedEmployee]);
+      // Try to load existing payslips for this employee and year
+      const employeePayslips = payslips.filter(
+        (p) => p.employeeId === selectedEmployee.id && p.period.year === year
+      );
 
-  // Auto-calculate when base salary or tax class changes
-  useEffect(() => {
-    if (autoCalc && baseSalary > 0) {
-      const newMonthsData = monthsData.map((month) => {
-        const calc = calculatePayslip({
-          remunerationBase: baseSalary,
-          taxClass: taxClass,
+      if (employeePayslips.length > 0) {
+        // Load existing payslips
+        const newMonthsData = monthsData.map((month) => {
+          const existingPayslip = employeePayslips.find((p) => p.period.month === month.monthNumber);
+
+          if (existingPayslip) {
+            return {
+              ...month,
+              taxClass: existingPayslip.employee.class || '2',
+              remunerationBase: existingPayslip.earnings.remunerationBase,
+              grossMonthly: existingPayslip.earnings.grossMonthly,
+              cotisable: existingPayslip.earnings.cotisable,
+              maladie: existingPayslip.employeeContrib.maladie,
+              pension: existingPayslip.employeeContrib.pension,
+              ciCo2: existingPayslip.employeeContrib.ciCo2,
+              deductions: existingPayslip.employeeContrib.deductions,
+              imposable: existingPayslip.earnings.imposable,
+              incomeTax: existingPayslip.employeeContrib.incomeTax,
+              cis: existingPayslip.employeeContrib.cis,
+              cissm: existingPayslip.employeeContrib.cissm,
+              netPay: existingPayslip.netPay,
+              employerMaladie: existingPayslip.employerContrib.maladie,
+              employerPension: existingPayslip.employerContrib.pension,
+              employerSante: existingPayslip.employerContrib.sante,
+              employerAccident: existingPayslip.employerContrib.accident,
+              employerTotal: existingPayslip.employerContrib.socialSecurityTotal,
+            };
+          }
+          return month;
         });
+        setMonthsData(newMonthsData);
+      } else if (autoCalc) {
+        // Auto-generate if no existing payslips and auto-calc is on
+        const baseSalary = selectedEmployee.baseSalary;
+        const taxClass = String(selectedEmployee.taxClass || '2');
 
-        return {
-          ...month,
-          taxClass: taxClass,
-          remunerationBase: baseSalary,
-          grossMonthly: calc.earnings.grossMonthly,
-          cotisable: calc.earnings.cotisable,
-          maladie: calc.employeeContrib.maladie,
-          pension: calc.employeeContrib.pension,
-          ciCo2: calc.employeeContrib.ciCo2,
-          deductions: calc.employeeContrib.deductions,
-          imposable: calc.earnings.imposable,
-          incomeTax: calc.employeeContrib.incomeTax,
-          cis: calc.employeeContrib.cis,
-          cissm: calc.employeeContrib.cissm,
-          netPay: calc.netPay,
-          employerMaladie: calc.employerContrib.maladie,
-          employerPension: calc.employerContrib.pension,
-          employerSante: calc.employerContrib.sante,
-          employerAccident: calc.employerContrib.accident,
-          employerTotal: calc.employerContrib.socialSecurityTotal,
-        };
-      });
-      setMonthsData(newMonthsData);
+        const newMonthsData = monthsData.map((month) => {
+          const calc = calculatePayslip({
+            remunerationBase: baseSalary,
+            taxClass: taxClass,
+          });
+
+          return {
+            ...month,
+            taxClass: taxClass,
+            remunerationBase: baseSalary,
+            grossMonthly: calc.earnings.grossMonthly,
+            cotisable: calc.earnings.cotisable,
+            maladie: calc.employeeContrib.maladie,
+            pension: calc.employeeContrib.pension,
+            ciCo2: calc.employeeContrib.ciCo2,
+            deductions: calc.employeeContrib.deductions,
+            imposable: calc.earnings.imposable,
+            incomeTax: calc.employeeContrib.incomeTax,
+            cis: calc.employeeContrib.cis,
+            cissm: calc.employeeContrib.cissm,
+            netPay: calc.netPay,
+            employerMaladie: calc.employerContrib.maladie,
+            employerPension: calc.employerContrib.pension,
+            employerSante: calc.employerContrib.sante,
+            employerAccident: calc.employerContrib.accident,
+            employerTotal: calc.employerContrib.socialSecurityTotal,
+          };
+        });
+        setMonthsData(newMonthsData);
+      }
     }
-  }, [baseSalary, taxClass, autoCalc]);
+  }, [selectedEmployee, year, autoCalc]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -169,6 +196,7 @@ export function CreateAnnualPayslip() {
         employerAccident: acc.employerAccident + month.employerAccident,
         employerTotal: acc.employerTotal + month.employerTotal,
         normalHours: acc.normalHours + month.normalHours,
+        employeeContribTotal: acc.employeeContribTotal + (month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax),
       }),
       {
         remunerationBase: 0,
@@ -189,16 +217,69 @@ export function CreateAnnualPayslip() {
         employerAccident: 0,
         employerTotal: 0,
         normalHours: 0,
+        employeeContribTotal: 0,
       }
     );
   }, [monthsData]);
 
   const handleMonthValueChange = (monthIndex: number, field: keyof MonthData, value: any) => {
     const newMonthsData = [...monthsData];
+    const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
+
     newMonthsData[monthIndex] = {
       ...newMonthsData[monthIndex],
-      [field]: typeof value === 'string' ? parseFloat(value) || 0 : value,
+      [field]: numValue,
     };
+
+    // Recalculate if auto-calc is on and remuneration base changes
+    if (autoCalc && field === 'remunerationBase' && numValue > 0) {
+      const calc = calculatePayslip({
+        remunerationBase: numValue,
+        taxClass: newMonthsData[monthIndex].taxClass,
+      });
+
+      newMonthsData[monthIndex] = {
+        ...newMonthsData[monthIndex],
+        grossMonthly: calc.earnings.grossMonthly,
+        cotisable: calc.earnings.cotisable,
+        maladie: calc.employeeContrib.maladie,
+        pension: calc.employeeContrib.pension,
+        ciCo2: calc.employeeContrib.ciCo2,
+        deductions: calc.employeeContrib.deductions,
+        imposable: calc.earnings.imposable,
+        incomeTax: calc.employeeContrib.incomeTax,
+        cis: calc.employeeContrib.cis,
+        cissm: calc.employeeContrib.cissm,
+        netPay: calc.netPay,
+        employerMaladie: calc.employerContrib.maladie,
+        employerPension: calc.employerContrib.pension,
+        employerSante: calc.employerContrib.sante,
+        employerAccident: calc.employerContrib.accident,
+        employerTotal: calc.employerContrib.socialSecurityTotal,
+      };
+    } else {
+      // Always recalculate Net Pay and Employer Total based on current values
+      const month = newMonthsData[monthIndex];
+
+      // Net Pay = Gross - (Maladie + Pension + CI-CO2 + CIS + CISSM + Deductions + IncomeTax)
+      month.netPay = month.grossMonthly - (
+        month.maladie +
+        month.pension +
+        month.ciCo2 +
+        month.cis +
+        month.cissm +
+        month.deductions +
+        month.incomeTax
+      );
+
+      // Employer Total = Maladie + Pension + Santé + Accident
+      month.employerTotal =
+        month.employerMaladie +
+        month.employerPension +
+        month.employerSante +
+        month.employerAccident;
+    }
+
     setMonthsData(newMonthsData);
   };
 
@@ -214,70 +295,86 @@ export function CreateAnnualPayslip() {
 
     if (!selectedCompany || !selectedEmployee) return;
 
-    // Create individual monthly payslips
-    monthsData.forEach((month) => {
-      const payslip = {
-        employeeId: selectedEmployeeId,
-        companyId: selectedCompanyId,
-        period: { month: month.monthNumber, year },
-        employee: {
-          id: selectedEmployee.id,
-          firstName: selectedEmployee.firstName,
-          lastName: selectedEmployee.lastName,
-          email: selectedEmployee.email,
-          class: selectedEmployee.class,
-          hireDate: selectedEmployee.hireDate,
-          terminationDate: selectedEmployee.terminationDate,
-        },
-        company: {
-          id: selectedCompany.id,
-          name: selectedCompany.name,
-          country: selectedCompany.country,
-          currency: selectedCompany.currency,
-        },
-        earnings: {
-          remunerationBase: month.remunerationBase,
-          grossMonthly: month.grossMonthly,
-          cotisable: month.cotisable,
-          imposable: month.imposable,
-        },
-        employeeContrib: {
-          maladie: month.maladie,
-          pension: month.pension,
-          ciCo2: month.ciCo2,
-          cis: month.cis,
-          cissm: month.cissm,
-          deductions: month.deductions,
-          incomeTax: month.incomeTax,
-          total: month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax,
-        },
-        employerContrib: {
-          maladie: month.employerMaladie,
-          pension: month.employerPension,
-          sante: month.employerSante,
-          accident: month.employerAccident,
-          socialSecurityTotal: month.employerTotal,
-        },
-        netPay: month.netPay,
-        ytd: {
-          gross: 0,
-          net: 0,
-          employeeContribTotal: 0,
-          employerContribTotal: 0,
-          taxes: 0,
-        },
-        lines: [],
-      };
+    // Create or update individual monthly payslips
+    let created = 0;
+    let updated = 0;
 
-      addPayslip(payslip);
+    monthsData.forEach((month) => {
+      if (month.remunerationBase > 0) {
+        // Check if payslip already exists for this month
+        const existingPayslip = payslips.find(
+          (p) => p.employeeId === selectedEmployeeId && p.period.month === month.monthNumber && p.period.year === year
+        );
+
+        const payslipData = {
+          employeeId: selectedEmployeeId,
+          companyId: selectedCompanyId,
+          period: { month: month.monthNumber, year },
+          employee: {
+            id: selectedEmployee.id,
+            firstName: selectedEmployee.firstName,
+            lastName: selectedEmployee.lastName,
+            email: selectedEmployee.email,
+            class: selectedEmployee.class,
+            hireDate: selectedEmployee.hireDate,
+            terminationDate: selectedEmployee.terminationDate,
+          },
+          company: {
+            id: selectedCompany.id,
+            name: selectedCompany.name,
+            country: selectedCompany.country,
+            currency: selectedCompany.currency,
+          },
+          earnings: {
+            remunerationBase: month.remunerationBase,
+            grossMonthly: month.grossMonthly,
+            cotisable: month.cotisable,
+            imposable: month.imposable,
+          },
+          employeeContrib: {
+            maladie: month.maladie,
+            pension: month.pension,
+            ciCo2: month.ciCo2,
+            cis: month.cis,
+            cissm: month.cissm,
+            deductions: month.deductions,
+            incomeTax: month.incomeTax,
+            total: month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax,
+          },
+          employerContrib: {
+            maladie: month.employerMaladie,
+            pension: month.employerPension,
+            sante: month.employerSante,
+            accident: month.employerAccident,
+            socialSecurityTotal: month.employerTotal,
+          },
+          netPay: month.netPay,
+          ytd: {
+            gross: 0,
+            net: 0,
+            employeeContribTotal: 0,
+            employerContribTotal: 0,
+            taxes: 0,
+          },
+          lines: [],
+        };
+
+        if (existingPayslip) {
+          updatePayslip(existingPayslip.id, payslipData);
+          updated++;
+        } else {
+          addPayslip(payslipData);
+          created++;
+        }
+      }
     });
 
     toast({
       title: 'Success',
-      description: `${monthsData.length} payslips created successfully`,
+      description: `${created} created, ${updated} updated successfully`,
     });
 
-    navigate('/admin/payslips');
+    navigate(-1);
   };
 
   return (
@@ -289,23 +386,38 @@ export function CreateAnnualPayslip() {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Créer Fiches de Paie Annuelles</h1>
-            <p className="text-muted-foreground">Create annual payslips for an employee</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              {employeeId ? 'EDIT FICHE DE PAIE ANNUELLE' : 'FICHE DE PAIE ANNUELLE'}
+            </h1>
+            <p className="text-muted-foreground">
+              {employeeId ? 'Edit annual payslips - All 12 months' : 'Create annual payslips - All 12 months'}
+            </p>
           </div>
         </div>
-        <Button onClick={handleSave} className="bg-primary text-primary-foreground">
-          <Save size={16} className="mr-2" />
-          Save All Payslips
-        </Button>
+        <div className="flex gap-2">
+          <label className="flex items-center gap-2 text-sm px-3 py-2 bg-muted rounded-md">
+            <input
+              type="checkbox"
+              checked={autoCalc}
+              onChange={(e) => setAutoCalc(e.target.checked)}
+              className="h-4 w-4"
+            />
+            Auto-calculate
+          </label>
+          <Button onClick={handleSave} className="bg-primary text-primary-foreground">
+            <Save size={16} className="mr-2" />
+            Save Payslips
+          </Button>
+        </div>
       </div>
 
       {/* Selection Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Employee & Configuration</CardTitle>
+          <CardTitle>Livre de Paie {year}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="company">Company *</Label>
               <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
@@ -349,121 +461,78 @@ export function CreateAnnualPayslip() {
                 max={2050}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="baseSalary">Base Salary *</Label>
-              <Input
-                id="baseSalary"
-                type="number"
-                value={baseSalary || ''}
-                onChange={(e) => setBaseSalary(parseFloat(e.target.value) || 0)}
-                min={0}
-                step={0.01}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="taxClass">Tax Class *</Label>
-              <Input
-                id="taxClass"
-                value={taxClass}
-                onChange={(e) => setTaxClass(e.target.value)}
-                placeholder="1, 2, etc."
-              />
-            </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="autoCalc"
-              checked={autoCalc}
-              onChange={(e) => setAutoCalc(e.target.checked)}
-              className="h-4 w-4"
-            />
-            <Label htmlFor="autoCalc" className="cursor-pointer">
-              Auto-calculate contributions and taxes
-            </Label>
-          </div>
-
-          {selectedEmployee && (
-            <div className="mt-4 p-4 bg-muted rounded-lg">
-              <h3 className="font-semibold mb-2">Employee Details</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Name:</span>{' '}
-                  <span className="font-medium">
-                    {selectedEmployee.firstName} {selectedEmployee.lastName}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Email:</span>{' '}
-                  <span className="font-medium">{selectedEmployee.email}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Matricule:</span>{' '}
-                  <span className="font-medium">{selectedEmployee.matricule || '-'}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Base Salary:</span>{' '}
-                  <span className="font-medium">
-                    {selectedCompany?.currency} {selectedEmployee.baseSalary.toLocaleString()}
-                  </span>
-                </div>
+          {selectedEmployee && selectedCompany && (
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+              <div>
+                <p className="text-xs text-muted-foreground">employee.matricule</p>
+                <p className="font-medium">{selectedEmployee.matricule || '1989 11 24 004 47'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">employee.class</p>
+                <p className="font-medium">{selectedEmployee.class || 'Empl.'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">employee.hire_date</p>
+                <p className="font-medium">
+                  {selectedEmployee.hireDate ? new Date(selectedEmployee.hireDate).toLocaleDateString('fr-LU') : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">employee.address</p>
+                <p className="font-medium">{selectedEmployee.address || '52, Grand-Rue'}</p>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Monthly Details Table */}
+      {/* Détail Mensuel Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Détail Mensuel - {year}</CardTitle>
+          <CardTitle>Détail Mensuel</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-24">Mois</TableHead>
-                  <TableHead className="w-24">Jours</TableHead>
-                  <TableHead className="w-20">Stat.</TableHead>
-                  <TableHead className="w-24">Classe</TableHead>
-                  <TableHead className="text-right">Rémun. Base</TableHead>
-                  <TableHead className="text-right">Brut Mensuel</TableHead>
-                  <TableHead className="text-right">Cotisable</TableHead>
-                  <TableHead className="text-right">Maladie</TableHead>
-                  <TableHead className="text-right">Pension</TableHead>
-                  <TableHead className="text-right">Déductions</TableHead>
-                  <TableHead className="text-right">Imposable</TableHead>
-                  <TableHead className="text-right">Impôts</TableHead>
-                  <TableHead className="text-right">CI-CO2</TableHead>
-                  <TableHead className="text-right">CIS</TableHead>
-                  <TableHead className="text-right">CISSM</TableHead>
-                  <TableHead className="text-right font-bold">Salaire Net</TableHead>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-bold">MOIS</TableHead>
+                  <TableHead className="font-bold">JOURS</TableHead>
+                  <TableHead className="font-bold">STAT.</TableHead>
+                  <TableHead className="font-bold">CLASSE</TableHead>
+                  <TableHead className="font-bold text-right">RÉMUN.<br/>BASE</TableHead>
+                  <TableHead className="font-bold text-right">BRUT<br/>MENSUEL</TableHead>
+                  <TableHead className="font-bold text-right">COTISABLE</TableHead>
+                  <TableHead className="font-bold text-right">MALADIE</TableHead>
+                  <TableHead className="font-bold text-right">PENSION</TableHead>
+                  <TableHead className="font-bold text-right">DÉDUCTIONS</TableHead>
+                  <TableHead className="font-bold text-right">IMPOSABLE</TableHead>
+                  <TableHead className="font-bold text-right">IMPÔTS</TableHead>
+                  <TableHead className="font-bold text-right">CI-CO2</TableHead>
+                  <TableHead className="font-bold text-right">CIS</TableHead>
+                  <TableHead className="font-bold text-right">CISS<br/>M</TableHead>
+                  <TableHead className="font-bold text-right">SALAIRE<br/>NET</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {monthsData.map((month, index) => (
-                  <TableRow key={month.monthNumber}>
-                    <TableCell className="font-medium">
-                      {month.monthName} {month.days}
-                    </TableCell>
+                  <TableRow key={month.monthNumber} className="border-b">
+                    <TableCell className="font-medium">{month.monthName} {month.days}</TableCell>
                     <TableCell>{month.daysImposable}</TableCell>
                     <TableCell>
                       <Input
                         value={month.status}
                         onChange={(e) => handleMonthValueChange(index, 'status', e.target.value)}
-                        className="h-8 w-20"
+                        className="h-8 w-20 text-sm"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
                         value={month.taxClass}
                         onChange={(e) => handleMonthValueChange(index, 'taxClass', e.target.value)}
-                        className="h-8 w-20"
+                        className="h-8 w-16 text-sm"
                       />
                     </TableCell>
                     <TableCell className="text-right">
@@ -471,27 +540,106 @@ export function CreateAnnualPayslip() {
                         type="number"
                         value={month.remunerationBase || ''}
                         onChange={(e) => handleMonthValueChange(index, 'remunerationBase', e.target.value)}
-                        className="h-8 w-28 text-right"
+                        className="h-8 w-32 text-right text-sm"
                         step="0.01"
-                        disabled={autoCalc}
                       />
                     </TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.grossMonthly)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.cotisable)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.maladie)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.pension)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.deductions)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.imposable)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.incomeTax)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.ciCo2)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.cis)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.cissm)}</TableCell>
-                    <TableCell className="text-right font-bold">{formatCurrency(month.netPay)}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.grossMonthly || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'grossMonthly', e.target.value)}
+                        className="h-8 w-32 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.cotisable || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'cotisable', e.target.value)}
+                        className="h-8 w-32 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.maladie || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'maladie', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.pension || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'pension', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.deductions || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'deductions', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.imposable || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'imposable', e.target.value)}
+                        className="h-8 w-32 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.incomeTax || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'incomeTax', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.ciCo2 || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'ciCo2', e.target.value)}
+                        className="h-8 w-24 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.cis || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'cis', e.target.value)}
+                        className="h-8 w-24 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.cissm || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'cissm', e.target.value)}
+                        className="h-8 w-24 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-sm bg-muted/30">{formatCurrency(month.netPay)}</TableCell>
                   </TableRow>
                 ))}
 
-                {/* Annual Total Row */}
-                <TableRow className="bg-muted/50 font-bold">
+                {/* Total Row */}
+                <TableRow className="bg-primary/10 font-bold">
                   <TableCell colSpan={4}>TOTAL ANNUEL</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.remunerationBase)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.grossMonthly)}</TableCell>
@@ -512,7 +660,7 @@ export function CreateAnnualPayslip() {
         </CardContent>
       </Card>
 
-      {/* Employer Contributions Table */}
+      {/* Cotisations Patronales */}
       <Card>
         <CardHeader>
           <CardTitle>Cotisations Patronales</CardTitle>
@@ -521,28 +669,60 @@ export function CreateAnnualPayslip() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-40">Mois</TableHead>
-                  <TableHead className="text-right">Maladie</TableHead>
-                  <TableHead className="text-right">Pension</TableHead>
-                  <TableHead className="text-right">Santé</TableHead>
-                  <TableHead className="text-right">Accident</TableHead>
-                  <TableHead className="text-right font-bold">Total Séc. Sociale</TableHead>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-bold">MOIS</TableHead>
+                  <TableHead className="font-bold text-right">MALADIE</TableHead>
+                  <TableHead className="font-bold text-right">PENSION</TableHead>
+                  <TableHead className="font-bold text-right">SANTÉ</TableHead>
+                  <TableHead className="font-bold text-right">ACCIDENT</TableHead>
+                  <TableHead className="font-bold text-right">TOTAL SÉC. SOCIALE</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monthsData.map((month) => (
-                  <TableRow key={month.monthNumber}>
+                {monthsData.map((month, index) => (
+                  <TableRow key={month.monthNumber} className="border-b">
                     <TableCell className="font-medium">{getMonthNameFr(month.monthNumber)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.employerMaladie)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.employerPension)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.employerSante)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.employerAccident)}</TableCell>
-                    <TableCell className="text-right font-bold">{formatCurrency(month.employerTotal)}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.employerMaladie || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'employerMaladie', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.employerPension || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'employerPension', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.employerSante || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'employerSante', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.employerAccident || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'employerAccident', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-bold bg-muted/30">{formatCurrency(month.employerTotal)}</TableCell>
                   </TableRow>
                 ))}
 
-                <TableRow className="bg-muted/50 font-bold">
+                <TableRow className="bg-primary/10 font-bold">
                   <TableCell>TOTAL ANNUEL</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.employerMaladie)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.employerPension)}</TableCell>
@@ -556,99 +736,97 @@ export function CreateAnnualPayslip() {
         </CardContent>
       </Card>
 
-      {/* Analytics Summary */}
+      {/* Récapitulation Annuelle */}
       <Card>
         <CardHeader>
-          <CardTitle>Récapitulation & Analytiques</CardTitle>
+          <CardTitle>Récapitulation Annuelle</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Salaires</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Brut Total:</span>
+                  <span className="font-bold">{formatCurrency(totals.grossMonthly)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Net Total:</span>
+                  <span className="font-bold text-green-600">{formatCurrency(totals.netPay)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Cotisations</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Employé:</span>
+                  <span className="font-bold">{formatCurrency(totals.employeeContribTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Employeur:</span>
+                  <span className="font-bold">{formatCurrency(totals.employerTotal)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="font-semibold text-lg">Autres</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Impôts:</span>
+                  <span className="font-bold">{formatCurrency(totals.incomeTax)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Heures Travaillées:</span>
+                  <span className="font-bold">{totals.normalHours}h</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-blue-50 border-blue-200">
+            <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-blue-600 font-medium">Salaire Brut Annuel</p>
-                  <p className="text-2xl font-bold text-blue-700 mt-2">
+                  <p className="text-sm text-blue-600 font-medium dark:text-blue-400">Salaire Brut Annuel</p>
+                  <p className="text-2xl font-bold text-blue-700 mt-2 dark:text-blue-300">
                     {formatCurrency(totals.grossMonthly)}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-green-50 border-green-200">
+            <Card className="bg-green-50 border-green-200 dark:bg-green-950">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-green-600 font-medium">Salaire Net Annuel</p>
-                  <p className="text-2xl font-bold text-green-700 mt-2">
+                  <p className="text-sm text-green-600 font-medium dark:text-green-400">Salaire Net Annuel</p>
+                  <p className="text-2xl font-bold text-green-700 mt-2 dark:text-green-300">
                     {formatCurrency(totals.netPay)}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-orange-50 border-orange-200">
+            <Card className="bg-orange-50 border-orange-200 dark:bg-orange-950">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-orange-600 font-medium">Cotisations Employé</p>
-                  <p className="text-2xl font-bold text-orange-700 mt-2">
-                    {formatCurrency(totals.maladie + totals.pension + totals.ciCo2 + totals.cis + totals.cissm + totals.deductions + totals.incomeTax)}
+                  <p className="text-sm text-orange-600 font-medium dark:text-orange-400">Total Cotisations</p>
+                  <p className="text-2xl font-bold text-orange-700 mt-2 dark:text-orange-300">
+                    {formatCurrency(totals.employeeContribTotal)}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-purple-50 border-purple-200">
+            <Card className="bg-purple-50 border-purple-200 dark:bg-purple-950">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-purple-600 font-medium">Cotisations Employeur</p>
-                  <p className="text-2xl font-bold text-purple-700 mt-2">
-                    {formatCurrency(totals.employerTotal)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-red-50 border-red-200">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-red-600 font-medium">Impôts Annuels</p>
-                  <p className="text-2xl font-bold text-red-700 mt-2">
+                  <p className="text-sm text-purple-600 font-medium dark:text-purple-400">Impôts Annuels</p>
+                  <p className="text-2xl font-bold text-purple-700 mt-2 dark:text-purple-300">
                     {formatCurrency(totals.incomeTax)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-indigo-50 border-indigo-200">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-indigo-600 font-medium">Heures Travaillées</p>
-                  <p className="text-2xl font-bold text-indigo-700 mt-2">
-                    {totals.normalHours}h
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-teal-50 border-teal-200">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-teal-600 font-medium">Coût Total Employeur</p>
-                  <p className="text-2xl font-bold text-teal-700 mt-2">
-                    {formatCurrency(totals.grossMonthly + totals.employerTotal)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-cyan-50 border-cyan-200">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <p className="text-sm text-cyan-600 font-medium">Taux Charges Sociales</p>
-                  <p className="text-2xl font-bold text-cyan-700 mt-2">
-                    {totals.grossMonthly > 0
-                      ? ((totals.employerTotal / totals.grossMonthly) * 100).toFixed(2) + '%'
-                      : '0%'
-                    }
                   </p>
                 </div>
               </CardContent>
