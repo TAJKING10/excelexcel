@@ -13,6 +13,7 @@ import { UserShell } from './components/layout/UserShell';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserAccessManagement } from './pages/admin/UserAccessManagement';
 import CreatePayslip from './pages/admin/CreatePayslip';
+import CreateAnnualPayslip from './pages/admin/CreateAnnualPayslip';
 import { Individuals as AdminIndividuals } from './pages/admin/Individuals';
 import { CompanyList } from './components/companies/CompanyList';
 import { CompanyDetail } from './pages/CompanyDetail';
@@ -73,6 +74,8 @@ function App() {
             <Route path="payslips" element={<PayslipList />} />
             <Route path="payslips/annual" element={<AnnualPayslipList />} />
             <Route path="payslips/create" element={<CreatePayslip />} />
+            <Route path="payslips/create-annual" element={<CreateAnnualPayslip />} />
+            <Route path="payslips/create-annual/:employeeId" element={<CreateAnnualPayslip />} />
             <Route path="payslips/explorer" element={<Explorer />} />
             <Route path="users" element={<UserAccessManagement />} />
             <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />

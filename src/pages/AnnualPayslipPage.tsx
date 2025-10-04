@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AnnualPayslipView } from '@/components/payslips/AnnualPayslipView';
 import { useDataStore } from '@/stores/data';
-import { Download, ArrowLeft } from 'lucide-react';
+import { Download, ArrowLeft, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -98,6 +98,11 @@ export default function AnnualPayslipPage() {
               ))}
             </SelectContent>
           </Select>
+
+          <Button variant="outline" onClick={() => navigate(`/admin/payslips/create-annual/${employeeId}`)}>
+            <Edit className="mr-2 h-4 w-4" />
+            {t('common.edit', 'Edit')}
+          </Button>
 
           <Button variant="outline" onClick={handleExportExcel}>
             <Download className="mr-2 h-4 w-4" />

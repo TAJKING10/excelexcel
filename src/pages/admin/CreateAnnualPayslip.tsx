@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDataStore } from '@/stores/data';
 import { useAuthStore } from '@/stores/auth';
@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ArrowLeft, Save } from 'lucide-react';
 import { calculatePayslip, formatCurrency, getMonthNameFr } from '@/lib/luxembourgPayroll';
 import { useToast } from '@/hooks/use-toast';
+import type { MonthlyPayslipData } from '@/types';
 
 interface MonthData {
   monthNumber: number;
@@ -32,15 +33,18 @@ interface MonthData {
   cis: number;
   cissm: number;
   netPay: number;
+  // Employer contributions
   employerMaladie: number;
   employerPension: number;
   employerSante: number;
   employerAccident: number;
   employerTotal: number;
+  // Working hours
   normalHours: number;
 }
 
-export function CreatePayslip() {
+export function CreateAnnualPayslip() {
+  const { employeeId } = useParams<{ employeeId?: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -48,8 +52,10 @@ export function CreatePayslip() {
   const { companies, employees, addPayslip } = useDataStore();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(employeeId || '');
   const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [baseSalary, setBaseSalary] = useState<number>(0);
+  const [taxClass, setTaxClass] = useState<string>('2');
   const [autoCalc, setAutoCalc] = useState<boolean>(true);
 
   // Initialize 12 months with zeros
@@ -82,6 +88,7 @@ export function CreatePayslip() {
     }))
   );
 
+  // Guard: only Super Admin can access
   useEffect(() => {
     if (user && user.role !== 'SUPER_ADMIN') {
       navigate('/');
@@ -98,10 +105,16 @@ export function CreatePayslip() {
 
   // Auto-fill from selected employee
   useEffect(() => {
-    if (selectedEmployee && autoCalc) {
-      const baseSalary = selectedEmployee.baseSalary;
-      const taxClass = String(selectedEmployee.taxClass || '2');
+    if (selectedEmployee) {
+      setBaseSalary(selectedEmployee.baseSalary);
+      setTaxClass(String(selectedEmployee.taxClass || '2'));
+      setSelectedCompanyId(selectedEmployee.companyId);
+    }
+  }, [selectedEmployee]);
 
+  // Auto-calculate when base salary or tax class changes
+  useEffect(() => {
+    if (autoCalc && baseSalary > 0) {
       const newMonthsData = monthsData.map((month) => {
         const calc = calculatePayslip({
           remunerationBase: baseSalary,
@@ -132,7 +145,7 @@ export function CreatePayslip() {
       });
       setMonthsData(newMonthsData);
     }
-  }, [selectedEmployee, autoCalc]);
+  }, [baseSalary, taxClass, autoCalc]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -156,7 +169,6 @@ export function CreatePayslip() {
         employerAccident: acc.employerAccident + month.employerAccident,
         employerTotal: acc.employerTotal + month.employerTotal,
         normalHours: acc.normalHours + month.normalHours,
-        employeeContribTotal: acc.employeeContribTotal + (month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax),
       }),
       {
         remunerationBase: 0,
@@ -177,48 +189,16 @@ export function CreatePayslip() {
         employerAccident: 0,
         employerTotal: 0,
         normalHours: 0,
-        employeeContribTotal: 0,
       }
     );
   }, [monthsData]);
 
   const handleMonthValueChange = (monthIndex: number, field: keyof MonthData, value: any) => {
     const newMonthsData = [...monthsData];
-    const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
-
     newMonthsData[monthIndex] = {
       ...newMonthsData[monthIndex],
-      [field]: numValue,
+      [field]: typeof value === 'string' ? parseFloat(value) || 0 : value,
     };
-
-    // Recalculate if auto-calc is on and remuneration base changes
-    if (autoCalc && field === 'remunerationBase' && numValue > 0) {
-      const calc = calculatePayslip({
-        remunerationBase: numValue,
-        taxClass: newMonthsData[monthIndex].taxClass,
-      });
-
-      newMonthsData[monthIndex] = {
-        ...newMonthsData[monthIndex],
-        grossMonthly: calc.earnings.grossMonthly,
-        cotisable: calc.earnings.cotisable,
-        maladie: calc.employeeContrib.maladie,
-        pension: calc.employeeContrib.pension,
-        ciCo2: calc.employeeContrib.ciCo2,
-        deductions: calc.employeeContrib.deductions,
-        imposable: calc.earnings.imposable,
-        incomeTax: calc.employeeContrib.incomeTax,
-        cis: calc.employeeContrib.cis,
-        cissm: calc.employeeContrib.cissm,
-        netPay: calc.netPay,
-        employerMaladie: calc.employerContrib.maladie,
-        employerPension: calc.employerContrib.pension,
-        employerSante: calc.employerContrib.sante,
-        employerAccident: calc.employerContrib.accident,
-        employerTotal: calc.employerContrib.socialSecurityTotal,
-      };
-    }
-
     setMonthsData(newMonthsData);
   };
 
@@ -236,68 +216,65 @@ export function CreatePayslip() {
 
     // Create individual monthly payslips
     monthsData.forEach((month) => {
-      if (month.remunerationBase > 0) {
-        const payslip = {
-          employeeId: selectedEmployeeId,
-          companyId: selectedCompanyId,
-          period: { month: month.monthNumber, year },
-          employee: {
-            id: selectedEmployee.id,
-            firstName: selectedEmployee.firstName,
-            lastName: selectedEmployee.lastName,
-            email: selectedEmployee.email,
-            class: selectedEmployee.class,
-            hireDate: selectedEmployee.hireDate,
-            terminationDate: selectedEmployee.terminationDate,
-          },
-          company: {
-            id: selectedCompany.id,
-            name: selectedCompany.name,
-            country: selectedCompany.country,
-            currency: selectedCompany.currency,
-          },
-          earnings: {
-            remunerationBase: month.remunerationBase,
-            grossMonthly: month.grossMonthly,
-            cotisable: month.cotisable,
-            imposable: month.imposable,
-          },
-          employeeContrib: {
-            maladie: month.maladie,
-            pension: month.pension,
-            ciCo2: month.ciCo2,
-            cis: month.cis,
-            cissm: month.cissm,
-            deductions: month.deductions,
-            incomeTax: month.incomeTax,
-            total: month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax,
-          },
-          employerContrib: {
-            maladie: month.employerMaladie,
-            pension: month.employerPension,
-            sante: month.employerSante,
-            accident: month.employerAccident,
-            socialSecurityTotal: month.employerTotal,
-          },
-          netPay: month.netPay,
-          ytd: {
-            gross: 0,
-            net: 0,
-            employeeContribTotal: 0,
-            employerContribTotal: 0,
-            taxes: 0,
-          },
-          lines: [],
-        };
+      const payslip = {
+        employeeId: selectedEmployeeId,
+        companyId: selectedCompanyId,
+        period: { month: month.monthNumber, year },
+        employee: {
+          id: selectedEmployee.id,
+          firstName: selectedEmployee.firstName,
+          lastName: selectedEmployee.lastName,
+          email: selectedEmployee.email,
+          class: selectedEmployee.class,
+          hireDate: selectedEmployee.hireDate,
+          terminationDate: selectedEmployee.terminationDate,
+        },
+        company: {
+          id: selectedCompany.id,
+          name: selectedCompany.name,
+          country: selectedCompany.country,
+          currency: selectedCompany.currency,
+        },
+        earnings: {
+          remunerationBase: month.remunerationBase,
+          grossMonthly: month.grossMonthly,
+          cotisable: month.cotisable,
+          imposable: month.imposable,
+        },
+        employeeContrib: {
+          maladie: month.maladie,
+          pension: month.pension,
+          ciCo2: month.ciCo2,
+          cis: month.cis,
+          cissm: month.cissm,
+          deductions: month.deductions,
+          incomeTax: month.incomeTax,
+          total: month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax,
+        },
+        employerContrib: {
+          maladie: month.employerMaladie,
+          pension: month.employerPension,
+          sante: month.employerSante,
+          accident: month.employerAccident,
+          socialSecurityTotal: month.employerTotal,
+        },
+        netPay: month.netPay,
+        ytd: {
+          gross: 0,
+          net: 0,
+          employeeContribTotal: 0,
+          employerContribTotal: 0,
+          taxes: 0,
+        },
+        lines: [],
+      };
 
-        addPayslip(payslip);
-      }
+      addPayslip(payslip);
     });
 
-    const count = monthsData.filter(m => m.remunerationBase > 0).length;
     toast({
       title: 'Success',
-      description: `${count} payslip(s) created successfully`,
+      description: `${monthsData.length} payslips created successfully`,
     });
 
     navigate('/admin/payslips');
@@ -312,34 +289,23 @@ export function CreatePayslip() {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">FICHE DE PAIE ANNUELLE</h1>
-            <p className="text-muted-foreground">Create annual payslips - All 12 months</p>
+            <h1 className="text-3xl font-bold text-foreground">Créer Fiches de Paie Annuelles</h1>
+            <p className="text-muted-foreground">Create annual payslips for an employee</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <label className="flex items-center gap-2 text-sm px-3 py-2 bg-muted rounded-md">
-            <input
-              type="checkbox"
-              checked={autoCalc}
-              onChange={(e) => setAutoCalc(e.target.checked)}
-              className="h-4 w-4"
-            />
-            Auto-calculate
-          </label>
-          <Button onClick={handleSave} className="bg-primary text-primary-foreground">
-            <Save size={16} className="mr-2" />
-            Save Payslips
-          </Button>
-        </div>
+        <Button onClick={handleSave} className="bg-primary text-primary-foreground">
+          <Save size={16} className="mr-2" />
+          Save All Payslips
+        </Button>
       </div>
 
       {/* Selection Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Livre de Paie {year}</CardTitle>
+          <CardTitle>Employee & Configuration</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label htmlFor="company">Company *</Label>
               <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
@@ -383,78 +349,121 @@ export function CreatePayslip() {
                 max={2050}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="baseSalary">Base Salary *</Label>
+              <Input
+                id="baseSalary"
+                type="number"
+                value={baseSalary || ''}
+                onChange={(e) => setBaseSalary(parseFloat(e.target.value) || 0)}
+                min={0}
+                step={0.01}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="taxClass">Tax Class *</Label>
+              <Input
+                id="taxClass"
+                value={taxClass}
+                onChange={(e) => setTaxClass(e.target.value)}
+                placeholder="1, 2, etc."
+              />
+            </div>
           </div>
 
-          {selectedEmployee && selectedCompany && (
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-xs text-muted-foreground">employee.matricule</p>
-                <p className="font-medium">{selectedEmployee.matricule || '1989 11 24 004 47'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">employee.class</p>
-                <p className="font-medium">{selectedEmployee.class || 'Empl.'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">employee.hire_date</p>
-                <p className="font-medium">
-                  {selectedEmployee.hireDate ? new Date(selectedEmployee.hireDate).toLocaleDateString('fr-LU') : '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">employee.address</p>
-                <p className="font-medium">{selectedEmployee.address || '52, Grand-Rue'}</p>
+          <div className="mt-4 flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="autoCalc"
+              checked={autoCalc}
+              onChange={(e) => setAutoCalc(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <Label htmlFor="autoCalc" className="cursor-pointer">
+              Auto-calculate contributions and taxes
+            </Label>
+          </div>
+
+          {selectedEmployee && (
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <h3 className="font-semibold mb-2">Employee Details</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Name:</span>{' '}
+                  <span className="font-medium">
+                    {selectedEmployee.firstName} {selectedEmployee.lastName}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Email:</span>{' '}
+                  <span className="font-medium">{selectedEmployee.email}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Matricule:</span>{' '}
+                  <span className="font-medium">{selectedEmployee.matricule || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Base Salary:</span>{' '}
+                  <span className="font-medium">
+                    {selectedCompany?.currency} {selectedEmployee.baseSalary.toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Détail Mensuel Table */}
+      {/* Monthly Details Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Détail Mensuel</CardTitle>
+          <CardTitle>Détail Mensuel - {year}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="font-bold">MOIS</TableHead>
-                  <TableHead className="font-bold">JOURS</TableHead>
-                  <TableHead className="font-bold">STAT.</TableHead>
-                  <TableHead className="font-bold">CLASSE</TableHead>
-                  <TableHead className="font-bold text-right">RÉMUN.<br/>BASE</TableHead>
-                  <TableHead className="font-bold text-right">BRUT<br/>MENSUEL</TableHead>
-                  <TableHead className="font-bold text-right">COTISABLE</TableHead>
-                  <TableHead className="font-bold text-right">MALADIE</TableHead>
-                  <TableHead className="font-bold text-right">PENSION</TableHead>
-                  <TableHead className="font-bold text-right">DÉDUCTIONS</TableHead>
-                  <TableHead className="font-bold text-right">IMPOSABLE</TableHead>
-                  <TableHead className="font-bold text-right">IMPÔTS</TableHead>
-                  <TableHead className="font-bold text-right">CI-CO2</TableHead>
-                  <TableHead className="font-bold text-right">CIS</TableHead>
-                  <TableHead className="font-bold text-right">CISS<br/>M</TableHead>
-                  <TableHead className="font-bold text-right">SALAIRE<br/>NET</TableHead>
+                <TableRow>
+                  <TableHead className="w-24">Mois</TableHead>
+                  <TableHead className="w-24">Jours</TableHead>
+                  <TableHead className="w-20">Stat.</TableHead>
+                  <TableHead className="w-24">Classe</TableHead>
+                  <TableHead className="text-right">Rémun. Base</TableHead>
+                  <TableHead className="text-right">Brut Mensuel</TableHead>
+                  <TableHead className="text-right">Cotisable</TableHead>
+                  <TableHead className="text-right">Maladie</TableHead>
+                  <TableHead className="text-right">Pension</TableHead>
+                  <TableHead className="text-right">Déductions</TableHead>
+                  <TableHead className="text-right">Imposable</TableHead>
+                  <TableHead className="text-right">Impôts</TableHead>
+                  <TableHead className="text-right">CI-CO2</TableHead>
+                  <TableHead className="text-right">CIS</TableHead>
+                  <TableHead className="text-right">CISSM</TableHead>
+                  <TableHead className="text-right font-bold">Salaire Net</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {monthsData.map((month, index) => (
-                  <TableRow key={month.monthNumber} className="border-b">
-                    <TableCell className="font-medium">{month.monthName} {month.days}</TableCell>
+                  <TableRow key={month.monthNumber}>
+                    <TableCell className="font-medium">
+                      {month.monthName} {month.days}
+                    </TableCell>
                     <TableCell>{month.daysImposable}</TableCell>
                     <TableCell>
                       <Input
                         value={month.status}
                         onChange={(e) => handleMonthValueChange(index, 'status', e.target.value)}
-                        className="h-8 w-20 text-sm"
+                        className="h-8 w-20"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
                         value={month.taxClass}
                         onChange={(e) => handleMonthValueChange(index, 'taxClass', e.target.value)}
-                        className="h-8 w-16 text-sm"
+                        className="h-8 w-20"
                       />
                     </TableCell>
                     <TableCell className="text-right">
@@ -462,26 +471,27 @@ export function CreatePayslip() {
                         type="number"
                         value={month.remunerationBase || ''}
                         onChange={(e) => handleMonthValueChange(index, 'remunerationBase', e.target.value)}
-                        className="h-8 w-32 text-right text-sm"
+                        className="h-8 w-28 text-right"
                         step="0.01"
+                        disabled={autoCalc}
                       />
                     </TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.grossMonthly)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.cotisable)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.maladie)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.pension)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.deductions)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.imposable)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.incomeTax)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.ciCo2)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.cis)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.cissm)}</TableCell>
-                    <TableCell className="text-right font-bold text-sm">{formatCurrency(month.netPay)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.grossMonthly)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.cotisable)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.maladie)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.pension)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.deductions)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.imposable)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.incomeTax)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.ciCo2)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.cis)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.cissm)}</TableCell>
+                    <TableCell className="text-right font-bold">{formatCurrency(month.netPay)}</TableCell>
                   </TableRow>
                 ))}
 
-                {/* Total Row */}
-                <TableRow className="bg-primary/10 font-bold">
+                {/* Annual Total Row */}
+                <TableRow className="bg-muted/50 font-bold">
                   <TableCell colSpan={4}>TOTAL ANNUEL</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.remunerationBase)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.grossMonthly)}</TableCell>
@@ -502,7 +512,7 @@ export function CreatePayslip() {
         </CardContent>
       </Card>
 
-      {/* Cotisations Patronales */}
+      {/* Employer Contributions Table */}
       <Card>
         <CardHeader>
           <CardTitle>Cotisations Patronales</CardTitle>
@@ -511,18 +521,18 @@ export function CreatePayslip() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="font-bold">MOIS</TableHead>
-                  <TableHead className="font-bold text-right">MALADIE</TableHead>
-                  <TableHead className="font-bold text-right">PENSION</TableHead>
-                  <TableHead className="font-bold text-right">SANTÉ</TableHead>
-                  <TableHead className="font-bold text-right">ACCIDENT</TableHead>
-                  <TableHead className="font-bold text-right">TOTAL SÉC. SOCIALE</TableHead>
+                <TableRow>
+                  <TableHead className="w-40">Mois</TableHead>
+                  <TableHead className="text-right">Maladie</TableHead>
+                  <TableHead className="text-right">Pension</TableHead>
+                  <TableHead className="text-right">Santé</TableHead>
+                  <TableHead className="text-right">Accident</TableHead>
+                  <TableHead className="text-right font-bold">Total Séc. Sociale</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {monthsData.map((month) => (
-                  <TableRow key={month.monthNumber} className="border-b">
+                  <TableRow key={month.monthNumber}>
                     <TableCell className="font-medium">{getMonthNameFr(month.monthNumber)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(month.employerMaladie)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(month.employerPension)}</TableCell>
@@ -532,7 +542,7 @@ export function CreatePayslip() {
                   </TableRow>
                 ))}
 
-                <TableRow className="bg-primary/10 font-bold">
+                <TableRow className="bg-muted/50 font-bold">
                   <TableCell>TOTAL ANNUEL</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.employerMaladie)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.employerPension)}</TableCell>
@@ -546,97 +556,99 @@ export function CreatePayslip() {
         </CardContent>
       </Card>
 
-      {/* Récapitulation Annuelle */}
+      {/* Analytics Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Récapitulation Annuelle</CardTitle>
+          <CardTitle>Récapitulation & Analytiques</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Salaires</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Brut Total:</span>
-                  <span className="font-bold">{formatCurrency(totals.grossMonthly)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Net Total:</span>
-                  <span className="font-bold text-green-600">{formatCurrency(totals.netPay)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Cotisations</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employé:</span>
-                  <span className="font-bold">{formatCurrency(totals.employeeContribTotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employeur:</span>
-                  <span className="font-bold">{formatCurrency(totals.employerTotal)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Autres</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Impôts:</span>
-                  <span className="font-bold">{formatCurrency(totals.incomeTax)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Heures Travaillées:</span>
-                  <span className="font-bold">{totals.normalHours}h</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950">
+            <Card className="bg-blue-50 border-blue-200">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-blue-600 font-medium dark:text-blue-400">Salaire Brut Annuel</p>
-                  <p className="text-2xl font-bold text-blue-700 mt-2 dark:text-blue-300">
+                  <p className="text-sm text-blue-600 font-medium">Salaire Brut Annuel</p>
+                  <p className="text-2xl font-bold text-blue-700 mt-2">
                     {formatCurrency(totals.grossMonthly)}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-green-50 border-green-200 dark:bg-green-950">
+            <Card className="bg-green-50 border-green-200">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-green-600 font-medium dark:text-green-400">Salaire Net Annuel</p>
-                  <p className="text-2xl font-bold text-green-700 mt-2 dark:text-green-300">
+                  <p className="text-sm text-green-600 font-medium">Salaire Net Annuel</p>
+                  <p className="text-2xl font-bold text-green-700 mt-2">
                     {formatCurrency(totals.netPay)}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-orange-50 border-orange-200 dark:bg-orange-950">
+            <Card className="bg-orange-50 border-orange-200">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-orange-600 font-medium dark:text-orange-400">Total Cotisations</p>
-                  <p className="text-2xl font-bold text-orange-700 mt-2 dark:text-orange-300">
-                    {formatCurrency(totals.employeeContribTotal)}
+                  <p className="text-sm text-orange-600 font-medium">Cotisations Employé</p>
+                  <p className="text-2xl font-bold text-orange-700 mt-2">
+                    {formatCurrency(totals.maladie + totals.pension + totals.ciCo2 + totals.cis + totals.cissm + totals.deductions + totals.incomeTax)}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-purple-50 border-purple-200 dark:bg-purple-950">
+            <Card className="bg-purple-50 border-purple-200">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-purple-600 font-medium dark:text-purple-400">Impôts Annuels</p>
-                  <p className="text-2xl font-bold text-purple-700 mt-2 dark:text-purple-300">
+                  <p className="text-sm text-purple-600 font-medium">Cotisations Employeur</p>
+                  <p className="text-2xl font-bold text-purple-700 mt-2">
+                    {formatCurrency(totals.employerTotal)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-red-50 border-red-200">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-red-600 font-medium">Impôts Annuels</p>
+                  <p className="text-2xl font-bold text-red-700 mt-2">
                     {formatCurrency(totals.incomeTax)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-indigo-50 border-indigo-200">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-indigo-600 font-medium">Heures Travaillées</p>
+                  <p className="text-2xl font-bold text-indigo-700 mt-2">
+                    {totals.normalHours}h
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-teal-50 border-teal-200">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-teal-600 font-medium">Coût Total Employeur</p>
+                  <p className="text-2xl font-bold text-teal-700 mt-2">
+                    {formatCurrency(totals.grossMonthly + totals.employerTotal)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-cyan-50 border-cyan-200">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-sm text-cyan-600 font-medium">Taux Charges Sociales</p>
+                  <p className="text-2xl font-bold text-cyan-700 mt-2">
+                    {totals.grossMonthly > 0
+                      ? ((totals.employerTotal / totals.grossMonthly) * 100).toFixed(2) + '%'
+                      : '0%'
+                    }
                   </p>
                 </div>
               </CardContent>
@@ -648,4 +660,4 @@ export function CreatePayslip() {
   );
 }
 
-export default CreatePayslip;
+export default CreateAnnualPayslip;
