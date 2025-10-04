@@ -217,6 +217,27 @@ export function CreatePayslip() {
         employerAccident: calc.employerContrib.accident,
         employerTotal: calc.employerContrib.socialSecurityTotal,
       };
+    } else {
+      // Always recalculate Net Pay and Employer Total based on current values
+      const month = newMonthsData[monthIndex];
+
+      // Net Pay = Gross - (Maladie + Pension + CI-CO2 + CIS + CISSM + Deductions + IncomeTax)
+      month.netPay = month.grossMonthly - (
+        month.maladie +
+        month.pension +
+        month.ciCo2 +
+        month.cis +
+        month.cissm +
+        month.deductions +
+        month.incomeTax
+      );
+
+      // Employer Total = Maladie + Pension + Santé + Accident
+      month.employerTotal =
+        month.employerMaladie +
+        month.employerPension +
+        month.employerSante +
+        month.employerAccident;
     }
 
     setMonthsData(newMonthsData);
@@ -466,17 +487,97 @@ export function CreatePayslip() {
                         step="0.01"
                       />
                     </TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.grossMonthly)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.cotisable)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.maladie)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.pension)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.deductions)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.imposable)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.incomeTax)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.ciCo2)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.cis)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(month.cissm)}</TableCell>
-                    <TableCell className="text-right font-bold text-sm">{formatCurrency(month.netPay)}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.grossMonthly || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'grossMonthly', e.target.value)}
+                        className="h-8 w-32 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.cotisable || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'cotisable', e.target.value)}
+                        className="h-8 w-32 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.maladie || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'maladie', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.pension || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'pension', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.deductions || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'deductions', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.imposable || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'imposable', e.target.value)}
+                        className="h-8 w-32 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.incomeTax || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'incomeTax', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.ciCo2 || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'ciCo2', e.target.value)}
+                        className="h-8 w-24 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.cis || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'cis', e.target.value)}
+                        className="h-8 w-24 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.cissm || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'cissm', e.target.value)}
+                        className="h-8 w-24 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-sm bg-muted/30">{formatCurrency(month.netPay)}</TableCell>
                   </TableRow>
                 ))}
 
@@ -521,14 +622,46 @@ export function CreatePayslip() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monthsData.map((month) => (
+                {monthsData.map((month, index) => (
                   <TableRow key={month.monthNumber} className="border-b">
                     <TableCell className="font-medium">{getMonthNameFr(month.monthNumber)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.employerMaladie)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.employerPension)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.employerSante)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(month.employerAccident)}</TableCell>
-                    <TableCell className="text-right font-bold">{formatCurrency(month.employerTotal)}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.employerMaladie || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'employerMaladie', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.employerPension || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'employerPension', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.employerSante || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'employerSante', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        type="number"
+                        value={month.employerAccident || ''}
+                        onChange={(e) => handleMonthValueChange(index, 'employerAccident', e.target.value)}
+                        className="h-8 w-28 text-right text-sm"
+                        step="0.01"
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-bold bg-muted/30">{formatCurrency(month.employerTotal)}</TableCell>
                   </TableRow>
                 ))}
 
