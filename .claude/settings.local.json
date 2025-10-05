@@ -15,7 +15,9 @@
       "Bash(pip install:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp:*)"
     ],
     "deny": [],
     "ask": []
