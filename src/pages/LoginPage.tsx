@@ -26,6 +26,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(
+    (localStorage.getItem('remember_me') ?? '1') === '1'
+  );
 
   // Redirect if already logged in
   useEffect(() => {
@@ -40,6 +43,10 @@ export default function LoginPage() {
     setError('');
 
     try {
+      // Save the remember me preference BEFORE login
+      // This ensures the Supabase client uses the correct storage on next page load
+      localStorage.setItem('remember_me', rememberMe ? '1' : '0');
+
       let email = usernameOrEmail;
 
       // If input doesn't contain @, treat it as username and lookup email
@@ -66,6 +73,9 @@ export default function LoginPage() {
 
       if (signInError) {
         setError(t('auth.invalidCredentials'));
+      } else {
+        // Reload the page to reinitialize Supabase client with the correct storage
+        window.location.reload();
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -156,6 +166,21 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="remember"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary dark:bg-gray-700"
+                />
+                <Label
+                  htmlFor="remember"
+                  className="text-sm font-normal cursor-pointer dark:text-gray-300"
+                >
+                  Remember me on this device
+                </Label>
               </div>
               {error && (
                 <Alert variant="destructive">

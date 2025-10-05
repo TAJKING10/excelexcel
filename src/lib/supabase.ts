@@ -10,20 +10,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
+// Check if user wants to be remembered (default to true for better UX)
+const rememberMe = (localStorage.getItem('remember_me') ?? '1') === '1';
+console.log('🔐 Remember me:', rememberMe);
+
+// Use localStorage if remembered, sessionStorage if not
+const baseStorage = rememberMe ? window.localStorage : window.sessionStorage;
+
 // Create a custom storage implementation that logs every operation
 const customStorage = {
   getItem: (key: string) => {
-    const value = window.localStorage.getItem(key);
-    console.log('📥 [Storage] GET:', key, 'exists:', !!value);
+    const value = baseStorage.getItem(key);
+    console.log('📥 [Storage] GET:', key, 'exists:', !!value, 'storage:', rememberMe ? 'localStorage' : 'sessionStorage');
     return value;
   },
   setItem: (key: string, value: string) => {
-    console.log('💾 [Storage] SET:', key, 'length:', value.length);
-    window.localStorage.setItem(key, value);
+    console.log('💾 [Storage] SET:', key, 'length:', value.length, 'storage:', rememberMe ? 'localStorage' : 'sessionStorage');
+    baseStorage.setItem(key, value);
   },
   removeItem: (key: string) => {
-    console.log('🗑️ [Storage] REMOVE:', key);
-    window.localStorage.removeItem(key);
+    console.log('🗑️ [Storage] REMOVE:', key, 'storage:', rememberMe ? 'localStorage' : 'sessionStorage');
+    baseStorage.removeItem(key);
   }
 };
 
@@ -36,18 +43,28 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Debug: Check if localStorage is working and if session exists
+// Debug: Check if storage is working and if session exists
 console.log('LocalStorage working:', !!window.localStorage);
-console.log('Stored session keys:', Object.keys(localStorage).filter(k => k.includes('supabase')));
+console.log('SessionStorage working:', !!window.sessionStorage);
 
 // Check what's in storage immediately
 const checkStorage = () => {
-  const keys = Object.keys(localStorage).filter(k => k.includes('supabase'));
-  console.log('📦 Total Supabase keys in storage:', keys.length);
-  keys.forEach(key => {
-    const value = localStorage.getItem(key);
-    console.log(`Storage [${key}]:`, value ? value.substring(0, 100) + '...' : 'null');
-  });
+  const localKeys = Object.keys(localStorage).filter(k => k.includes('supabase'));
+  const sessionKeys = Object.keys(sessionStorage).filter(k => k.includes('supabase'));
+  console.log('📦 Total Supabase keys in localStorage:', localKeys.length);
+  console.log('📦 Total Supabase keys in sessionStorage:', sessionKeys.length);
+
+  if (rememberMe) {
+    localKeys.forEach(key => {
+      const value = localStorage.getItem(key);
+      console.log(`Storage [${key}]:`, value ? value.substring(0, 100) + '...' : 'null');
+    });
+  } else {
+    sessionKeys.forEach(key => {
+      const value = sessionStorage.getItem(key);
+      console.log(`Storage [${key}]:`, value ? value.substring(0, 100) + '...' : 'null');
+    });
+  }
 };
 
 checkStorage();

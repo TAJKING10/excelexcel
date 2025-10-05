@@ -53,6 +53,18 @@ function AppRoutes() {
       {/* Auth routes - always available */}
       <Route path="/login" element={<LoginPage />} />
 
+      {/* Root redirect - redirect based on role */}
+      <Route
+        path="/"
+        element={
+          user ? (
+            <Navigate to={defaultRoute} replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
       {/* SUPER_ADMIN Routes */}
       <Route
         path="/admin/*"
@@ -84,14 +96,14 @@ function AppRoutes() {
 
       {/* EMPLOYEE Routes */}
       <Route
-        path="/"
+        path="/employee/*"
         element={
           <ProtectedRoute requiredRole="EMPLOYEE">
             <UserShell />
           </ProtectedRoute>
         }
       >
-        <Route index element={<EmployeeDashboard />} />
+        <Route index element={<Navigate to="/employee/dashboard" replace />} />
         <Route path="dashboard" element={<EmployeeDashboard />} />
         <Route path="companies/:companyId" element={<CompanyDetail />} />
         <Route path="individuals/:individualId" element={<IndividualDetail />} />

@@ -59,8 +59,8 @@ export function getDefaultRoute(role: Role): string {
     case 'SUPER_ADMIN':
       return '/admin/dashboard';
     case 'EMPLOYEE':
-      return '/dashboard';
+      return '/employee/dashboard';
     default:
-      return '/dashboard';
+      return '/employee/dashboard';
   }
 }
