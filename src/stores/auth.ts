@@ -87,10 +87,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Profile fetch error:', profileError);
+        set({ isLoading: false, isAuthenticated: false });
+        return;
+      }
+
+      if (!profile) {
+        console.error('Profile not found for user:', userId);
         set({ isLoading: false, isAuthenticated: false });
         return;
       }
@@ -102,7 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .from('user_access')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (accessError) {
         console.error('Access fetch error:', accessError);

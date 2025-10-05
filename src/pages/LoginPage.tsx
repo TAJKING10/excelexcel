@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useThemeStore } from '@/stores/theme';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,31 +19,76 @@ import {
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
-  const { login } = useAuthStore();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useThemeStore();
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate(user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : '/dashboard', { replace: true });
+    }
+  }, [loading, user, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    console.log('LoginPage: Attempting login with:', usernameOrEmail);
-    const success = await login(usernameOrEmail, password);
-    console.log('LoginPage: Login result:', success);
+    try {
+      let email = usernameOrEmail;
 
-    if (!success) {
+      // If input doesn't contain @, treat it as username and lookup email
+      if (!usernameOrEmail.includes('@')) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', usernameOrEmail)
+          .maybeSingle();
+
+        if (profileError || !profile) {
+          setError(t('auth.invalidCredentials'));
+          setIsLoading(false);
+          return;
+        }
+
+        email = profile.email;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(t('auth.invalidCredentials'));
+      }
+    } catch (err) {
+      console.error('Login error:', err);
       setError(t('auth.invalidCredentials'));
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
