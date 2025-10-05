@@ -8,6 +8,11 @@ export interface UserAccess {
   canEditPayslips: boolean;
   canDeletePayslips: boolean;
   canViewAnalytics: boolean;
+  hasAllCompaniesAccess?: boolean; // Access to all companies (current and future)
+  hasAllIndividualsAccess?: boolean; // Access to all individuals (current and future)
+  canCreateCompanies?: boolean; // Can create new companies
+  canCreateIndividuals?: boolean; // Can create new individuals
+  canCreateEmployees?: boolean; // Can create employees inside companies
 }
 
 export interface User {
@@ -17,9 +22,28 @@ export interface User {
   firstName: string;
   lastName: string;
   role: Role;
+  password?: string; // Hashed password for authentication
   // Company Admins are associated with a single company
   companyId?: string;
   access?: UserAccess; // Access control for employees (managed by super admin)
+  isActive?: boolean; // Can be disabled by super admin
+  createdAt?: string;
+  createdBy?: string; // Super admin who created this user
+  lastLogin?: string;
+}
+
+// Activity Log for tracking user actions
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  username: string;
+  action: string; // e.g., "created_payslip", "edited_employee", "viewed_company"
+  entityType: 'payslip' | 'employee' | 'company' | 'individual' | 'user' | 'other';
+  entityId?: string;
+  entityName?: string;
+  details?: string;
+  timestamp: string;
+  ipAddress?: string;
 }
 
 // Company Types

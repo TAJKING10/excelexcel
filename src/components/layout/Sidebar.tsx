@@ -12,6 +12,7 @@ import {
   FileText,
   Settings,
   LogOut,
+  Activity,
   ChevronLeft,
   ChevronRight,
   UserCircle,
@@ -108,6 +109,22 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Bottom Actions */}
       <div className="p-3 space-y-1 border-t border-[#eff6ff] dark:border-[#1e293b]">
+        {user?.role === 'SUPER_ADMIN' && (
+          <Link to="/activity-log">
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full justify-start h-11 text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] transition-advensys font-medium dark:text-[#94a3b8] dark:hover:text-[#60a5fa] dark:hover:bg-[#1e293b]",
+                location.pathname.includes('/activity-log') && "bg-[#eff6ff] text-[#003ABD] dark:bg-[#1e293b] dark:text-[#60a5fa]",
+                collapsed ? "px-2 justify-center" : "px-4"
+              )}
+            >
+              <Activity size={20} className="shrink-0" />
+              {!collapsed && <span className="ml-3">Activity Log</span>}
+            </Button>
+          </Link>
+        )}
+
         <Link to="/settings">
           <Button
             variant="ghost"

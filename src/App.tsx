@@ -12,6 +12,7 @@ import { UserShell } from './components/layout/UserShell';
 // Pages - Admin
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserAccessManagement } from './pages/admin/UserAccessManagement';
+import { ActivityLogViewer } from './pages/admin/ActivityLogViewer';
 import CreatePayslip from './pages/admin/CreatePayslip';
 import CreateAnnualPayslip from './pages/admin/CreateAnnualPayslip';
 import { Individuals as AdminIndividuals } from './pages/admin/Individuals';
@@ -79,6 +80,7 @@ function App() {
             <Route path="payslips/create-annual/:employeeId" element={<CreateAnnualPayslip />} />
             <Route path="payslips/explorer" element={<Explorer />} />
             <Route path="users" element={<UserAccessManagement />} />
+            <Route path="activity-log" element={<ActivityLogViewer />} />
             <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
           </Route>
         )}

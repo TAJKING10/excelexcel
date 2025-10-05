@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis, PayslipLine } from '@/types';
+import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis, PayslipLine, ActivityLog } from '@/types';
 import { generateAnnualPayslip } from '@/lib/luxembourgPayroll';
 
 interface DataState {
@@ -9,6 +9,7 @@ interface DataState {
   annualPayslips: AnnualPayslip[];
   users: User[];
   individuals: Individual[];
+  activityLogs: ActivityLog[];
   payrollTemplates?: Record<string, PayslipLine[]>;
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
   updateCompany: (id: string, company: Partial<Company>) => void;
@@ -28,6 +29,8 @@ interface DataState {
   updateUser: (id: string, user: Partial<User>) => void;
   updateUserAccess: (userId: string, access: UserAccess) => void;
   deleteUser: (id: string) => void;
+  logActivity: (log: Omit<ActivityLog, 'id' | 'timestamp'>) => void;
+  getActivityLogs: (filters?: { userId?: string; entityType?: string; limit?: number }) => ActivityLog[];
   getCompanyAnalytics: (companyId: string) => CompanyAnalytics;
   getAllAnalytics: () => {
     totalCompanies: number;
@@ -358,6 +361,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   annualPayslips: [],
   users: [],
   individuals: mockIndividuals,
+  activityLogs: [],
   payrollTemplates: {},
 
   addCompany: (company) =>
@@ -466,6 +470,39 @@ export const useDataStore = create<DataState>((set, get) => ({
     set((state) => ({
       users: state.users.filter((u) => u.id !== id),
     })),
+
+  logActivity: (log) =>
+    set((state) => ({
+      activityLogs: [
+        ...state.activityLogs,
+        {
+          ...log,
+          id: `log-${Date.now()}-${Math.random()}`,
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    })),
+
+  getActivityLogs: (filters) => {
+    const state = get();
+    let logs = [...state.activityLogs].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    if (filters?.userId) {
+      logs = logs.filter((l) => l.userId === filters.userId);
+    }
+
+    if (filters?.entityType) {
+      logs = logs.filter((l) => l.entityType === filters.entityType);
+    }
+
+    if (filters?.limit) {
+      logs = logs.slice(0, filters.limit);
+    }
+
+    return logs;
+  },
 
   getCompanyAnalytics: (companyId: string): CompanyAnalytics => {
     const state = get();
