@@ -487,5 +487,26 @@
     "allEmployees": "Tous les employés",
     "netMin": "Net min",
     "netMax": "Net max"
+  },
+  "payroll": {
+    "noPayslipsFor": "Aucune fiche de paie pour",
+    "monthlySummary": "Récapitulatif Mensuel",
+    "totalGrossPayroll": "Masse Salariale Brute Totale",
+    "totalEmployeeContributions": "Cotisations Salariales Totales",
+    "totalEmployerContributions": "Cotisations Patronales Totales",
+    "totalNetSalaries": "Salaires Nets Totaux",
+    "detailByEmployee": "Détail par Employé",
+    "totalEmployerShares": "Parts Patronales Totales",
+    "totalEmployerCost": "Coût Total Employeur",
+    "noDataForYear": "Aucune données pour l'année {{year}}",
+    "yearRecapitulation": "RÉCAPITULATION ANNÉE {{year}}",
+    "ofGross": "% du brut",
+    "hoursAndAbsencesSummary": "Récapitulatif des Heures et Absences",
+    "noDataFor": "Aucune données pour",
+    "monthlyEmployerSharesDetail": "Détail Mensuel des Parts Patronales",
+    "payrollMass": "Masse Salariale",
+    "employerChargesBreakdown": "Répartition des Charges Patronales",
+    "ofCharges": "% des charges",
+    "salariesPlusEmployerCharges": "Salaires + Charges patronales"
   }
 }

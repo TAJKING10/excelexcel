@@ -487,5 +487,26 @@
     "allEmployees": "All employees",
     "netMin": "Net min",
     "netMax": "Net max"
+  },
+  "payroll": {
+    "noPayslipsFor": "No payslips for",
+    "monthlySummary": "Monthly Summary",
+    "totalGrossPayroll": "Total Gross Payroll",
+    "totalEmployeeContributions": "Total Employee Contributions",
+    "totalEmployerContributions": "Total Employer Contributions",
+    "totalNetSalaries": "Total Net Salaries",
+    "detailByEmployee": "Detail by Employee",
+    "totalEmployerShares": "Total Employer Shares",
+    "totalEmployerCost": "Total Employer Cost",
+    "noDataForYear": "No data for year {{year}}",
+    "yearRecapitulation": "YEAR {{year}} RECAPITULATION",
+    "ofGross": "% of gross",
+    "hoursAndAbsencesSummary": "Hours and Absences Summary",
+    "noDataFor": "No data for",
+    "monthlyEmployerSharesDetail": "Monthly Employer Shares Detail",
+    "payrollMass": "Payroll Mass",
+    "employerChargesBreakdown": "Employer Charges Breakdown",
+    "ofCharges": "% of charges",
+    "salariesPlusEmployerCharges": "Salaries + Employer Charges"
   }
 }

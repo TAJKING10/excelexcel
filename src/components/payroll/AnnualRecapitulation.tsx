@@ -113,7 +113,7 @@ export function AnnualRecapitulation({
       <Card>
         <CardContent className="pt-6 text-center text-muted-foreground">
           <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
-          <p>Aucune données pour l'année {year}</p>
+          <p>{t('payroll.noDataForYear', { year })}</p>
         </CardContent>
       </Card>
     );
@@ -125,7 +125,7 @@ export function AnnualRecapitulation({
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
-            RÉCAPITULATION ANNÉE {year}
+            {t('payroll.yearRecapitulation', { year }).toUpperCase()}
           </h2>
           {employeeName && (
             <p className="text-sm text-muted-foreground mt-1">{employeeName}</p>
@@ -133,7 +133,7 @@ export function AnnualRecapitulation({
         </div>
         <Button onClick={handleExport} variant="outline">
           <Download size={16} className="mr-2" />
-          Exporter
+          {t('actions.export')}
         </Button>
       </div>
 
@@ -142,7 +142,7 @@ export function AnnualRecapitulation({
         <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-blue-700 dark:text-blue-400">
-              Salaire Brut Annuel
+              {t('analytics.annualPayslip.annualGrossSalary')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -150,7 +150,7 @@ export function AnnualRecapitulation({
               {formatCurrency(annualTotals.grossMonthly)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {yearlyPayslips.length} mois
+              {yearlyPayslips.length} {t('common.months')}
             </p>
           </CardContent>
         </Card>
@@ -158,7 +158,7 @@ export function AnnualRecapitulation({
         <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-red-700 dark:text-red-400">
-              Cotisations Totales
+              {t('analytics.annualPayslip.totalContributions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -166,7 +166,7 @@ export function AnnualRecapitulation({
               {formatCurrency(annualTotals.employeeContribTotal)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {((annualTotals.employeeContribTotal / annualTotals.grossMonthly) * 100).toFixed(1)}% du brut
+              {((annualTotals.employeeContribTotal / annualTotals.grossMonthly) * 100).toFixed(1)}% {t('payroll.ofGross')}
             </p>
           </CardContent>
         </Card>
@@ -174,7 +174,7 @@ export function AnnualRecapitulation({
         <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-orange-700 dark:text-orange-400">
-              Impôts Annuels
+              {t('analytics.annualPayslip.annualTaxes')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -182,7 +182,7 @@ export function AnnualRecapitulation({
               {formatCurrency(annualTotals.incomeTax)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {((annualTotals.incomeTax / annualTotals.grossMonthly) * 100).toFixed(1)}% du brut
+              {((annualTotals.incomeTax / annualTotals.grossMonthly) * 100).toFixed(1)}% {t('payroll.ofGross')}
             </p>
           </CardContent>
         </Card>
@@ -190,7 +190,7 @@ export function AnnualRecapitulation({
         <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 border-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-green-700 dark:text-green-400">
-              Salaire Net Annuel
+              {t('analytics.annualPayslip.annualNetSalary')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -198,7 +198,7 @@ export function AnnualRecapitulation({
               {formatCurrency(annualTotals.netPay)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {((annualTotals.netPay / annualTotals.grossMonthly) * 100).toFixed(1)}% du brut
+              {((annualTotals.netPay / annualTotals.grossMonthly) * 100).toFixed(1)}% {t('payroll.ofGross')}
             </p>
           </CardContent>
         </Card>
@@ -207,24 +207,24 @@ export function AnnualRecapitulation({
       {/* Monthly Breakdown Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Détail Mensuel</CardTitle>
+          <CardTitle>{t('analytics.annualPayslip.monthlyBreakdown')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted">
-                  <TableHead className="text-xs">Mois</TableHead>
-                  <TableHead className="text-xs text-right">Brut</TableHead>
-                  <TableHead className="text-xs text-right">Maladie</TableHead>
-                  <TableHead className="text-xs text-right">Pension</TableHead>
-                  <TableHead className="text-xs text-right">CI-CO2</TableHead>
-                  <TableHead className="text-xs text-right">Déductions</TableHead>
-                  <TableHead className="text-xs text-right">Imposable</TableHead>
-                  <TableHead className="text-xs text-right">Impôts</TableHead>
-                  <TableHead className="text-xs text-right">CIS</TableHead>
-                  <TableHead className="text-xs text-right">CISSM</TableHead>
-                  <TableHead className="text-xs text-right font-bold">Net</TableHead>
+                  <TableHead className="text-xs">{t('analytics.annualPayslip.month')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payroll.gross')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.health')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.pension')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.ciCo2')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.deductions')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.taxable')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.taxes')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.cis')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.cissm')}</TableHead>
+                  <TableHead className="text-xs text-right font-bold">{t('payroll.net')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -322,21 +322,21 @@ export function AnnualRecapitulation({
       {/* Hours Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Récapitulatif des Heures et Absences</CardTitle>
+          <CardTitle>{t('payroll.hoursAndAbsencesSummary')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted">
-                  <TableHead className="text-xs">Mois</TableHead>
-                  <TableHead className="text-xs text-right">Normal</TableHead>
-                  <TableHead className="text-xs text-right">Suppl.</TableHead>
-                  <TableHead className="text-xs text-right">Congés</TableHead>
-                  <TableHead className="text-xs text-right">Férié extra</TableHead>
-                  <TableHead className="text-xs text-right">Congés fam.</TableHead>
-                  <TableHead className="text-xs text-right">Maladie</TableHead>
-                  <TableHead className="text-xs text-right">Chômage</TableHead>
+                  <TableHead className="text-xs">{t('analytics.annualPayslip.month')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payslips.hours.normal')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payslips.hours.supplementary')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payslips.hours.holidays')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payslips.hours.publicHolidayExtra')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payslips.hours.familyLeave')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payslips.hours.sickLeave')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payslips.hours.unemployment')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

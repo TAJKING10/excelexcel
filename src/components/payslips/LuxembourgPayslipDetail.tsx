@@ -36,7 +36,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
       {/* Header with Download */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">LIVRE DE PAIE</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t('payslips.payrollBook').toUpperCase()}</h1>
           <p className="text-lg text-muted-foreground mt-2">
             {payslip.period.year} - {getMonthNameFr(payslip.period.month)}
           </p>
@@ -71,7 +71,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
             <div className="space-y-2">
               <div className="flex items-start gap-2">
                 <span className="text-sm font-semibold text-muted-foreground min-w-[100px]">
-                  Ancienneté:
+                  {t('employee.seniority')}:
                 </span>
                 <span className="text-sm text-foreground">
                   {payslip.employee.hireDate ? formatDate(payslip.employee.hireDate) : '-'}
@@ -79,7 +79,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-sm font-semibold text-muted-foreground min-w-[100px]">
-                  Entrée:
+                  {t('employee.hire_date')}:
                 </span>
                 <span className="text-sm text-foreground">
                   {payslip.employee.hireDate ? formatDate(payslip.employee.hireDate) : '-'}
@@ -88,7 +88,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
               {payslip.employee.terminationDate && (
                 <div className="flex items-start gap-2">
                   <span className="text-sm font-semibold text-muted-foreground min-w-[100px]">
-                    Sortie:
+                    {t('employee.termination_date')}:
                   </span>
                   <span className="text-sm text-foreground">
                     {formatDate(payslip.employee.terminationDate)}
@@ -127,7 +127,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
       <Card>
         <CardHeader>
           <CardTitle className="text-center text-lg">
-            SALAIRES PLUS AVANCES MALADIE
+            {t('payslips.salariesPlusSickAdvances').toUpperCase()}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -135,22 +135,22 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted">
-                  <TableHead className="text-xs">Jours</TableHead>
-                  <TableHead className="text-xs text-center">Jours impos.</TableHead>
-                  <TableHead className="text-xs text-center">Stat.</TableHead>
-                  <TableHead className="text-xs text-center">Classe - %</TableHead>
-                  <TableHead className="text-xs text-right">Rémun. Base</TableHead>
-                  <TableHead className="text-xs text-right">Brut Mensuel</TableHead>
-                  <TableHead className="text-xs text-right">Cotisable</TableHead>
-                  <TableHead className="text-xs text-right">Maladie</TableHead>
-                  <TableHead className="text-xs text-right">Pension</TableHead>
-                  <TableHead className="text-xs text-right">CI-CO2</TableHead>
-                  <TableHead className="text-xs text-right">Déductions</TableHead>
-                  <TableHead className="text-xs text-right">Imposable</TableHead>
-                  <TableHead className="text-xs text-right">Impôts</TableHead>
-                  <TableHead className="text-xs text-right">CIS</TableHead>
-                  <TableHead className="text-xs text-right">CISSM</TableHead>
-                  <TableHead className="text-xs text-right font-bold">Salaire Net</TableHead>
+                  <TableHead className="text-xs">{t('analytics.annualPayslip.days')}</TableHead>
+                  <TableHead className="text-xs text-center">{t('payslips.taxableDays')}</TableHead>
+                  <TableHead className="text-xs text-center">{t('analytics.annualPayslip.stat')}</TableHead>
+                  <TableHead className="text-xs text-center">{t('analytics.annualPayslip.class')} - %</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.baseRemuneration')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.monthlyGross')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.contributable')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.health')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.pension')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.ciCo2')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.deductions')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.taxable')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.taxes')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.cis')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.cissm')}</TableHead>
+                  <TableHead className="text-xs text-right font-bold">{t('analytics.annualPayslip.netSalary')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -211,7 +211,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
         <Card>
           <CardHeader>
             <CardTitle className="text-center text-lg">
-              HEURES ET CONGÉS
+              {t('payslips.hoursAndLeaves').toUpperCase()}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -219,14 +219,14 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted">
-                    <TableHead className="text-xs">Mois</TableHead>
-                    <TableHead className="text-xs text-right">Normal</TableHead>
-                    <TableHead className="text-xs text-right">Suppl.</TableHead>
-                    <TableHead className="text-xs text-right">Congés</TableHead>
-                    <TableHead className="text-xs text-right">Férié extra</TableHead>
-                    <TableHead className="text-xs text-right">Congés familliale</TableHead>
-                    <TableHead className="text-xs text-right">Maladie</TableHead>
-                    <TableHead className="text-xs text-right">Chômage</TableHead>
+                    <TableHead className="text-xs">{t('analytics.annualPayslip.month')}</TableHead>
+                    <TableHead className="text-xs text-right">{t('payslips.hours.normal')}</TableHead>
+                    <TableHead className="text-xs text-right">{t('payslips.hours.supplementary')}</TableHead>
+                    <TableHead className="text-xs text-right">{t('payslips.hours.holidays')}</TableHead>
+                    <TableHead className="text-xs text-right">{t('payslips.hours.publicHolidayExtra')}</TableHead>
+                    <TableHead className="text-xs text-right">{t('payslips.hours.familyLeave')}</TableHead>
+                    <TableHead className="text-xs text-right">{t('payslips.hours.sickLeave')}</TableHead>
+                    <TableHead className="text-xs text-right">{t('payslips.hours.unemployment')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -269,7 +269,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
         <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-blue-700 dark:text-blue-400">
-              Rémunération Brute
+              {t('payslips.grossRemuneration')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -278,11 +278,11 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
             </p>
             <div className="mt-3 space-y-1 text-xs text-muted-foreground">
               <div className="flex justify-between">
-                <span>Cotisable:</span>
+                <span>{t('analytics.annualPayslip.contributable')}:</span>
                 <span className="font-mono">{formatCurrency(payslip.earnings.cotisable)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Imposable:</span>
+                <span>{t('analytics.annualPayslip.taxable')}:</span>
                 <span className="font-mono">{formatCurrency(payslip.earnings.imposable)}</span>
               </div>
             </div>
@@ -293,7 +293,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
         <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-red-700 dark:text-red-400">
-              Cotisations Salariales
+              {t('payslips.employeeContributions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -302,15 +302,15 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
             </p>
             <div className="mt-3 space-y-1 text-xs text-muted-foreground">
               <div className="flex justify-between">
-                <span>Maladie:</span>
+                <span>{t('analytics.annualPayslip.health')}:</span>
                 <span className="font-mono">{formatCurrency(payslip.employeeContrib.maladie)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Pension:</span>
+                <span>{t('analytics.annualPayslip.pension')}:</span>
                 <span className="font-mono">{formatCurrency(payslip.employeeContrib.pension)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Impôts:</span>
+                <span>{t('analytics.annualPayslip.taxes')}:</span>
                 <span className="font-mono">{formatCurrency(payslip.employeeContrib.incomeTax)}</span>
               </div>
             </div>
@@ -321,7 +321,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
         <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 border-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-green-700 dark:text-green-400">
-              Salaire Net
+              {t('analytics.annualPayslip.netSalary')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -331,7 +331,7 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
             {payslip.credits && payslip.credits > 0 && (
               <div className="mt-3 text-xs text-muted-foreground">
                 <div className="flex justify-between">
-                  <span>Crédits:</span>
+                  <span>{t('payslips.credits')}:</span>
                   <span className="font-mono">{formatCurrency(payslip.credits)}</span>
                 </div>
               </div>
@@ -344,37 +344,37 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
       <Card className="border-orange-200">
         <CardHeader>
           <CardTitle className="text-center text-lg text-orange-700 dark:text-orange-400">
-            PARTS PATRONALES
+            {t('payslips.employerShares').toUpperCase()}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Maladie</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('analytics.annualPayslip.health')}</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(payslip.employerContrib.maladie)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Pension</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('analytics.annualPayslip.pension')}</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(payslip.employerContrib.pension)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Santé</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('analytics.sante')}</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(payslip.employerContrib.sante)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Accident</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('analytics.accident')}</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(payslip.employerContrib.accident)}
               </div>
             </div>
             <div className="text-center border-l-2 border-orange-300">
-              <div className="text-xs text-muted-foreground mb-1 font-semibold">Total</div>
+              <div className="text-xs text-muted-foreground mb-1 font-semibold">{t('common.total')}</div>
               <div className="text-xl font-bold text-orange-700">
                 {formatCurrency(payslip.employerContrib.socialSecurityTotal)}
               </div>
@@ -386,36 +386,36 @@ export function LuxembourgPayslipDetail({ payslip }: LuxembourgPayslipDetailProp
       {/* Year to Date Summary */}
       <Card className="bg-muted/30">
         <CardHeader>
-          <CardTitle className="text-center">RÉCAPITULATION ANNÉE {payslip.period.year}</CardTitle>
+          <CardTitle className="text-center">{t('payslips.yearRecapitulation', { year: payslip.period.year }).toUpperCase()}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-2">Brut Annuel</div>
+              <div className="text-sm text-muted-foreground mb-2">{t('payslips.annualGross')}</div>
               <div className="text-xl font-bold text-foreground">
                 {formatCurrency(payslip.ytd.gross)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-2">Net Annuel</div>
+              <div className="text-sm text-muted-foreground mb-2">{t('payslips.annualNet')}</div>
               <div className="text-xl font-bold text-green-600">
                 {formatCurrency(payslip.ytd.net)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-2">Cotis. Salariales</div>
+              <div className="text-sm text-muted-foreground mb-2">{t('payslips.employeeContribShort')}</div>
               <div className="text-xl font-bold text-red-600">
                 {formatCurrency(payslip.ytd.employeeContribTotal)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-2">Cotis. Patronales</div>
+              <div className="text-sm text-muted-foreground mb-2">{t('payslips.employerContribShort')}</div>
               <div className="text-xl font-bold text-orange-600">
                 {formatCurrency(payslip.ytd.employerContribTotal)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-2">Impôts</div>
+              <div className="text-sm text-muted-foreground mb-2">{t('analytics.annualPayslip.taxes')}</div>
               <div className="text-xl font-bold text-foreground">
                 {formatCurrency(payslip.ytd.taxes)}
               </div>

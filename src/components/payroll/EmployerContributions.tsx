@@ -104,7 +104,7 @@ export function EmployerContributions({
       <Card>
         <CardContent className="pt-6 text-center text-muted-foreground">
           <Building2 size={48} className="mx-auto mb-4 opacity-50" />
-          <p>Aucune données pour {year}</p>
+          <p>{t('payroll.noDataFor')} {year}</p>
         </CardContent>
       </Card>
     );
@@ -116,7 +116,7 @@ export function EmployerContributions({
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
-            PARTS PATRONALES - {year}
+            {t('payslips.employerShares').toUpperCase()} - {year}
           </h2>
           {companyName && (
             <p className="text-lg text-muted-foreground mt-1">{companyName}</p>
@@ -124,7 +124,7 @@ export function EmployerContributions({
         </div>
         <Button onClick={handleExport} variant="outline">
           <Download size={16} className="mr-2" />
-          Exporter
+          {t('actions.export')}
         </Button>
       </div>
 
@@ -133,7 +133,7 @@ export function EmployerContributions({
         <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-orange-700 dark:text-orange-400">
-              Maladie
+              {t('analytics.annualPayslip.health')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -147,7 +147,7 @@ export function EmployerContributions({
         <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-orange-700 dark:text-orange-400">
-              Pension
+              {t('analytics.annualPayslip.pension')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -161,7 +161,7 @@ export function EmployerContributions({
         <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-orange-700 dark:text-orange-400">
-              Santé
+              {t('analytics.sante')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -175,7 +175,7 @@ export function EmployerContributions({
         <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-orange-700 dark:text-orange-400">
-              Accident
+              {t('analytics.accident')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -189,7 +189,7 @@ export function EmployerContributions({
         <Card className="border-orange-500 bg-orange-100/50 dark:bg-orange-900/30 border-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-orange-800 dark:text-orange-300">
-              Total Annuel
+              {t('payroll.annualTotal')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -197,7 +197,7 @@ export function EmployerContributions({
               {formatCurrency(annualTotals.total)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {((annualTotals.total / annualTotals.grossSalaries) * 100).toFixed(1)}% du brut
+              {((annualTotals.total / annualTotals.grossSalaries) * 100).toFixed(1)}% {t('payroll.ofGross')}
             </p>
           </CardContent>
         </Card>
@@ -206,21 +206,21 @@ export function EmployerContributions({
       {/* Monthly Breakdown Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Détail Mensuel des Parts Patronales</CardTitle>
+          <CardTitle>{t('payroll.monthlyEmployerSharesDetail')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted">
-                  <TableHead className="text-xs">Mois</TableHead>
-                  <TableHead className="text-xs text-center">Employés</TableHead>
-                  <TableHead className="text-xs text-right">Masse Salariale</TableHead>
-                  <TableHead className="text-xs text-right">Maladie (3.05%)</TableHead>
-                  <TableHead className="text-xs text-right">Pension (8%)</TableHead>
-                  <TableHead className="text-xs text-right">Santé (4%)</TableHead>
-                  <TableHead className="text-xs text-right">Accident (~1%)</TableHead>
-                  <TableHead className="text-xs text-right font-bold">Total</TableHead>
+                  <TableHead className="text-xs">{t('analytics.annualPayslip.month')}</TableHead>
+                  <TableHead className="text-xs text-center">{t('common.employees')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payroll.payrollMass')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.health')} (3.05%)</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.pension')} (8%)</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.sante')} (4%)</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.accident')} (~1%)</TableHead>
+                  <TableHead className="text-xs text-right font-bold">{t('common.total')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -297,14 +297,14 @@ export function EmployerContributions({
       {/* Cost Breakdown */}
       <Card className="bg-muted/30">
         <CardHeader>
-          <CardTitle>Répartition des Charges Patronales</CardTitle>
+          <CardTitle>{t('payroll.employerChargesBreakdown')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {/* Maladie */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Maladie (Assurance maladie)</span>
+                <span className="text-sm font-medium">{t('payroll.healthInsurance')}</span>
                 <span className="text-sm font-bold text-orange-600">
                   {formatCurrency(annualTotals.maladie)}
                 </span>
@@ -318,14 +318,14 @@ export function EmployerContributions({
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {((annualTotals.maladie / annualTotals.total) * 100).toFixed(1)}% des charges
+                {((annualTotals.maladie / annualTotals.total) * 100).toFixed(1)}% {t('payroll.ofCharges')}
               </p>
             </div>
 
             {/* Pension */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Pension (Assurance pension)</span>
+                <span className="text-sm font-medium">{t('payroll.pensionInsurance')}</span>
                 <span className="text-sm font-bold text-orange-600">
                   {formatCurrency(annualTotals.pension)}
                 </span>
@@ -339,14 +339,14 @@ export function EmployerContributions({
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {((annualTotals.pension / annualTotals.total) * 100).toFixed(1)}% des charges
+                {((annualTotals.pension / annualTotals.total) * 100).toFixed(1)}% {t('payroll.ofCharges')}
               </p>
             </div>
 
             {/* Santé */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Santé (Mutualité)</span>
+                <span className="text-sm font-medium">{t('payroll.healthMutuality')}</span>
                 <span className="text-sm font-bold text-orange-600">
                   {formatCurrency(annualTotals.sante)}
                 </span>
@@ -360,14 +360,14 @@ export function EmployerContributions({
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {((annualTotals.sante / annualTotals.total) * 100).toFixed(1)}% des charges
+                {((annualTotals.sante / annualTotals.total) * 100).toFixed(1)}% {t('payroll.ofCharges')}
               </p>
             </div>
 
             {/* Accident */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Accident (Assurance accidents)</span>
+                <span className="text-sm font-medium">{t('payroll.accidentInsurance')}</span>
                 <span className="text-sm font-bold text-orange-600">
                   {formatCurrency(annualTotals.accident)}
                 </span>
@@ -381,7 +381,7 @@ export function EmployerContributions({
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {((annualTotals.accident / annualTotals.total) * 100).toFixed(1)}% des charges
+                {((annualTotals.accident / annualTotals.total) * 100).toFixed(1)}% {t('payroll.ofCharges')}
               </p>
             </div>
           </div>
@@ -390,9 +390,9 @@ export function EmployerContributions({
           <div className="mt-6 pt-6 border-t-2 border-muted-foreground">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <p className="text-lg font-semibold">Coût Total Employeur</p>
+                <p className="text-lg font-semibold">{t('payroll.totalEmployerCost')}</p>
                 <p className="text-xs text-muted-foreground">
-                  Salaires + Charges patronales
+                  {t('payroll.salariesPlusEmployerCharges')}
                 </p>
               </div>
               <div className="text-right">

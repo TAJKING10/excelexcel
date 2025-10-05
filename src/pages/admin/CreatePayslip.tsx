@@ -338,7 +338,7 @@ export function CreatePayslip() {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">FICHE DE PAIE ANNUELLE</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('analytics.annualPayslip.title').toUpperCase()}</h1>
             <p className="text-muted-foreground">Create annual payslips - All 12 months</p>
           </div>
         </div>
@@ -362,7 +362,7 @@ export function CreatePayslip() {
       {/* Selection Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Livre de Paie {year}</CardTitle>
+          <CardTitle>{t('payslips.payrollBook')} {year}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -439,29 +439,29 @@ export function CreatePayslip() {
       {/* Détail Mensuel Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Détail Mensuel</CardTitle>
+          <CardTitle>{t('analytics.annualPayslip.monthlyBreakdown')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="font-bold">MOIS</TableHead>
-                  <TableHead className="font-bold">JOURS</TableHead>
-                  <TableHead className="font-bold">STAT.</TableHead>
-                  <TableHead className="font-bold">CLASSE</TableHead>
-                  <TableHead className="font-bold text-right">RÉMUN.<br/>BASE</TableHead>
-                  <TableHead className="font-bold text-right">BRUT<br/>MENSUEL</TableHead>
-                  <TableHead className="font-bold text-right">COTISABLE</TableHead>
-                  <TableHead className="font-bold text-right">MALADIE</TableHead>
-                  <TableHead className="font-bold text-right">PENSION</TableHead>
-                  <TableHead className="font-bold text-right">DÉDUCTIONS</TableHead>
-                  <TableHead className="font-bold text-right">IMPOSABLE</TableHead>
-                  <TableHead className="font-bold text-right">IMPÔTS</TableHead>
-                  <TableHead className="font-bold text-right">CI-CO2</TableHead>
-                  <TableHead className="font-bold text-right">CIS</TableHead>
-                  <TableHead className="font-bold text-right">CISS<br/>M</TableHead>
-                  <TableHead className="font-bold text-right">SALAIRE<br/>NET</TableHead>
+                  <TableHead className="font-bold">{t('analytics.annualPayslip.month').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t('analytics.annualPayslip.days').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t('analytics.annualPayslip.stat').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold">{t('analytics.annualPayslip.class').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.baseRemuneration').toUpperCase().split(' ').join('\n')}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.monthlyGross').toUpperCase().split(' ').join('\n')}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.contributable').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.health').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.pension').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.deductions').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.taxable').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.taxes').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.ciCo2').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.cis').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.cissm').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.netSalary').toUpperCase().split(' ').join('\n')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -588,7 +588,7 @@ export function CreatePayslip() {
 
                 {/* Total Row */}
                 <TableRow className="bg-primary/10 font-bold">
-                  <TableCell colSpan={4}>TOTAL ANNUEL</TableCell>
+                  <TableCell colSpan={4}>{t('analytics.annualPayslip.annualTotal').toUpperCase()}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.remunerationBase)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.grossMonthly)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.cotisable)}</TableCell>
@@ -611,19 +611,19 @@ export function CreatePayslip() {
       {/* Cotisations Patronales */}
       <Card>
         <CardHeader>
-          <CardTitle>Cotisations Patronales</CardTitle>
+          <CardTitle>{t('analytics.annualPayslip.employerContributions')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="font-bold">MOIS</TableHead>
-                  <TableHead className="font-bold text-right">MALADIE</TableHead>
-                  <TableHead className="font-bold text-right">PENSION</TableHead>
-                  <TableHead className="font-bold text-right">SANTÉ</TableHead>
-                  <TableHead className="font-bold text-right">ACCIDENT</TableHead>
-                  <TableHead className="font-bold text-right">TOTAL SÉC. SOCIALE</TableHead>
+                  <TableHead className="font-bold">{t('analytics.annualPayslip.month').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.health').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.pension').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.sante').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.accident').toUpperCase()}</TableHead>
+                  <TableHead className="font-bold text-right">{t('analytics.annualPayslip.socialSecurityTotal').toUpperCase()}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -671,7 +671,7 @@ export function CreatePayslip() {
                 ))}
 
                 <TableRow className="bg-primary/10 font-bold">
-                  <TableCell>TOTAL ANNUEL</TableCell>
+                  <TableCell>{t('analytics.annualPayslip.annualTotal').toUpperCase()}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.employerMaladie)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.employerPension)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(totals.employerSante)}</TableCell>
@@ -687,47 +687,47 @@ export function CreatePayslip() {
       {/* Récapitulation Annuelle */}
       <Card>
         <CardHeader>
-          <CardTitle>Récapitulation Annuelle</CardTitle>
+          <CardTitle>{t('analytics.annualPayslip.annualRecapitulation')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Salaires</h3>
+              <h3 className="font-semibold text-lg">{t('analytics.annualPayslip.salaries')}</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Brut Total:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.totalGross')}</span>
                   <span className="font-bold">{formatCurrency(totals.grossMonthly)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Net Total:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.totalNet')}</span>
                   <span className="font-bold text-green-600">{formatCurrency(totals.netPay)}</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Cotisations</h3>
+              <h3 className="font-semibold text-lg">{t('analytics.annualPayslip.contributions')}</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employé:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.employee')}</span>
                   <span className="font-bold">{formatCurrency(totals.employeeContribTotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employeur:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.employer')}</span>
                   <span className="font-bold">{formatCurrency(totals.employerTotal)}</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Autres</h3>
+              <h3 className="font-semibold text-lg">{t('analytics.annualPayslip.other')}</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Impôts:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.taxesLabel')}</span>
                   <span className="font-bold">{formatCurrency(totals.incomeTax)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Heures Travaillées:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.hoursWorked')}</span>
                   <span className="font-bold">{totals.normalHours}h</span>
                 </div>
               </div>
@@ -739,7 +739,7 @@ export function CreatePayslip() {
             <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-blue-600 font-medium dark:text-blue-400">Salaire Brut Annuel</p>
+                  <p className="text-sm text-blue-600 font-medium dark:text-blue-400">{t('analytics.annualPayslip.annualGrossSalary')}</p>
                   <p className="text-2xl font-bold text-blue-700 mt-2 dark:text-blue-300">
                     {formatCurrency(totals.grossMonthly)}
                   </p>
@@ -750,7 +750,7 @@ export function CreatePayslip() {
             <Card className="bg-green-50 border-green-200 dark:bg-green-950">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-green-600 font-medium dark:text-green-400">Salaire Net Annuel</p>
+                  <p className="text-sm text-green-600 font-medium dark:text-green-400">{t('analytics.annualPayslip.annualNetSalary')}</p>
                   <p className="text-2xl font-bold text-green-700 mt-2 dark:text-green-300">
                     {formatCurrency(totals.netPay)}
                   </p>
@@ -761,7 +761,7 @@ export function CreatePayslip() {
             <Card className="bg-orange-50 border-orange-200 dark:bg-orange-950">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-orange-600 font-medium dark:text-orange-400">Total Cotisations</p>
+                  <p className="text-sm text-orange-600 font-medium dark:text-orange-400">{t('analytics.annualPayslip.totalContributions')}</p>
                   <p className="text-2xl font-bold text-orange-700 mt-2 dark:text-orange-300">
                     {formatCurrency(totals.employeeContribTotal)}
                   </p>
@@ -772,7 +772,7 @@ export function CreatePayslip() {
             <Card className="bg-purple-50 border-purple-200 dark:bg-purple-950">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-purple-600 font-medium dark:text-purple-400">Impôts Annuels</p>
+                  <p className="text-sm text-purple-600 font-medium dark:text-purple-400">{t('analytics.annualPayslip.annualTaxes')}</p>
                   <p className="text-2xl font-bold text-purple-700 mt-2 dark:text-purple-300">
                     {formatCurrency(totals.incomeTax)}
                   </p>

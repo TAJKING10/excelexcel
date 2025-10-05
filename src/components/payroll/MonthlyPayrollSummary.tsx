@@ -97,7 +97,7 @@ export function MonthlyPayrollSummary({
       <Card>
         <CardContent className="pt-6 text-center text-muted-foreground">
           <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-          <p>Aucune fiche de paie pour {getMonthNameFr(month)} {year}</p>
+          <p>{t('payroll.noPayslipsFor')} {getMonthNameFr(month)} {year}</p>
         </CardContent>
       </Card>
     );
@@ -109,15 +109,15 @@ export function MonthlyPayrollSummary({
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-foreground">
-            Récapitulatif Mensuel - {getMonthNameFr(month)} {year}
+            {t('payroll.monthlySummary')} - {getMonthNameFr(month)} {year}
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {totals.employees} employé{totals.employees > 1 ? 's' : ''}
+            {totals.employees} {t('common.employee', { count: totals.employees })}
           </p>
         </div>
         <Button onClick={handleExport} variant="outline">
           <Download size={16} className="mr-2" />
-          Exporter
+          {t('actions.export')}
         </Button>
       </div>
 
@@ -126,7 +126,7 @@ export function MonthlyPayrollSummary({
         <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-blue-700 dark:text-blue-400">
-              Masse Salariale Brute
+              {t('payroll.grossPayroll')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -139,7 +139,7 @@ export function MonthlyPayrollSummary({
         <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-red-700 dark:text-red-400">
-              Cotisations Salariales
+              {t('payslips.employeeContributions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -152,7 +152,7 @@ export function MonthlyPayrollSummary({
         <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-orange-700 dark:text-orange-400">
-              Cotisations Patronales
+              {t('analytics.annualPayslip.employerContributions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -165,7 +165,7 @@ export function MonthlyPayrollSummary({
         <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-green-700 dark:text-green-400">
-              Salaires Nets Totaux
+              {t('payroll.totalNetSalaries')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -179,21 +179,21 @@ export function MonthlyPayrollSummary({
       {/* Detailed Employee List */}
       <Card>
         <CardHeader>
-          <CardTitle>Détail par Employé</CardTitle>
+          <CardTitle>{t('payroll.detailByEmployee')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted">
-                  <TableHead className="text-xs">Employé</TableHead>
-                  <TableHead className="text-xs text-center">Matricule</TableHead>
-                  <TableHead className="text-xs text-right">Brut</TableHead>
-                  <TableHead className="text-xs text-right">Maladie</TableHead>
-                  <TableHead className="text-xs text-right">Pension</TableHead>
-                  <TableHead className="text-xs text-right">Impôts</TableHead>
-                  <TableHead className="text-xs text-right">Cotis. Total</TableHead>
-                  <TableHead className="text-xs text-right font-bold">Net</TableHead>
+                  <TableHead className="text-xs">{t('common.employee')}</TableHead>
+                  <TableHead className="text-xs text-center">{t('employee.matricule')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payroll.gross')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.health')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.pension')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('analytics.annualPayslip.taxes')}</TableHead>
+                  <TableHead className="text-xs text-right">{t('payroll.contribTotal')}</TableHead>
+                  <TableHead className="text-xs text-right font-bold">{t('payroll.net')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -255,36 +255,36 @@ export function MonthlyPayrollSummary({
       {/* Employer Contributions Summary */}
       <Card className="border-orange-200">
         <CardHeader>
-          <CardTitle>Parts Patronales Totales</CardTitle>
+          <CardTitle>{t('payroll.totalEmployerShares')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Maladie</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('analytics.annualPayslip.health')}</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(totals.employerMaladie)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Pension</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('analytics.annualPayslip.pension')}</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(totals.employerPension)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Santé</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('analytics.sante')}</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(totals.employerSante)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">Accident</div>
+              <div className="text-xs text-muted-foreground mb-1">{t('analytics.accident')}</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(totals.employerAccident)}
               </div>
             </div>
             <div className="text-center border-l-2 border-orange-300">
-              <div className="text-xs text-muted-foreground mb-1 font-semibold">Total</div>
+              <div className="text-xs text-muted-foreground mb-1 font-semibold">{t('common.total')}</div>
               <div className="text-xl font-bold text-orange-700">
                 {formatCurrency(totals.employerContribTotal)}
               </div>
@@ -296,22 +296,22 @@ export function MonthlyPayrollSummary({
       {/* Cost Summary */}
       <Card className="bg-muted/30">
         <CardHeader>
-          <CardTitle>Coût Total Employeur</CardTitle>
+          <CardTitle>{t('payroll.totalEmployerCost')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             <div className="flex justify-between items-center text-lg">
-              <span className="text-muted-foreground">Salaires bruts:</span>
+              <span className="text-muted-foreground">{t('payroll.grossSalaries')}:</span>
               <span className="font-bold">{formatCurrency(totals.grossMonthly)}</span>
             </div>
             <div className="flex justify-between items-center text-lg">
-              <span className="text-muted-foreground">+ Cotisations patronales:</span>
+              <span className="text-muted-foreground">+ {t('payroll.employerContributions')}:</span>
               <span className="font-bold text-orange-600">
                 {formatCurrency(totals.employerContribTotal)}
               </span>
             </div>
             <div className="border-t-2 border-muted-foreground pt-3 flex justify-between items-center text-2xl">
-              <span className="font-bold">Coût total:</span>
+              <span className="font-bold">{t('payroll.totalCost')}:</span>
               <span className="font-bold text-primary">
                 {formatCurrency(totals.grossMonthly + totals.employerContribTotal)}
               </span>
