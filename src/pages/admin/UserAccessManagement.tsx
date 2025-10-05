@@ -244,7 +244,11 @@ export function UserAccessManagement() {
       });
 
       setIsDialogOpen(false);
-      fetchData(); // Refresh the list
+
+      // Refresh the list after a small delay to ensure data is committed
+      setTimeout(() => {
+        fetchData();
+      }, 500);
     } catch (error: any) {
       console.error('Error saving user:', error);
       toast({
@@ -263,60 +267,28 @@ export function UserAccessManagement() {
       username: formData.username,
     });
 
-    // Step 1: Create user in Supabase Auth
-    console.log('📝 Step 1: Creating auth user...');
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        data: {
-          username: formData.username,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-        },
-        emailRedirectTo: undefined,
-      },
+    // Step 1: Create user via database function (doesn't auto-login)
+    console.log('📝 Step 1: Creating user via database function...');
+
+    const { data: userData, error: userError } = await supabase.rpc('create_employee_user', {
+      user_email: formData.email,
+      user_password: formData.password,
+      user_username: formData.username,
+      user_first_name: formData.firstName,
+      user_last_name: formData.lastName,
     });
 
-    console.log('✅ Auth response:', { authData, authError });
-
-    if (authError) {
-      console.error('❌ Auth error:', authError);
-      throw new Error(`Auth error: ${authError.message}`);
-    }
-    if (!authData.user) {
-      console.error('❌ No user in auth data');
-      throw new Error('User creation failed');
+    if (userError) {
+      console.error('❌ User creation error:', userError);
+      throw new Error(`User creation error: ${userError.message}`);
     }
 
-    const userId = authData.user.id;
-    console.log('✅ User created with ID:', userId);
+    const userId = userData.id;
+    console.log('✅ User and profile created with ID:', userId);
 
-    // Wait a bit for the trigger to create the profile
-    console.log('⏳ Waiting for trigger to create profile...');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Step 2: Update profile with username and names (in case trigger didn't work)
-    console.log('📝 Step 2: Updating profile...');
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        username: formData.username,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        role: 'EMPLOYEE',
-      })
-      .eq('id', userId);
-
-    if (profileError) {
-      console.error('❌ Profile error:', profileError);
-      throw new Error(`Profile error: ${profileError.message}`);
-    }
-    console.log('✅ Profile updated');
-
-    // Step 3: Create user access record
-    console.log('📝 Step 3: Creating user access...');
-    const { error: accessError } = await supabase
+    // Step 2: Create user access record
+    console.log('📝 Step 2: Creating user access...');
+    const { data: accessData_result, error: accessError } = await supabase
       .from('user_access')
       .insert({
         user_id: userId,
@@ -331,13 +303,17 @@ export function UserAccessManagement() {
         can_create_companies: accessData.canCreateCompanies,
         can_create_individuals: accessData.canCreateIndividuals,
         can_create_employees: accessData.canCreateEmployees,
-      });
+      })
+      .select();
+
+    console.log('📝 Access insert result:', { accessData_result, accessError });
 
     if (accessError) {
       console.error('❌ Access error:', accessError);
       throw new Error(`Access error: ${accessError.message}`);
     }
     console.log('✅ User access created successfully!');
+    console.log('✅ User creation complete! Admin session unchanged.');
   };
 
   const updateExistingUser = async () => {
