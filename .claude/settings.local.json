@@ -17,7 +17,14 @@
       "Bash(findstr:*)",
       "Bash(cd:*)",
       "Bash(claude mcp add:*)",
-      "Bash(claude mcp:*)"
+      "Bash(claude mcp:*)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__get_project_url",
+      "mcp__supabase__get_anon_key",
+      "Bash(curl -X POST 'https://ozkgkgqahgwuwmohslsr.supabase.co/auth/v1/token?grant_type=password' -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96a2drZ3FhaGd3dXdtb2hzbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0Mjk2NDEsImV4cCI6MjA3NTAwNTY0MX0._AOVNMhgLF9LnNvEqVeRde2do6ToIgNGXAgtOmAPLOo\" -H 'Content-Type: application/json' -d '{\"\"email\"\":\"\"irvin@advensys-conseil.lu\"\",\"\"password\"\":\"\"Advensys2025\"\"}')"
     ],
     "deny": [],
     "ask": []

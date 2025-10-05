@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from './stores/auth';
+import { supabase } from './lib/supabase';
 import { getDefaultRoute } from './lib/rbac';
 import { ProtectedRoute } from './components/guards/ProtectedRoute';
 
@@ -36,13 +37,52 @@ import AnnualPayslipPage from './pages/AnnualPayslipPage';
 import LoginPage from './pages/LoginPage';
 
 function App() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isLoading, fetchUserProfile } = useAuthStore();
   const { i18n } = useTranslation();
 
   useEffect(() => {
     // Set default language
     i18n.changeLanguage('fr');
-  }, [i18n]);
+
+    // Check for existing session
+    const checkSession = async () => {
+      console.log('Checking session...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('Session:', session, 'Error:', error);
+
+      if (session?.user) {
+        await fetchUserProfile(session.user.id);
+      } else {
+        // No session, set loading to false
+        useAuthStore.setState({ isLoading: false });
+      }
+    };
+
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session);
+      if (event === 'SIGNED_IN' && session?.user) {
+        await fetchUserProfile(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        // Session will be cleared by logout function
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [i18n, fetchUserProfile]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return <LoginPage />;

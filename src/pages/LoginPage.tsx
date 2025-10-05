@@ -19,7 +19,7 @@ export default function LoginPage() {
   const { t, i18n } = useTranslation();
   const { login } = useAuthStore();
   const { isDarkMode, toggleDarkMode } = useThemeStore();
-  const [username, setUsername] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -29,7 +29,10 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    const success = await login(username, password);
+    console.log('LoginPage: Attempting login with:', usernameOrEmail);
+    const success = await login(usernameOrEmail, password);
+    console.log('LoginPage: Login result:', success);
+
     if (!success) {
       setError(t('auth.invalidCredentials'));
     }
@@ -82,13 +85,13 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="dark:text-gray-200">{t('auth.username')}</Label>
+                <Label htmlFor="username" className="dark:text-gray-200">Username or Email</Label>
                 <Input
                   id="username"
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder={t('auth.username')}
+                  value={usernameOrEmail}
+                  onChange={(e) => setUsernameOrEmail(e.target.value)}
+                  placeholder="Admin"
                   required
                   autoComplete="username"
                   className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
@@ -119,20 +122,23 @@ export default function LoginPage() {
 
             <div className="mt-6 p-4 bg-muted dark:bg-gray-700 rounded-lg">
               <p className="text-sm text-muted-foreground dark:text-gray-300 text-center mb-2 font-medium">
-                {t('auth.demoAccounts')}:
+                Super Admin Account:
               </p>
               <div className="space-y-2 text-xs text-muted-foreground dark:text-gray-400">
-                <div className="flex justify-between items-center p-2 bg-background dark:bg-gray-600 rounded">
-                  <span className="font-medium dark:text-gray-200">SuperAdmin</span>
-                  <span className="text-xs opacity-70">SUPER_ADMIN</span>
+                <div className="flex flex-col gap-1 p-2 bg-background dark:bg-gray-600 rounded">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium dark:text-gray-200">Username:</span>
+                    <span className="text-xs">Admin</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium dark:text-gray-200">Password:</span>
+                    <span className="text-xs">Advensys2025</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="font-medium dark:text-gray-200">Role:</span>
+                    <span className="text-xs opacity-70">SUPER_ADMIN</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-2 bg-background dark:bg-gray-600 rounded">
-                  <span className="font-medium dark:text-gray-200">employee</span>
-                  <span className="text-xs opacity-70">EMPLOYEE</span>
-                </div>
-                <p className="text-center text-xs opacity-70 mt-2">
-              {t('auth.password')}: {t('auth.passwordHint')}
-                </p>
               </div>
             </div>
           </CardContent>
