@@ -234,7 +234,8 @@ export function CompanyDetail() {
             {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
               <Button
                 onClick={() => {
-                  navigate(user?.role === 'SUPER_ADMIN' ? '/admin/payslips/create' : '/admin/payslips/create');
+                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                  navigate(`${basePath}/payslips/create`);
                 }}
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -348,6 +349,7 @@ export function CompanyDetail() {
 function EmployeeListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const { employees, updateEmployee, deleteEmployee } = useDataStore();
   const { toast } = useToast();
   const [editingEmployee, setEditingEmployee] = useState<string | null>(null);
@@ -452,7 +454,10 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/admin/employees/${employee.id}/annual-payslip`)}>
+                        <DropdownMenuItem onClick={() => {
+                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                          navigate(`${basePath}/employees/${employee.id}/annual-payslip`);
+                        }}>
                           <FileSpreadsheet size={16} className="mr-2" />
                           Fiche de Paie Annuelle
                         </DropdownMenuItem>
@@ -566,6 +571,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
 function PayslipListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const { payslips, employees } = useDataStore();
   const [selectedPayslip, setSelectedPayslip] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -621,7 +627,15 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                           <Eye size={16} className="mr-2" />
                           Voir
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => navigate(`/admin/employees/${payslip.employeeId}/annual-payslip`)}>
+                        <Button size="sm" variant="outline" onClick={() => {
+                          console.log('🔴 Annuelle button clicked!');
+                          console.log('User role:', user?.role);
+                          console.log('Payslip employeeId:', payslip.employeeId);
+                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                          const targetPath = `${basePath}/employees/${payslip.employeeId}/annual-payslip`;
+                          console.log('Navigating to:', targetPath);
+                          navigate(targetPath);
+                        }}>
                           <FileSpreadsheet size={16} className="mr-2" />
                           Annuelle
                         </Button>

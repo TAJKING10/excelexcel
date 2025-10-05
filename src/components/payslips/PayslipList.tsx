@@ -105,7 +105,8 @@ export function PayslipList() {
           <Button
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {
-              navigate('/admin/payslips/create');
+              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+              navigate(`${basePath}/payslips/create`);
             }}
           >
             <Plus size={16} className="mr-2" />
@@ -217,7 +218,10 @@ export function PayslipList() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => navigate(`/admin/employees/${payslip.employeeId}/annual-payslip`)}
+                            onClick={() => {
+                              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                              navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
+                            }}
                             title="Fiche de Paie Annuelle"
                           >
                             <FileSpreadsheet size={16} />

@@ -14,7 +14,8 @@
       "Bash(python:*)",
       "Bash(pip install:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(cd:*)"
     ],
     "deny": [],
     "ask": []

@@ -210,10 +210,15 @@ export function IndividualDetail() {
             </p>
           </div>
         </div>
-        <Button onClick={() => navigate(`/admin/payslips/create-annual/${individualId}`)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Créer fiche de paie annuelle
-        </Button>
+        {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
+          <Button onClick={() => {
+            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+            navigate(`${basePath}/payslips/create-annual/${individualId}`);
+          }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Créer fiche de paie annuelle
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -282,24 +287,34 @@ export function IndividualDetail() {
                         <TableCell>{formatCurrency(payslip.netPay)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => navigate(`/admin/individuals/${individualId}/annual-payslip`)}
-                              title="View Annual Payslip"
-                            >
-                              <FileSpreadsheet size={16} className="mr-2" />
-                              Annuelle
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => navigate(`/admin/payslips/create-annual/${individualId}`)}
-                              title="Edit Annual Payslip"
-                            >
-                              <Edit size={16} className="mr-2" />
-                              Edit
-                            </Button>
+                            {(user?.role === 'SUPER_ADMIN' || user?.access?.canViewPayslips) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                                  navigate(`${basePath}/individuals/${individualId}/annual-payslip`);
+                                }}
+                                title="View Annual Payslip"
+                              >
+                                <FileSpreadsheet size={16} className="mr-2" />
+                                Annuelle
+                              </Button>
+                            )}
+                            {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                                  navigate(`${basePath}/payslips/create-annual/${individualId}`);
+                                }}
+                                title="Edit Annual Payslip"
+                              >
+                                <Edit size={16} className="mr-2" />
+                                Edit
+                              </Button>
+                            )}
                             <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
                               <Download size={16} />
                             </Button>

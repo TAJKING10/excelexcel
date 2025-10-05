@@ -102,6 +102,9 @@ function App() {
             <Route path="admin/payslips/create" element={<CreatePayslip />} />
             <Route path="admin/payslips/create-annual" element={<CreateAnnualPayslip />} />
             <Route path="admin/payslips/create-annual/:employeeId" element={<CreateAnnualPayslip />} />
+            <Route path="payslips/create" element={<CreatePayslip />} />
+            <Route path="payslips/create-annual" element={<CreateAnnualPayslip />} />
+            <Route path="payslips/create-annual/:employeeId" element={<CreateAnnualPayslip />} />
           </Route>
         )}
 
