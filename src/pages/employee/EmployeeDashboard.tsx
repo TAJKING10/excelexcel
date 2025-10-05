@@ -63,21 +63,21 @@ export function EmployeeDashboard() {
   });
 
   // Get accessible companies and data
-  const accessibleCompanies = companies.filter((c) =>
-    user?.access?.companyIds.includes(c.id)
-  );
+  const accessibleCompanies = user?.access?.hasAllCompaniesAccess
+    ? companies
+    : companies.filter((c) => user?.access?.companyIds.includes(c.id));
 
-  const accessibleEmployees = employees.filter((e) =>
-    user?.access?.companyIds.includes(e.companyId)
-  );
+  const accessibleEmployees = user?.access?.hasAllCompaniesAccess
+    ? employees
+    : employees.filter((e) => user?.access?.companyIds.includes(e.companyId));
 
-  const accessiblePayslips = payslips.filter((p) =>
-    user?.access?.companyIds.includes(p.companyId)
-  );
+  const accessiblePayslips = user?.access?.hasAllCompaniesAccess
+    ? payslips
+    : payslips.filter((p) => user?.access?.companyIds.includes(p.companyId));
 
-  const accessibleIndividuals = individuals.filter((i) =>
-    user?.access?.individualIds?.includes(i.id)
-  );
+  const accessibleIndividuals = user?.access?.hasAllIndividualsAccess
+    ? individuals
+    : individuals.filter((i) => user?.access?.individualIds?.includes(i.id));
 
   // Get stats for each company
   const getCompanyStats = (companyId: string) => {
@@ -196,10 +196,12 @@ export function EmployeeDashboard() {
                   {t('dashboard.clientCompaniesDesc')}
                 </CardDescription>
               </div>
-              <Button onClick={() => setIsAddCompanyDialogOpen(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                {t('companies.add')}
-              </Button>
+              {user?.access?.canCreateCompanies && (
+                <Button onClick={() => setIsAddCompanyDialogOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  {t('companies.add')}
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {accessibleCompanies.length === 0 ? (
@@ -209,10 +211,12 @@ export function EmployeeDashboard() {
                   <p className="text-sm text-muted-foreground mb-4">
                     {t('dashboard.noCompaniesDesc')}
                   </p>
-                  <Button onClick={() => setIsAddCompanyDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('dashboard.createCompany')}
-                  </Button>
+                  {user?.access?.canCreateCompanies && (
+                    <Button onClick={() => setIsAddCompanyDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('dashboard.createCompany')}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -276,10 +280,12 @@ export function EmployeeDashboard() {
                   {t('dashboard.individualFreelancersDesc')}
                 </CardDescription>
               </div>
-              <Button onClick={() => setIsAddIndividualDialogOpen(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                {t('individuals.add')}
-              </Button>
+              {user?.access?.canCreateIndividuals && (
+                <Button onClick={() => setIsAddIndividualDialogOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  {t('individuals.add')}
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {accessibleIndividuals.length === 0 ? (
@@ -289,10 +295,12 @@ export function EmployeeDashboard() {
                   <p className="text-sm text-muted-foreground mb-4">
                     {t('dashboard.noIndividualsDesc')}
                   </p>
-                  <Button onClick={() => setIsAddIndividualDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('dashboard.addIndividual')}
-                  </Button>
+                  {user?.access?.canCreateIndividuals && (
+                    <Button onClick={() => setIsAddIndividualDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('dashboard.addIndividual')}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -345,18 +353,22 @@ export function EmployeeDashboard() {
           <CardTitle className="text-base">{t('dashboard.quickActions')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsAddCompanyDialogOpen(true)}>
-            <Building2 className="h-4 w-4 mr-2" />
-            {t('dashboard.createCompany')}
-          </Button>
+          {user?.access?.canCreateCompanies && (
+            <Button variant="outline" size="sm" onClick={() => setIsAddCompanyDialogOpen(true)}>
+              <Building2 className="h-4 w-4 mr-2" />
+              {t('dashboard.createCompany')}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => navigate('/payslips')}>
             <FileText className="h-4 w-4 mr-2" />
             {t('dashboard.viewAllPayslips')}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsAddIndividualDialogOpen(true)}>
-            <UserCircle className="h-4 w-4 mr-2" />
-            {t('dashboard.addIndividual')}
-          </Button>
+          {user?.access?.canCreateIndividuals && (
+            <Button variant="outline" size="sm" onClick={() => setIsAddIndividualDialogOpen(true)}>
+              <UserCircle className="h-4 w-4 mr-2" />
+              {t('dashboard.addIndividual')}
+            </Button>
+          )}
         </CardContent>
       </Card>
 

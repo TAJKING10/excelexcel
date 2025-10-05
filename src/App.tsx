@@ -95,8 +95,13 @@ function App() {
             <Route path="dashboard" element={<EmployeeDashboard />} />
             <Route path="companies/:companyId" element={<CompanyDetail />} />
             <Route path="individuals/:individualId" element={<IndividualDetail />} />
+            <Route path="individuals/:individualId/annual-payslip" element={<AnnualPayslipPage />} />
+            <Route path="employees/:employeeId/annual-payslip" element={<AnnualPayslipPage />} />
             <Route path="payslips" element={<Payslips />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="admin/payslips/create" element={<CreatePayslip />} />
+            <Route path="admin/payslips/create-annual" element={<CreateAnnualPayslip />} />
+            <Route path="admin/payslips/create-annual/:employeeId" element={<CreateAnnualPayslip />} />
           </Route>
         )}
 

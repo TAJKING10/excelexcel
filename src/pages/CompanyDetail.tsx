@@ -216,10 +216,12 @@ export function CompanyDetail() {
         {/* Employees Tab */}
         <TabsContent value="employees" className="space-y-4">
           <div className="flex justify-end">
-            <Button onClick={() => setIsAddEmployeeDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('employees.add')}
-            </Button>
+            {(user?.role === 'SUPER_ADMIN' || user?.access?.canCreateEmployees) && (
+              <Button onClick={() => setIsAddEmployeeDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                {t('employees.add')}
+              </Button>
+            )}
           </div>
           <EmployeeListFiltered companyId={companyId} />
         </TabsContent>
@@ -229,10 +231,10 @@ export function CompanyDetail() {
           <div className="flex justify-between items-center">
             <AdvensysImportDialog companyId={companyId} onSuccess={() => {}}
             />
-            {user?.role === 'SUPER_ADMIN' && (
+            {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
               <Button
                 onClick={() => {
-                  navigate('/admin/payslips/create');
+                  navigate(user?.role === 'SUPER_ADMIN' ? '/admin/payslips/create' : '/admin/payslips/create');
                 }}
               >
                 <Plus className="mr-2 h-4 w-4" />

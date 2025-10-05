@@ -52,8 +52,9 @@ export function PayslipList() {
       // SuperAdmin sees all
     } else if (user?.role === 'EMPLOYEE' && user?.access) {
       // Employee - check access to companies or individuals
-      const hasAccess = user.access.companyIds.includes(payslip.companyId) ||
-                       user.access.individualIds.includes(payslip.employeeId)
+      const hasCompanyAccess = user.access.hasAllCompaniesAccess || user.access.companyIds.includes(payslip.companyId);
+      const hasIndividualAccess = user.access.hasAllIndividualsAccess || user.access.individualIds.includes(payslip.employeeId);
+      const hasAccess = hasCompanyAccess || hasIndividualAccess;
       if (!hasAccess) return false
     } else {
       return false
@@ -100,7 +101,7 @@ export function PayslipList() {
             {canDelete && ' Can Delete'}
           </p>
         </div>
-        {user?.role === 'SUPER_ADMIN' && (
+        {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
           <Button
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {

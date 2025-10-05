@@ -83,12 +83,17 @@ export function CreatePayslip() {
   );
 
   useEffect(() => {
-    if (user && user.role !== 'SUPER_ADMIN') {
+    if (user && user.role !== 'SUPER_ADMIN' && !user.access?.canEditPayslips) {
       navigate('/');
     }
   }, [user, navigate]);
 
-  const availableCompanies = companies;
+  const availableCompanies = user?.role === 'SUPER_ADMIN'
+    ? companies
+    : user?.access?.hasAllCompaniesAccess
+    ? companies
+    : companies.filter((c) => user?.access?.companyIds.includes(c.id));
+
   const filteredEmployees = selectedCompanyId
     ? employees.filter((e) => e.companyId === selectedCompanyId && e.status === 'active')
     : employees.filter((e) => e.status === 'active');

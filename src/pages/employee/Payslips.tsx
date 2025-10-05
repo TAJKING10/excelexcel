@@ -29,9 +29,9 @@ export function Payslips() {
   const currentYear = new Date().getFullYear();
 
   // Filter payslips accessible to this employee
-  const accessiblePayslips = payslips.filter((p) =>
-    user?.access?.companyIds.includes(p.companyId)
-  );
+  const accessiblePayslips = user?.access?.hasAllCompaniesAccess
+    ? payslips
+    : payslips.filter((p) => user?.access?.companyIds.includes(p.companyId));
 
   // Get current employee ID (simplified - in real app, would be based on logged in user)
   const currentEmployeeId = accessiblePayslips[0]?.employeeId;
