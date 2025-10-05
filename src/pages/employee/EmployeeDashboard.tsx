@@ -60,6 +60,10 @@ export function EmployeeDashboard() {
     country: 'Luxembourg',
     currency: 'EUR',
     status: 'active' as 'active' | 'terminated',
+    baseSalary: 0,
+    taxClass: 2,
+    matricule: '',
+    address: '',
   });
 
   // Get accessible companies and data
@@ -107,9 +111,24 @@ export function EmployeeDashboard() {
       toast({ title: t('common.error'), description: t('individuals.nameRequired'), variant: 'destructive' });
       return;
     }
+    if (!individualForm.baseSalary || individualForm.baseSalary <= 0) {
+      toast({ title: t('common.error'), description: 'Valid base salary is required', variant: 'destructive' });
+      return;
+    }
     addIndividual(individualForm);
     toast({ title: t('common.success'), description: t('individuals.createdSuccess') });
-    setIndividualForm({ firstName: '', lastName: '', email: '', country: 'Luxembourg', currency: 'EUR', status: 'active' });
+    setIndividualForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      country: 'Luxembourg',
+      currency: 'EUR',
+      status: 'active',
+      baseSalary: 0,
+      taxClass: 2,
+      matricule: '',
+      address: '',
+    });
     setIsAddIndividualDialogOpen(false);
   };
 
@@ -498,6 +517,50 @@ export function EmployeeDashboard() {
                   <SelectItem value="GBP">GBP (£)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="individual-baseSalary">Base Salary (Monthly)</Label>
+              <Input
+                id="individual-baseSalary"
+                type="number"
+                value={individualForm.baseSalary}
+                onChange={(e) => setIndividualForm({ ...individualForm, baseSalary: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <Label htmlFor="individual-taxClass">Tax Class</Label>
+              <Select
+                value={individualForm.taxClass.toString()}
+                onValueChange={(value) => setIndividualForm({ ...individualForm, taxClass: parseInt(value) })}
+              >
+                <SelectTrigger id="individual-taxClass">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Class 1</SelectItem>
+                  <SelectItem value="1a">Class 1a</SelectItem>
+                  <SelectItem value="2">Class 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="individual-matricule">Matricule (Optional)</Label>
+              <Input
+                id="individual-matricule"
+                value={individualForm.matricule}
+                onChange={(e) => setIndividualForm({ ...individualForm, matricule: e.target.value })}
+                placeholder="1989 11 24 004 47"
+              />
+            </div>
+            <div>
+              <Label htmlFor="individual-address">Address (Optional)</Label>
+              <Input
+                id="individual-address"
+                value={individualForm.address}
+                onChange={(e) => setIndividualForm({ ...individualForm, address: e.target.value })}
+                placeholder="52, Grand-Rue"
+              />
             </div>
             <div>
               <Label htmlFor="individual-status">{t('employees.status')}</Label>
