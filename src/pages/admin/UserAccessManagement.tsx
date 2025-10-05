@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useLanguageStore } from '@/stores/language';
-import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,22 +22,43 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Users, Plus, Edit, Trash2, Shield, Eye, EyeOff, Activity } from 'lucide-react';
-import { UserAccess, User } from '@/types';
+import { Users, Plus, Edit, Trash2, Shield, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { User, Company, Individual } from '@/types';
+
+interface UserWithAccess extends User {
+  user_access?: {
+    company_ids: string[];
+    individual_ids: string[];
+    can_view_payslips: boolean;
+    can_edit_payslips: boolean;
+    can_delete_payslips: boolean;
+    can_view_analytics: boolean;
+    has_all_companies_access: boolean;
+    has_all_individuals_access: boolean;
+    can_create_companies: boolean;
+    can_create_individuals: boolean;
+    can_create_employees: boolean;
+  };
+}
 
 export function UserAccessManagement() {
-  const { t } = useLanguageStore();
-  const { user: currentUser } = useAuthStore();
-  const { users, companies, individuals, addUser, updateUser, updateUserAccess, deleteUser, logActivity } = useDataStore();
+  const { t } = useTranslation();
+  const { user: currentUser } = useAuth();
   const { toast } = useToast();
+
+  const [users, setUsers] = useState<UserWithAccess[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [individuals, setIndividuals] = useState<Individual[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserWithAccess | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -46,9 +67,10 @@ export function UserAccessManagement() {
     password: '',
     isActive: true,
   });
-  const [accessData, setAccessData] = useState<UserAccess>({
-    companyIds: [],
-    individualIds: [],
+
+  const [accessData, setAccessData] = useState({
+    companyIds: [] as string[],
+    individualIds: [] as string[],
     canViewPayslips: true,
     canEditPayslips: false,
     canDeletePayslips: false,
@@ -60,7 +82,79 @@ export function UserAccessManagement() {
     canCreateEmployees: false,
   });
 
-  const handleOpenDialog = (user?: User) => {
+  // Fetch users, companies, and individuals
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      console.log('📥 Fetching users...');
+
+      // Fetch users (only EMPLOYEE role)
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_access(*)
+        `)
+        .eq('role', 'EMPLOYEE')
+        .order('created_at', { ascending: false });
+
+      console.log('📥 Users data:', { usersData, usersError });
+
+      if (usersError) {
+        console.error('❌ Users fetch error:', usersError);
+        throw usersError;
+      }
+
+      // Transform the data
+      const transformedUsers: UserWithAccess[] = (usersData || []).map((u: any) => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        firstName: u.first_name,
+        lastName: u.last_name,
+        role: u.role,
+        isActive: true,
+        user_access: u.user_access?.[0]
+      }));
+
+      console.log('✅ Transformed users:', transformedUsers);
+      setUsers(transformedUsers);
+
+      // Fetch companies
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('companies')
+        .select('*')
+        .order('name');
+
+      if (companiesError) throw companiesError;
+      setCompanies(companiesData || []);
+
+      // Fetch individuals
+      const { data: individualsData, error: individualsError } = await supabase
+        .from('individuals')
+        .select('*')
+        .order('first_name');
+
+      if (individualsError) throw individualsError;
+      setIndividuals(individualsData || []);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDialog = (user?: UserWithAccess) => {
     if (user) {
       setSelectedUser(user);
       setFormData({
@@ -71,19 +165,22 @@ export function UserAccessManagement() {
         password: '',
         isActive: user.isActive ?? true,
       });
-      setAccessData(user.access || {
-        companyIds: [],
-        individualIds: [],
-        canViewPayslips: true,
-        canEditPayslips: false,
-        canDeletePayslips: false,
-        canViewAnalytics: false,
-        hasAllCompaniesAccess: false,
-        hasAllIndividualsAccess: false,
-        canCreateCompanies: false,
-        canCreateIndividuals: false,
-        canCreateEmployees: false,
-      });
+
+      if (user.user_access) {
+        setAccessData({
+          companyIds: user.user_access.company_ids || [],
+          individualIds: user.user_access.individual_ids || [],
+          canViewPayslips: user.user_access.can_view_payslips ?? true,
+          canEditPayslips: user.user_access.can_edit_payslips ?? false,
+          canDeletePayslips: user.user_access.can_delete_payslips ?? false,
+          canViewAnalytics: user.user_access.can_view_analytics ?? false,
+          hasAllCompaniesAccess: user.user_access.has_all_companies_access ?? false,
+          hasAllIndividualsAccess: user.user_access.has_all_individuals_access ?? false,
+          canCreateCompanies: user.user_access.can_create_companies ?? false,
+          canCreateIndividuals: user.user_access.can_create_individuals ?? false,
+          canCreateEmployees: user.user_access.can_create_employees ?? false,
+        });
+      }
     } else {
       setSelectedUser(null);
       setFormData({
@@ -111,11 +208,11 @@ export function UserAccessManagement() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.username || !formData.firstName || !formData.lastName || !formData.email) {
       toast({
-        title: t('common.error', 'Error'),
-        description: t('employees.fillRequired', 'Please fill in all required fields'),
+        title: 'Error',
+        description: 'Please fill in all required fields',
         variant: 'destructive',
       });
       return;
@@ -123,76 +220,209 @@ export function UserAccessManagement() {
 
     if (!selectedUser && !formData.password) {
       toast({
-        title: t('common.error', 'Error'),
-        description: t('users.passwordRequired', 'Password is required for new users'),
+        title: 'Error',
+        description: 'Password is required for new users',
         variant: 'destructive',
       });
       return;
     }
 
-    if (selectedUser) {
-      const updateData: any = {
-        username: formData.username,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        isActive: formData.isActive,
-        access: accessData,
-      };
+    setSaving(true);
 
-      // Only update password if provided
-      if (formData.password) {
-        updateData.password = formData.password;
+    try {
+      if (selectedUser) {
+        // Update existing user
+        await updateExistingUser();
+      } else {
+        // Create new user
+        await createNewUser();
       }
 
-      updateUser(selectedUser.id, updateData);
-
-      logActivity({
-        userId: currentUser?.id || 'system',
-        username: currentUser?.username || 'System',
-        action: 'updated_user',
-        entityType: 'user',
-        entityId: selectedUser.id,
-        entityName: `${formData.firstName} ${formData.lastName}`,
-        details: `Updated user @${formData.username}`,
-      });
-
       toast({
-        title: t('common.success', 'Success'),
-        description: t('users.updatedSuccess', 'User updated successfully'),
+        title: 'Success',
+        description: selectedUser ? 'User updated successfully' : 'User created successfully',
       });
-    } else {
-      const newUser = {
+
+      setIsDialogOpen(false);
+      fetchData(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error saving user:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save user',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const createNewUser = async () => {
+    console.log('🚀 Starting user creation...', {
+      email: formData.email,
+      username: formData.username,
+    });
+
+    // Step 1: Create user in Supabase Auth
+    console.log('📝 Step 1: Creating auth user...');
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        data: {
+          username: formData.username,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+        },
+        emailRedirectTo: undefined,
+      },
+    });
+
+    console.log('✅ Auth response:', { authData, authError });
+
+    if (authError) {
+      console.error('❌ Auth error:', authError);
+      throw new Error(`Auth error: ${authError.message}`);
+    }
+    if (!authData.user) {
+      console.error('❌ No user in auth data');
+      throw new Error('User creation failed');
+    }
+
+    const userId = authData.user.id;
+    console.log('✅ User created with ID:', userId);
+
+    // Wait a bit for the trigger to create the profile
+    console.log('⏳ Waiting for trigger to create profile...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Step 2: Update profile with username and names (in case trigger didn't work)
+    console.log('📝 Step 2: Updating profile...');
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
         username: formData.username,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        password: formData.password,
-        role: 'EMPLOYEE' as const,
-        access: accessData,
-        isActive: formData.isActive,
-        createdAt: new Date().toISOString(),
-        createdBy: currentUser?.id,
-      };
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        role: 'EMPLOYEE',
+      })
+      .eq('id', userId);
 
-      addUser(newUser);
+    if (profileError) {
+      console.error('❌ Profile error:', profileError);
+      throw new Error(`Profile error: ${profileError.message}`);
+    }
+    console.log('✅ Profile updated');
 
-      logActivity({
-        userId: currentUser?.id || 'system',
-        username: currentUser?.username || 'System',
-        action: 'created_user',
-        entityType: 'user',
-        entityId: newUser.username,
-        entityName: `${formData.firstName} ${formData.lastName}`,
-        details: `Created new user @${formData.username}`,
+    // Step 3: Create user access record
+    console.log('📝 Step 3: Creating user access...');
+    const { error: accessError } = await supabase
+      .from('user_access')
+      .insert({
+        user_id: userId,
+        company_ids: accessData.companyIds,
+        individual_ids: accessData.individualIds,
+        can_view_payslips: accessData.canViewPayslips,
+        can_edit_payslips: accessData.canEditPayslips,
+        can_delete_payslips: accessData.canDeletePayslips,
+        can_view_analytics: accessData.canViewAnalytics,
+        has_all_companies_access: accessData.hasAllCompaniesAccess,
+        has_all_individuals_access: accessData.hasAllIndividualsAccess,
+        can_create_companies: accessData.canCreateCompanies,
+        can_create_individuals: accessData.canCreateIndividuals,
+        can_create_employees: accessData.canCreateEmployees,
       });
 
+    if (accessError) {
+      console.error('❌ Access error:', accessError);
+      throw new Error(`Access error: ${accessError.message}`);
+    }
+    console.log('✅ User access created successfully!');
+  };
+
+  const updateExistingUser = async () => {
+    if (!selectedUser) return;
+
+    // Step 1: Update profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        username: formData.username,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+      })
+      .eq('id', selectedUser.id);
+
+    if (profileError) throw new Error(`Profile error: ${profileError.message}`);
+
+    // Step 2: Update or create user access
+    const { error: accessError } = await supabase
+      .from('user_access')
+      .upsert({
+        user_id: selectedUser.id,
+        company_ids: accessData.companyIds,
+        individual_ids: accessData.individualIds,
+        can_view_payslips: accessData.canViewPayslips,
+        can_edit_payslips: accessData.canEditPayslips,
+        can_delete_payslips: accessData.canDeletePayslips,
+        can_view_analytics: accessData.canViewAnalytics,
+        has_all_companies_access: accessData.hasAllCompaniesAccess,
+        has_all_individuals_access: accessData.hasAllIndividualsAccess,
+        can_create_companies: accessData.canCreateCompanies,
+        can_create_individuals: accessData.canCreateIndividuals,
+        can_create_employees: accessData.canCreateEmployees,
+      });
+
+    if (accessError) throw new Error(`Access error: ${accessError.message}`);
+
+    // Step 3: Update password if provided
+    if (formData.password) {
+      // Note: This requires admin privileges - you may need to call a Supabase Edge Function
+      // For now, we'll skip password updates for existing users
       toast({
-        title: t('common.success', 'Success'),
-        description: t('users.createdSuccess', 'User created successfully'),
+        title: 'Note',
+        description: 'Password updates for existing users require additional setup',
+        variant: 'default',
       });
     }
-    setIsDialogOpen(false);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Delete user access first
+      const { error: accessError } = await supabase
+        .from('user_access')
+        .delete()
+        .eq('user_id', userId);
+
+      if (accessError) throw accessError;
+
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+      });
+
+      fetchData();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete user',
+        variant: 'destructive',
+      });
+    }
   };
 
   const toggleCompanyAccess = (companyId: string) => {
@@ -213,31 +443,39 @@ export function UserAccessManagement() {
     }));
   };
 
-  const getAccessSummary = (user: User) => {
-    if (!user.access) return t('common.noData');
+  const getAccessSummary = (user: UserWithAccess) => {
+    if (!user.user_access) return 'No access configured';
 
-    const companyText = user.access.hasAllCompaniesAccess
-      ? t('users.allCompanies', 'All Companies')
-      : `${user.access.companyIds.length} ${t('nav.companies').toLowerCase()}`;
+    const companyText = user.user_access.has_all_companies_access
+      ? 'All Companies'
+      : `${user.user_access.company_ids?.length || 0} companies`;
 
-    const individualText = user.access.hasAllIndividualsAccess
-      ? t('users.allIndividuals', 'All Individuals')
-      : `${user.access.individualIds.length} ${t('nav.individuals').toLowerCase()}`;
+    const individualText = user.user_access.has_all_individuals_access
+      ? 'All Individuals'
+      : `${user.user_access.individual_ids?.length || 0} individuals`;
 
     return `${companyText}, ${individualText}`;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('users.accessSummary')}</h1>
-          <p className="text-muted-foreground">{t('users.configureDetails')}</p>
+          <h1 className="text-3xl font-bold text-foreground">User Management</h1>
+          <p className="text-muted-foreground">Create and manage employee accounts</p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="mr-2 h-4 w-4" />
-          {t('users.addNewUser')}
+          Add New User
         </Button>
       </div>
 
@@ -246,56 +484,50 @@ export function UserAccessManagement() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Users className="mr-2 h-5 w-5" />
-            {t('users.accessSummary')}
+            Employee Accounts
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('employees.name')}</TableHead>
-                <TableHead>{t('employees.email')}</TableHead>
-                <TableHead>{t('users.username')}</TableHead>
-                <TableHead>{t('users.status', 'Status')}</TableHead>
-                <TableHead>{t('users.accessSummary')}</TableHead>
-                <TableHead>{t('users.permissions')}</TableHead>
-                <TableHead>{t('employees.actions')}</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Username</TableHead>
+                <TableHead>Access Summary</TableHead>
+                <TableHead>Permissions</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    {t('users.noUsers')}
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    No users found. Click "Add New User" to create one.
                   </TableCell>
                 </TableRow>
               ) : (
                 users.map((user) => (
-                  <TableRow key={user.id} className={user.isActive === false ? 'opacity-50' : ''}>
+                  <TableRow key={user.id}>
                     <TableCell className="font-medium">
                       {user.firstName} {user.lastName}
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>@{user.username}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.isActive !== false ? 'default' : 'secondary'}>
-                        {user.isActive !== false ? t('users.active', 'Active') : t('users.disabled', 'Disabled')}
-                      </Badge>
-                    </TableCell>
                     <TableCell>{getAccessSummary(user)}</TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        {user.access?.canViewPayslips && (
-                          <Badge variant="secondary" className="text-xs">{t('payslips.view')}</Badge>
+                      <div className="flex gap-1 flex-wrap">
+                        {user.user_access?.can_view_payslips && (
+                          <Badge variant="secondary" className="text-xs">View</Badge>
                         )}
-                        {user.access?.canEditPayslips && (
-                          <Badge variant="default" className="text-xs">{t('payslips.edit')}</Badge>
+                        {user.user_access?.can_edit_payslips && (
+                          <Badge variant="default" className="text-xs">Edit</Badge>
                         )}
-                        {user.access?.canDeletePayslips && (
-                          <Badge variant="destructive" className="text-xs">{t('payslips.delete')}</Badge>
+                        {user.user_access?.can_delete_payslips && (
+                          <Badge variant="destructive" className="text-xs">Delete</Badge>
                         )}
-                        {user.access?.canViewAnalytics && (
-                          <Badge variant="outline" className="text-xs">{t('nav.analytics')}</Badge>
+                        {user.user_access?.can_view_analytics && (
+                          <Badge variant="outline" className="text-xs">Analytics</Badge>
                         )}
                       </div>
                     </TableCell>
@@ -311,7 +543,7 @@ export function UserAccessManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteUser(user.id)}
+                          onClick={() => handleDeleteUser(user.id)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -330,10 +562,10 @@ export function UserAccessManagement() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedUser ? t('users.editUserAccess') : t('users.addNewUser')}
+              {selectedUser ? 'Edit User Access' : 'Add New User'}
             </DialogTitle>
             <DialogDescription>
-              {t('users.configureDetails')}
+              Configure user details and access permissions
             </DialogDescription>
           </DialogHeader>
 
@@ -341,37 +573,40 @@ export function UserAccessManagement() {
             {/* User Details */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">{t('employees.firstname')}</Label>
+                <Label htmlFor="firstName">First Name *</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
                   onChange={(e) =>
                     setFormData({ ...formData, firstName: e.target.value })
                   }
+                  disabled={saving}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">{t('employees.name')}</Label>
+                <Label htmlFor="lastName">Last Name *</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
                   onChange={(e) =>
                     setFormData({ ...formData, lastName: e.target.value })
                   }
+                  disabled={saving}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="username">{t('auth.username')}</Label>
+                <Label htmlFor="username">Username *</Label>
                 <Input
                   id="username"
                   value={formData.username}
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
                   }
+                  disabled={saving || !!selectedUser}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">{t('employees.email')}</Label>
+                <Label htmlFor="email">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -379,6 +614,7 @@ export function UserAccessManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
+                  disabled={saving || !!selectedUser}
                 />
               </div>
             </div>
@@ -386,7 +622,7 @@ export function UserAccessManagement() {
             {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">
-                {t('auth.password', 'Password')} {selectedUser && `(${t('users.leaveBlank', 'leave blank to keep current')})`}
+                Password {selectedUser ? '(leave blank to keep current)' : '*'}
               </Label>
               <div className="relative">
                 <Input
@@ -394,7 +630,8 @@ export function UserAccessManagement() {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={selectedUser ? t('users.enterNewPassword', 'Enter new password') : t('users.enterPassword', 'Enter password')}
+                  placeholder={selectedUser ? 'Enter new password' : 'Enter password'}
+                  disabled={saving}
                 />
                 <Button
                   type="button"
@@ -402,28 +639,17 @@ export function UserAccessManagement() {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={saving}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
 
-            {/* Active Status */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-              />
-              <Label htmlFor="isActive">
-                {t('users.userIs', 'User is')} {formData.isActive ? t('users.active', 'Active') : t('users.disabled', 'Disabled')}
-              </Label>
-            </div>
-
             {/* Permissions */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">{t('users.permissions')}</Label>
+                <Label className="text-base font-semibold">Permissions</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -445,9 +671,10 @@ export function UserAccessManagement() {
                     });
                   }}
                   className="text-xs"
+                  disabled={saving}
                 >
                   <Shield className="mr-1 h-3 w-3" />
-                  {t('users.grantFullAccess', 'Grant Full Access')}
+                  Grant Full Access
                 </Button>
               </div>
               <div className="space-y-2">
@@ -458,9 +685,10 @@ export function UserAccessManagement() {
                     onCheckedChange={(checked) =>
                       setAccessData({ ...accessData, canViewPayslips: !!checked })
                     }
+                    disabled={saving}
                   />
                   <Label htmlFor="canViewPayslips" className="font-normal">
-                    {t('users.canViewPayslips')}
+                    Can View Payslips
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -470,9 +698,10 @@ export function UserAccessManagement() {
                     onCheckedChange={(checked) =>
                       setAccessData({ ...accessData, canEditPayslips: !!checked })
                     }
+                    disabled={saving}
                   />
                   <Label htmlFor="canEditPayslips" className="font-normal">
-                    {t('users.canEditPayslips')}
+                    Can Edit Payslips
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -482,9 +711,10 @@ export function UserAccessManagement() {
                     onCheckedChange={(checked) =>
                       setAccessData({ ...accessData, canDeletePayslips: !!checked })
                     }
+                    disabled={saving}
                   />
                   <Label htmlFor="canDeletePayslips" className="font-normal">
-                    {t('users.canDeletePayslips')}
+                    Can Delete Payslips
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -494,9 +724,10 @@ export function UserAccessManagement() {
                     onCheckedChange={(checked) =>
                       setAccessData({ ...accessData, canViewAnalytics: !!checked })
                     }
+                    disabled={saving}
                   />
                   <Label htmlFor="canViewAnalytics" className="font-normal">
-                    {t('users.canViewAnalytics')}
+                    Can View Analytics
                   </Label>
                 </div>
               </div>
@@ -504,7 +735,7 @@ export function UserAccessManagement() {
 
             {/* Company Access */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">{t('users.companyAccess')}</Label>
+              <Label className="text-base font-semibold">Company Access</Label>
 
               {/* All Companies Toggle */}
               <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -515,13 +746,13 @@ export function UserAccessManagement() {
                     setAccessData({
                       ...accessData,
                       hasAllCompaniesAccess: !!checked,
-                      // Clear individual company selections if "All" is checked
                       companyIds: checked ? [] : accessData.companyIds
                     });
                   }}
+                  disabled={saving}
                 />
                 <Label htmlFor="allCompanies" className="font-semibold text-blue-700 dark:text-blue-300">
-                  {t('users.allCompaniesCurrentFuture', 'All Companies (Current & Future)')}
+                  All Companies (Current & Future)
                 </Label>
               </div>
 
@@ -534,9 +765,10 @@ export function UserAccessManagement() {
                     onCheckedChange={(checked) => {
                       setAccessData({ ...accessData, canCreateCompanies: !!checked });
                     }}
+                    disabled={saving}
                   />
                   <Label htmlFor="canCreateCompanies" className="font-medium text-green-700 dark:text-green-300">
-                    {t('users.canCreateCompanies', 'Can Create New Companies')}
+                    Can Create New Companies
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-2 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
@@ -546,9 +778,10 @@ export function UserAccessManagement() {
                     onCheckedChange={(checked) => {
                       setAccessData({ ...accessData, canCreateEmployees: !!checked });
                     }}
+                    disabled={saving}
                   />
                   <Label htmlFor="canCreateEmployees" className="font-medium text-green-700 dark:text-green-300">
-                    {t('users.canCreateEmployees', 'Can Create Employees Inside Companies')}
+                    Can Create Employees Inside Companies
                   </Label>
                 </div>
               </div>
@@ -556,26 +789,31 @@ export function UserAccessManagement() {
               {/* Individual Company Selection */}
               {!accessData.hasAllCompaniesAccess && (
                 <div className="border rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
-                  <p className="text-sm text-muted-foreground mb-2">{t('users.selectSpecificCompanies', 'Select specific companies:')}</p>
-                  {companies.map((company) => (
-                    <div key={company.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`company-${company.id}`}
-                        checked={accessData.companyIds.includes(company.id)}
-                        onCheckedChange={() => toggleCompanyAccess(company.id)}
-                      />
-                      <Label htmlFor={`company-${company.id}`} className="font-normal">
-                        {company.name}
-                      </Label>
-                    </div>
-                  ))}
+                  <p className="text-sm text-muted-foreground mb-2">Select specific companies:</p>
+                  {companies.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No companies available</p>
+                  ) : (
+                    companies.map((company) => (
+                      <div key={company.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`company-${company.id}`}
+                          checked={accessData.companyIds.includes(company.id)}
+                          onCheckedChange={() => toggleCompanyAccess(company.id)}
+                          disabled={saving}
+                        />
+                        <Label htmlFor={`company-${company.id}`} className="font-normal">
+                          {company.name}
+                        </Label>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
 
             {/* Individual Access */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">{t('users.individualAccess')}</Label>
+              <Label className="text-base font-semibold">Individual Access</Label>
 
               {/* All Individuals Toggle */}
               <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-950 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -586,13 +824,13 @@ export function UserAccessManagement() {
                     setAccessData({
                       ...accessData,
                       hasAllIndividualsAccess: !!checked,
-                      // Clear individual selections if "All" is checked
                       individualIds: checked ? [] : accessData.individualIds
                     });
                   }}
+                  disabled={saving}
                 />
                 <Label htmlFor="allIndividuals" className="font-semibold text-purple-700 dark:text-purple-300">
-                  {t('users.allIndividualsCurrentFuture', 'All Individuals (Current & Future)')}
+                  All Individuals (Current & Future)
                 </Label>
               </div>
 
@@ -604,9 +842,10 @@ export function UserAccessManagement() {
                   onCheckedChange={(checked) => {
                     setAccessData({ ...accessData, canCreateIndividuals: !!checked });
                   }}
+                  disabled={saving}
                 />
                 <Label htmlFor="canCreateIndividuals" className="font-medium text-green-700 dark:text-green-300">
-                  {t('users.canCreateIndividuals', 'Can Create New Individuals')}
+                  Can Create New Individuals
                 </Label>
               </div>
 
@@ -614,22 +853,23 @@ export function UserAccessManagement() {
               {!accessData.hasAllIndividualsAccess && (
                 <div className="border rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
                   {individuals.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t('users.noIndividualsAvailable')}</p>
+                    <p className="text-sm text-muted-foreground">No individuals available</p>
                   ) : (
                     <>
-                      <p className="text-sm text-muted-foreground mb-2">{t('users.selectSpecificIndividuals', 'Select specific individuals:')}</p>
+                      <p className="text-sm text-muted-foreground mb-2">Select specific individuals:</p>
                       {individuals.map((individual) => (
                         <div key={individual.id} className="flex items-center space-x-2">
                           <Checkbox
                             id={`individual-${individual.id}`}
                             checked={accessData.individualIds.includes(individual.id)}
                             onCheckedChange={() => toggleIndividualAccess(individual.id)}
+                            disabled={saving}
                           />
                           <Label
                             htmlFor={`individual-${individual.id}`}
                             className="font-normal"
                           >
-                            {individual.firstName} {individual.lastName}
+                            {individual.first_name} {individual.last_name}
                           </Label>
                         </div>
                       ))}
@@ -641,11 +881,12 @@ export function UserAccessManagement() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              {t('common.cancel')}
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
+              Cancel
             </Button>
-            <Button onClick={handleSave}>
-              {selectedUser ? t('common.update') : t('common.create')} {t('users.user')}
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {selectedUser ? 'Update' : 'Create'} User
             </Button>
           </DialogFooter>
         </DialogContent>
