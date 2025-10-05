@@ -352,6 +352,13 @@ export function EmployeeDashboard() {
                           className="w-full mt-4"
                           variant="outline"
                           size="sm"
+                          onClick={() => {
+                            console.log('🟢 Create Payslip button clicked from dashboard for individual:', individual.id);
+                            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                            const targetPath = `${basePath}/payslips/create-annual/${individual.id}`;
+                            console.log('🟢 Navigating to:', targetPath);
+                            navigate(targetPath);
+                          }}
                         >
                           {t('payslips.create')}
                           <ArrowRight className="ml-2 h-4 w-4" />

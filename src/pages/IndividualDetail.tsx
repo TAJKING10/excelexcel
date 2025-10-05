@@ -33,6 +33,9 @@ export function IndividualDetail() {
     imposable: 0,
   });
 
+  console.log('🔶 IndividualDetail rendered - Dialog state:', isCreatePayslipDialogOpen);
+  console.log('🔶 User permissions:', { role: user?.role, canEditPayslips: user?.access?.canEditPayslips });
+
   if (!individualId) {
     return <div>Individual not found</div>;
   }
@@ -58,10 +61,16 @@ export function IndividualDetail() {
   const ytdNet = ytdPayslips.reduce((sum, p) => sum + p.netPay, 0);
 
   const handleCreatePayslip = () => {
+    console.log('🔵 handleCreatePayslip function called!');
+    console.log('🔵 Payslip form data:', payslipForm);
+
     if (!payslipForm.grossMonthly || payslipForm.grossMonthly <= 0) {
+      console.log('❌ Validation failed: Invalid gross salary');
       toast({ title: 'Error', description: 'Valid gross salary is required', variant: 'destructive' });
       return;
     }
+
+    console.log('✅ Validation passed, creating payslip...');
 
     // Calculate contributions (simplified)
     const maladie = payslipForm.grossMonthly * 0.028;
@@ -258,6 +267,21 @@ export function IndividualDetail() {
 
         {/* Payslips Tab */}
         <TabsContent value="payslips" className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Fiches de paie</h3>
+            {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
+              <Button onClick={() => {
+                console.log('🟢 Create Annual Payslip button clicked for individual!');
+                const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                const targetPath = `${basePath}/payslips/create-annual/${individualId}`;
+                console.log('🟢 Navigating to:', targetPath);
+                navigate(targetPath);
+              }}>
+                <Plus className="mr-2 h-4 w-4" />
+                Créer Fiche de Paie Annuelle
+              </Button>
+            )}
+          </div>
           <Card>
             <CardHeader>
               <CardTitle>Fiches de paie</CardTitle>
@@ -376,7 +400,10 @@ export function IndividualDetail() {
       </Tabs>
 
       {/* Create Payslip Dialog */}
-      <Dialog open={isCreatePayslipDialogOpen} onOpenChange={setIsCreatePayslipDialogOpen}>
+      <Dialog open={isCreatePayslipDialogOpen} onOpenChange={(open) => {
+        console.log('🟡 Dialog state changing to:', open);
+        setIsCreatePayslipDialogOpen(open);
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Créer fiche de paie immédiate</DialogTitle>
@@ -441,10 +468,16 @@ export function IndividualDetail() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreatePayslipDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              console.log('🔴 Cancel button clicked');
+              setIsCreatePayslipDialogOpen(false);
+            }}>
               Cancel
             </Button>
-            <Button onClick={handleCreatePayslip}>Create Payslip</Button>
+            <Button onClick={() => {
+              console.log('🟢 Create Payslip submit button clicked!');
+              handleCreatePayslip();
+            }}>Create Payslip</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
