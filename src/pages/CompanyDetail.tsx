@@ -628,13 +628,8 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                           Voir
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => {
-                          console.log('🔴 Annuelle button clicked!');
-                          console.log('User role:', user?.role);
-                          console.log('Payslip employeeId:', payslip.employeeId);
                           const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-                          const targetPath = `${basePath}/employees/${payslip.employeeId}/annual-payslip`;
-                          console.log('Navigating to:', targetPath);
-                          navigate(targetPath);
+                          navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
                         }}>
                           <FileSpreadsheet size={16} className="mr-2" />
                           Annuelle
