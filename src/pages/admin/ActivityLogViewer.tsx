@@ -70,26 +70,26 @@ export function ActivityLogViewer() {
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center">
           <Activity className="mr-3 h-8 w-8" />
-          Activity Log
+          {t('activity.title', 'Activity Log')}
         </h1>
-        <p className="text-muted-foreground">Track all user actions and system events</p>
+        <p className="text-muted-foreground">{t('activity.subtitle', 'Track all user actions and system events')}</p>
       </div>
 
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>{t('common.filters', 'Filters')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="user-filter">User</Label>
+              <Label htmlFor="user-filter">{t('users.user', 'User')}</Label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                 <SelectTrigger id="user-filter">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="all">{t('activity.allUsers', 'All Users')}</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.firstName} {user.lastName} (@{user.username})
@@ -100,30 +100,30 @@ export function ActivityLogViewer() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="entity-filter">Entity Type</Label>
+              <Label htmlFor="entity-filter">{t('activity.entityType', 'Entity Type')}</Label>
               <Select value={selectedEntityType} onValueChange={setSelectedEntityType}>
                 <SelectTrigger id="entity-filter">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="payslip">Payslips</SelectItem>
-                  <SelectItem value="employee">Employees</SelectItem>
-                  <SelectItem value="company">Companies</SelectItem>
-                  <SelectItem value="individual">Individuals</SelectItem>
-                  <SelectItem value="user">Users</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="all">{t('activity.allTypes', 'All Types')}</SelectItem>
+                  <SelectItem value="payslip">{t('nav.payslips', 'Payslips')}</SelectItem>
+                  <SelectItem value="employee">{t('nav.employees', 'Employees')}</SelectItem>
+                  <SelectItem value="company">{t('nav.companies', 'Companies')}</SelectItem>
+                  <SelectItem value="individual">{t('nav.individuals', 'Individuals')}</SelectItem>
+                  <SelectItem value="user">{t('activity.users', 'Users')}</SelectItem>
+                  <SelectItem value="other">{t('activity.other', 'Other')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
+              <Label htmlFor="search">{t('common.search', 'Search')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder="Search actions, details..."
+                  placeholder={t('activity.searchPlaceholder', 'Search actions, details...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -137,26 +137,26 @@ export function ActivityLogViewer() {
       {/* Activity Log Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity ({filteredLogs.length} entries)</CardTitle>
+          <CardTitle>{t('activity.recentActivity', 'Recent Activity')} ({filteredLogs.length} {t('activity.entries', 'entries')})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Entity Type</TableHead>
-                  <TableHead>Entity</TableHead>
-                  <TableHead>Details</TableHead>
+                  <TableHead>{t('activity.timestamp', 'Timestamp')}</TableHead>
+                  <TableHead>{t('users.user', 'User')}</TableHead>
+                  <TableHead>{t('activity.action', 'Action')}</TableHead>
+                  <TableHead>{t('activity.entityType', 'Entity Type')}</TableHead>
+                  <TableHead>{t('activity.entity', 'Entity')}</TableHead>
+                  <TableHead>{t('activity.details', 'Details')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLogs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      No activity logs found
+                      {t('activity.noLogs', 'No activity logs found')}
                     </TableCell>
                   </TableRow>
                 ) : (

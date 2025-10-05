@@ -68,11 +68,11 @@ export function Payslips() {
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="list">
             <FileSpreadsheet size={16} className="mr-2" />
-            Fiches de Paie
+            {t('payslips.title', 'Payslips')}
           </TabsTrigger>
           <TabsTrigger value="annual">
             <TrendingUp size={16} className="mr-2" />
-            Récapitulatif Annuel
+            {t('payslips.annualRecap', 'Annual Recap')}
           </TabsTrigger>
         </TabsList>
 
@@ -152,7 +152,7 @@ export function Payslips() {
           ) : (
             <Card>
               <CardContent className="pt-6 text-center text-muted-foreground">
-                <p>Aucune donnée disponible</p>
+                <p>{t('common.noData', 'No data available')}</p>
               </CardContent>
             </Card>
           )}
@@ -163,7 +163,7 @@ export function Payslips() {
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Fiche de Paie</DialogTitle>
+            <DialogTitle>{t('payslips.title', 'Payslip')}</DialogTitle>
           </DialogHeader>
           {selectedPayslipData && (
             <LuxembourgPayslipDetail payslip={selectedPayslipData} />

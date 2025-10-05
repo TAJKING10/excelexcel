@@ -34,13 +34,13 @@ export function IndividualDetail() {
   });
 
   if (!individualId) {
-    return <div>Individual not found</div>;
+    return <div>{t('individuals.notFound', 'Individual not found')}</div>;
   }
 
   const individual = individuals.find((i) => i.id === individualId);
 
   if (!individual) {
-    return <div>Individual not found</div>;
+    return <div>{t('individuals.notFound', 'Individual not found')}</div>;
   }
 
   // Get payslips for this individual
@@ -59,7 +59,7 @@ export function IndividualDetail() {
 
   const handleCreatePayslip = () => {
     if (!payslipForm.grossMonthly || payslipForm.grossMonthly <= 0) {
-      toast({ title: 'Error', description: 'Valid gross salary is required', variant: 'destructive' });
+      toast({ title: t('common.error', 'Error'), description: t('payslips.validGrossRequired', 'Valid gross salary is required'), variant: 'destructive' });
       return;
     }
 
@@ -160,7 +160,7 @@ export function IndividualDetail() {
       ],
     });
 
-    toast({ title: 'Success', description: 'Payslip created successfully' });
+    toast({ title: t('common.success', 'Success'), description: t('payslips.createdSuccess', 'Payslip created successfully') });
     setPayslipForm({
       period: { month: new Date().getMonth() + 1, year: new Date().getFullYear() },
       grossMonthly: 0,
@@ -216,7 +216,7 @@ export function IndividualDetail() {
             navigate(`${basePath}/payslips/create-annual/${individualId}`);
           }}>
             <Plus className="mr-2 h-4 w-4" />
-            Créer fiche de paie annuelle
+            {t('payslips.createAnnual', 'Create Annual Payslip')}
           </Button>
         )}
       </div>
@@ -225,21 +225,21 @@ export function IndividualDetail() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           icon={CreditCard}
-          title="Total Net (YTD)"
+          title={t('payslips.totalNetYTD', 'Total Net (YTD)')}
           value={formatCurrency(ytdNet)}
-          subtitle={`${ytdPayslips.length} payslips this year`}
+          subtitle={`${ytdPayslips.length} ${t('payslips.payslipsThisYear', 'payslips this year')}`}
         />
         <StatCard
           icon={FileText}
-          title="Last Payslip"
-          value={lastPayslip ? formatCurrency(lastPayslip.netPay) : 'N/A'}
-          subtitle={lastPayslip ? `${String(lastPayslip.period.month).padStart(2, '0')}/${lastPayslip.period.year}` : 'No payslips yet'}
+          title={t('payslips.lastPayslip', 'Last Payslip')}
+          value={lastPayslip ? formatCurrency(lastPayslip.netPay) : t('common.noData', 'N/A')}
+          subtitle={lastPayslip ? `${String(lastPayslip.period.month).padStart(2, '0')}/${lastPayslip.period.year}` : t('payslips.noPayslipsYet', 'No payslips yet')}
         />
         <StatCard
           icon={TrendingUp}
-          title="YTD Gross"
+          title={t('payslips.ytdGross', 'YTD Gross')}
           value={formatCurrency(ytdGross)}
-          subtitle={`Year ${currentYear}`}
+          subtitle={`${t('payslips.year', 'Year')} ${currentYear}`}
         />
       </div>
 
@@ -248,45 +248,45 @@ export function IndividualDetail() {
         <TabsList>
           <TabsTrigger value="payslips">
             <FileText className="h-4 w-4 mr-2" />
-            Fiches de paie
+            {t('payslips.title', 'Payslips')}
           </TabsTrigger>
           <TabsTrigger value="info">
             <UserCircle className="h-4 w-4 mr-2" />
-            Information
+            {t('common.info', 'Information')}
           </TabsTrigger>
         </TabsList>
 
         {/* Payslips Tab */}
         <TabsContent value="payslips" className="space-y-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Fiches de paie</h3>
+            <h3 className="text-lg font-semibold">{t('payslips.title', 'Payslips')}</h3>
             {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
               <Button onClick={() => {
                 const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
                 navigate(`${basePath}/payslips/create-annual/${individualId}`);
               }}>
                 <Plus className="mr-2 h-4 w-4" />
-                {t('payslips.createAnnual', 'Créer Fiche de Paie Annuelle')}
+                {t('payslips.createAnnual', 'Create Annual Payslip')}
               </Button>
             )}
           </div>
           <Card>
             <CardHeader>
-              <CardTitle>Fiches de paie</CardTitle>
+              <CardTitle>{t('payslips.title', 'Payslips')}</CardTitle>
             </CardHeader>
             <CardContent>
               {individualPayslips.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">No payslips found</p>
+                  <p className="text-muted-foreground">{t('payslips.noPayslips', 'No payslips found')}</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Period</TableHead>
-                      <TableHead>Gross</TableHead>
-                      <TableHead>Net</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t('payslips.period', 'Period')}</TableHead>
+                      <TableHead>{t('payslips.gross', 'Gross')}</TableHead>
+                      <TableHead>{t('payslips.net', 'Net')}</TableHead>
+                      <TableHead>{t('payslips.actions', 'Actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -307,10 +307,10 @@ export function IndividualDetail() {
                                   const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
                                   navigate(`${basePath}/individuals/${individualId}/annual-payslip`);
                                 }}
-                                title="View Annual Payslip"
+                                title={t('payslips.viewAnnual', 'View Annual Payslip')}
                               >
                                 <FileSpreadsheet size={16} className="mr-2" />
-                                Annuelle
+                                {t('payslips.annual', 'Annual')}
                               </Button>
                             )}
                             {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
@@ -321,10 +321,10 @@ export function IndividualDetail() {
                                   const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
                                   navigate(`${basePath}/payslips/create-annual/${individualId}`);
                                 }}
-                                title="Edit Annual Payslip"
+                                title={t('payslips.editAnnual', 'Edit Annual Payslip')}
                               >
                                 <Edit size={16} className="mr-2" />
-                                Edit
+                                {t('common.edit', 'Edit')}
                               </Button>
                             )}
                             <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
@@ -345,38 +345,38 @@ export function IndividualDetail() {
         <TabsContent value="info">
           <Card>
             <CardHeader>
-              <CardTitle>Individual Information</CardTitle>
+              <CardTitle>{t('individuals.information', 'Individual Information')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">First Name</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('employees.firstname', 'First Name')}</p>
                   <p className="text-foreground">{individual.firstName}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Last Name</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('employees.name', 'Last Name')}</p>
                   <p className="text-foreground">{individual.lastName}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('employees.email', 'Email')}</p>
                   <p className="text-foreground">{individual.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Country</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('companies.country', 'Country')}</p>
                   <p className="text-foreground">{individual.country}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Currency</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('companies.currency', 'Currency')}</p>
                   <p className="text-foreground">{individual.currency}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('employees.status', 'Status')}</p>
                   <Badge variant={individual.status === 'active' ? 'default' : 'secondary'}>
                     {individual.status}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Created At</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('dashboard.createdAt', 'Created At')}</p>
                   <p className="text-foreground">
                     {new Date(individual.createdAt).toLocaleDateString()}
                   </p>
@@ -391,11 +391,11 @@ export function IndividualDetail() {
       <Dialog open={isCreatePayslipDialogOpen} onOpenChange={setIsCreatePayslipDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Créer fiche de paie immédiate</DialogTitle>
+            <DialogTitle>{t('payslips.createQuick', 'Create Quick Payslip')}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="month">Month</Label>
+              <Label htmlFor="month">{t('payslips.month', 'Month')}</Label>
               <Select
                 value={String(payslipForm.period.month)}
                 onValueChange={(value) => setPayslipForm({ ...payslipForm, period: { ...payslipForm.period, month: parseInt(value) } })}
@@ -413,7 +413,7 @@ export function IndividualDetail() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="year">Year</Label>
+              <Label htmlFor="year">{t('payslips.year', 'Year')}</Label>
               <Input
                 id="year"
                 type="number"
@@ -422,7 +422,7 @@ export function IndividualDetail() {
               />
             </div>
             <div>
-              <Label htmlFor="gross">Gross Monthly</Label>
+              <Label htmlFor="gross">{t('payslips.earnings.grossMonthly', 'Gross Monthly')}</Label>
               <Input
                 id="gross"
                 type="number"
@@ -432,31 +432,31 @@ export function IndividualDetail() {
               />
             </div>
             <div>
-              <Label htmlFor="cotisable">Cotisable</Label>
+              <Label htmlFor="cotisable">{t('payslips.earnings.cotisable', 'Contributable')}</Label>
               <Input
                 id="cotisable"
                 type="number"
                 value={payslipForm.cotisable}
                 onChange={(e) => setPayslipForm({ ...payslipForm, cotisable: parseFloat(e.target.value) || 0 })}
-                placeholder="Same as gross"
+                placeholder={t('payslips.sameAsGross', 'Same as gross')}
               />
             </div>
             <div>
-              <Label htmlFor="imposable">Imposable</Label>
+              <Label htmlFor="imposable">{t('payslips.earnings.imposable', 'Taxable')}</Label>
               <Input
                 id="imposable"
                 type="number"
                 value={payslipForm.imposable}
                 onChange={(e) => setPayslipForm({ ...payslipForm, imposable: parseFloat(e.target.value) || 0 })}
-                placeholder="Same as gross"
+                placeholder={t('payslips.sameAsGross', 'Same as gross')}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreatePayslipDialogOpen(false)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
-            <Button onClick={handleCreatePayslip}>Create Payslip</Button>
+            <Button onClick={handleCreatePayslip}>{t('payslips.create', 'Create Payslip')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

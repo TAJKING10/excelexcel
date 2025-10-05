@@ -112,7 +112,7 @@ export function EmployeeDashboard() {
       return;
     }
     if (!individualForm.baseSalary || individualForm.baseSalary <= 0) {
-      toast({ title: t('common.error'), description: 'Valid base salary is required', variant: 'destructive' });
+      toast({ title: t('common.error'), description: t('employees.validSalaryRequired', 'Valid base salary is required'), variant: 'destructive' });
       return;
     }
     addIndividual(individualForm);
@@ -523,7 +523,7 @@ export function EmployeeDashboard() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="individual-baseSalary">Base Salary (Monthly)</Label>
+              <Label htmlFor="individual-baseSalary">{t('employees.baseSalary', 'Base Salary')} ({t('payslips.monthly', 'Monthly')})</Label>
               <Input
                 id="individual-baseSalary"
                 type="number"
@@ -533,7 +533,7 @@ export function EmployeeDashboard() {
               />
             </div>
             <div>
-              <Label htmlFor="individual-taxClass">Tax Class</Label>
+              <Label htmlFor="individual-taxClass">{t('employees.taxClass', 'Tax Class')}</Label>
               <Select
                 value={individualForm.taxClass.toString()}
                 onValueChange={(value) => setIndividualForm({ ...individualForm, taxClass: parseInt(value) })}
@@ -542,14 +542,14 @@ export function EmployeeDashboard() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Class 1</SelectItem>
-                  <SelectItem value="1a">Class 1a</SelectItem>
-                  <SelectItem value="2">Class 2</SelectItem>
+                  <SelectItem value="1">{t('employees.class1', 'Class 1')}</SelectItem>
+                  <SelectItem value="1a">{t('employees.class1a', 'Class 1a')}</SelectItem>
+                  <SelectItem value="2">{t('employees.class2', 'Class 2')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="individual-matricule">Matricule (Optional)</Label>
+              <Label htmlFor="individual-matricule">{t('employees.matricule', 'Matricule')} ({t('common.optional', 'Optional')})</Label>
               <Input
                 id="individual-matricule"
                 value={individualForm.matricule}
@@ -558,7 +558,7 @@ export function EmployeeDashboard() {
               />
             </div>
             <div>
-              <Label htmlFor="individual-address">Address (Optional)</Label>
+              <Label htmlFor="individual-address">{t('employees.address', 'Address')} ({t('common.optional', 'Optional')})</Label>
               <Input
                 id="individual-address"
                 value={individualForm.address}

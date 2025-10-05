@@ -145,7 +145,7 @@ export function CompanyDetail() {
           </TabsTrigger>
           <TabsTrigger value="annual-analysis">
             <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Analyse Annuelle
+            {t('analytics.annualAnalysis', 'Analyse Annuelle')}
           </TabsTrigger>
         </TabsList>
 
@@ -389,8 +389,8 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
     });
 
     toast({
-      title: 'Succès',
-      description: 'Employé mis à jour avec succès',
+      title: t('common.success', 'Succès'),
+      description: t('employees.updatedSuccess', 'Employé mis à jour avec succès'),
     });
 
     setEditDialogOpen(false);
@@ -398,11 +398,11 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
   };
 
   const handleDelete = (employeeId: string, employeeName: string) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer ${employeeName} ?`)) {
+    if (confirm(t('employees.confirmDelete', `Êtes-vous sûr de vouloir supprimer cet employé ?`))) {
       deleteEmployee(employeeId);
       toast({
-        title: 'Succès',
-        description: 'Employé supprimé avec succès',
+        title: t('common.success', 'Succès'),
+        description: t('employees.deletedSuccess', 'Employé supprimé avec succès'),
       });
     }
   };
@@ -459,7 +459,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
                           navigate(`${basePath}/employees/${employee.id}/annual-payslip`);
                         }}>
                           <FileSpreadsheet size={16} className="mr-2" />
-                          Fiche de Paie Annuelle
+                          {t('payslips.annualTitle', 'Fiche de Paie Annuelle')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEdit(employee)}>
                           <Edit size={16} className="mr-2" />
@@ -490,11 +490,11 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Modifier l'employé</DialogTitle>
+            <DialogTitle>{t('employees.editEmployee', 'Modifier l\'employé')}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="edit-firstName">Prénom</Label>
+              <Label htmlFor="edit-firstName">{t('employees.firstName', 'Prénom')}</Label>
               <Input
                 id="edit-firstName"
                 value={employeeForm.firstName}
@@ -502,7 +502,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
               />
             </div>
             <div>
-              <Label htmlFor="edit-lastName">Nom</Label>
+              <Label htmlFor="edit-lastName">{t('employees.lastName', 'Nom')}</Label>
               <Input
                 id="edit-lastName"
                 value={employeeForm.lastName}
@@ -510,7 +510,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
               />
             </div>
             <div>
-              <Label htmlFor="edit-email">Email</Label>
+              <Label htmlFor="edit-email">{t('employees.email', 'Email')}</Label>
               <Input
                 id="edit-email"
                 type="email"
@@ -519,7 +519,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
               />
             </div>
             <div>
-              <Label htmlFor="edit-matricule">Matricule</Label>
+              <Label htmlFor="edit-matricule">{t('employees.matricule', 'Matricule')}</Label>
               <Input
                 id="edit-matricule"
                 value={employeeForm.matricule}
@@ -527,16 +527,16 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
               />
             </div>
             <div>
-              <Label htmlFor="edit-class">Classe</Label>
+              <Label htmlFor="edit-class">{t('employees.class', 'Classe')}</Label>
               <Input
                 id="edit-class"
                 value={employeeForm.class}
                 onChange={(e) => setEmployeeForm({ ...employeeForm, class: e.target.value })}
-                placeholder="e.g., Empl., Cadre A"
+                placeholder={t('employees.classPlaceholder', 'Cadre A')}
               />
             </div>
             <div>
-              <Label htmlFor="edit-taxClass">Classe d'impôt</Label>
+              <Label htmlFor="edit-taxClass">{t('employees.taxClass', 'Classe d\'impôt')}</Label>
               <Input
                 id="edit-taxClass"
                 value={employeeForm.taxClass}
@@ -545,7 +545,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
               />
             </div>
             <div className="col-span-2">
-              <Label htmlFor="edit-salary">Salaire de base</Label>
+              <Label htmlFor="edit-salary">{t('employees.baseSalary', 'Salaire de base')}</Label>
               <Input
                 id="edit-salary"
                 type="number"
@@ -557,9 +557,9 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Annuler
+              {t('common.cancel', 'Annuler')}
             </Button>
-            <Button onClick={handleSaveEdit}>Enregistrer</Button>
+            <Button onClick={handleSaveEdit}>{t('common.save', 'Enregistrer')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -625,18 +625,18 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => handleViewPayslip(payslip.id)}>
                           <Eye size={16} className="mr-2" />
-                          Voir
+                          {t('common.view', 'Voir')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => {
                           const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
                           navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
                         }}>
                           <FileSpreadsheet size={16} className="mr-2" />
-                          Annuelle
+                          {t('payslips.annualTitle', 'Annuelle')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
                           <Download size={16} className="mr-2" />
-                          PDF
+                          {t('common.pdf', 'PDF')}
                         </Button>
                       </div>
                     </TableCell>
@@ -652,7 +652,7 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Fiche de Paie</DialogTitle>
+            <DialogTitle>{t('payslips.title', 'Fiche de Paie')}</DialogTitle>
           </DialogHeader>
           {selectedPayslipData && (
             <LuxembourgPayslipDetail payslip={selectedPayslipData} />

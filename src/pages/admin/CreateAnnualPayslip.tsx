@@ -309,8 +309,8 @@ export function CreateAnnualPayslip() {
     if (isIndividual) {
       if (!selectedEmployeeId || !selectedEmployee) {
         toast({
-          title: 'Error',
-          description: 'Individual not found',
+          title: t('common.error', 'Error'),
+          description: t('individuals.notFound', 'Individual not found'),
           variant: 'destructive',
         });
         return;
@@ -318,8 +318,8 @@ export function CreateAnnualPayslip() {
     } else {
       if (!selectedCompanyId || !selectedEmployeeId) {
         toast({
-          title: 'Error',
-          description: 'Please select a company and employee',
+          title: t('common.error', 'Error'),
+          description: t('payslips.selectCompanyEmployee', 'Please select a company and employee'),
           variant: 'destructive',
         });
         return;
@@ -403,8 +403,8 @@ export function CreateAnnualPayslip() {
     });
 
     toast({
-      title: 'Success',
-      description: `${created} created, ${updated} updated successfully`,
+      title: t('common.success', 'Success'),
+      description: t('payslips.saveSuccess', `${created} created, ${updated} updated successfully`),
     });
 
     navigate(-1);
@@ -420,10 +420,10 @@ export function CreateAnnualPayslip() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              {employeeId ? 'EDIT FICHE DE PAIE ANNUELLE' : 'FICHE DE PAIE ANNUELLE'}
+              {employeeId ? t('payslips.editAnnual', 'EDIT ANNUAL PAYSLIP') : t('payslips.annualTitle', 'ANNUAL PAYSLIP')}
             </h1>
             <p className="text-muted-foreground">
-              {employeeId ? 'Edit annual payslips - All 12 months' : 'Create annual payslips - All 12 months'}
+              {employeeId ? t('payslips.editAnnualDesc', 'Edit annual payslips - All 12 months') : t('payslips.createAnnualDesc', 'Create annual payslips - All 12 months')}
             </p>
           </div>
         </div>
@@ -435,11 +435,11 @@ export function CreateAnnualPayslip() {
               onChange={(e) => setAutoCalc(e.target.checked)}
               className="h-4 w-4"
             />
-            Auto-calculate
+            {t('payslips.autoCalculate', 'Auto-calculate')}
           </label>
           <Button onClick={handleSave} className="bg-primary text-primary-foreground">
             <Save size={16} className="mr-2" />
-            Save Payslips
+            {t('payslips.savePayslips', 'Save Payslips')}
           </Button>
         </div>
       </div>
@@ -447,14 +447,14 @@ export function CreateAnnualPayslip() {
       {/* Selection Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Livre de Paie {year}</CardTitle>
+          <CardTitle>{t('payslips.payrollBook', 'Payroll Book')} {year}</CardTitle>
         </CardHeader>
         <CardContent>
           {isIndividual ? (
             // Individual mode - show individual info
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Individual</Label>
+                <Label>{t('individuals.title', 'Individual')}</Label>
                 <div className="text-lg font-semibold">
                   {selectedEmployee?.firstName} {selectedEmployee?.lastName}
                 </div>
@@ -462,7 +462,7 @@ export function CreateAnnualPayslip() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="year">Year *</Label>
+                <Label htmlFor="year">{t('payslips.year', 'Year')} *</Label>
                 <Input
                   id="year"
                   type="number"
@@ -477,10 +477,10 @@ export function CreateAnnualPayslip() {
             // Employee mode - show company/employee selectors
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="company">Company *</Label>
+                <Label htmlFor="company">{t('payslips.company', 'Company')} *</Label>
                 <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
                   <SelectTrigger id="company">
-                    <SelectValue placeholder="Select company" />
+                    <SelectValue placeholder={t('companies.select', 'Select company')} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableCompanies.map((company) => (
@@ -493,10 +493,10 @@ export function CreateAnnualPayslip() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="employee">Employee *</Label>
+                <Label htmlFor="employee">{t('payslips.employee', 'Employee')} *</Label>
                 <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId} disabled={!selectedCompanyId}>
                   <SelectTrigger id="employee">
-                    <SelectValue placeholder="Select employee" />
+                    <SelectValue placeholder={t('employees.select', 'Select employee')} />
                   </SelectTrigger>
                   <SelectContent>
                     {filteredEmployees.map((employee) => (
@@ -509,7 +509,7 @@ export function CreateAnnualPayslip() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="year">Year *</Label>
+                <Label htmlFor="year">{t('payslips.year', 'Year')} *</Label>
                 <Input
                   id="year"
                   type="number"

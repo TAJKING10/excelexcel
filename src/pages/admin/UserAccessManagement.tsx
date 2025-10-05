@@ -114,8 +114,8 @@ export function UserAccessManagement() {
   const handleSave = () => {
     if (!formData.username || !formData.firstName || !formData.lastName || !formData.email) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
+        title: t('common.error', 'Error'),
+        description: t('employees.fillRequired', 'Please fill in all required fields'),
         variant: 'destructive',
       });
       return;
@@ -123,8 +123,8 @@ export function UserAccessManagement() {
 
     if (!selectedUser && !formData.password) {
       toast({
-        title: 'Error',
-        description: 'Password is required for new users',
+        title: t('common.error', 'Error'),
+        description: t('users.passwordRequired', 'Password is required for new users'),
         variant: 'destructive',
       });
       return;
@@ -158,8 +158,8 @@ export function UserAccessManagement() {
       });
 
       toast({
-        title: 'Success',
-        description: 'User updated successfully',
+        title: t('common.success', 'Success'),
+        description: t('users.updatedSuccess', 'User updated successfully'),
       });
     } else {
       const newUser = {
@@ -188,8 +188,8 @@ export function UserAccessManagement() {
       });
 
       toast({
-        title: 'Success',
-        description: 'User created successfully',
+        title: t('common.success', 'Success'),
+        description: t('users.createdSuccess', 'User created successfully'),
       });
     }
     setIsDialogOpen(false);
@@ -217,11 +217,11 @@ export function UserAccessManagement() {
     if (!user.access) return t('common.noData');
 
     const companyText = user.access.hasAllCompaniesAccess
-      ? 'All Companies'
+      ? t('users.allCompanies', 'All Companies')
       : `${user.access.companyIds.length} ${t('nav.companies').toLowerCase()}`;
 
     const individualText = user.access.hasAllIndividualsAccess
-      ? 'All Individuals'
+      ? t('users.allIndividuals', 'All Individuals')
       : `${user.access.individualIds.length} ${t('nav.individuals').toLowerCase()}`;
 
     return `${companyText}, ${individualText}`;
@@ -256,7 +256,7 @@ export function UserAccessManagement() {
                 <TableHead>{t('employees.name')}</TableHead>
                 <TableHead>{t('employees.email')}</TableHead>
                 <TableHead>{t('users.username')}</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('users.status', 'Status')}</TableHead>
                 <TableHead>{t('users.accessSummary')}</TableHead>
                 <TableHead>{t('users.permissions')}</TableHead>
                 <TableHead>{t('employees.actions')}</TableHead>
@@ -279,7 +279,7 @@ export function UserAccessManagement() {
                     <TableCell>@{user.username}</TableCell>
                     <TableCell>
                       <Badge variant={user.isActive !== false ? 'default' : 'secondary'}>
-                        {user.isActive !== false ? 'Active' : 'Disabled'}
+                        {user.isActive !== false ? t('users.active', 'Active') : t('users.disabled', 'Disabled')}
                       </Badge>
                     </TableCell>
                     <TableCell>{getAccessSummary(user)}</TableCell>
@@ -386,7 +386,7 @@ export function UserAccessManagement() {
             {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">
-                Password {selectedUser && '(leave blank to keep current)'}
+                {t('auth.password', 'Password')} {selectedUser && `(${t('users.leaveBlank', 'leave blank to keep current')})`}
               </Label>
               <div className="relative">
                 <Input
@@ -394,7 +394,7 @@ export function UserAccessManagement() {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={selectedUser ? 'Enter new password' : 'Enter password'}
+                  placeholder={selectedUser ? t('users.enterNewPassword', 'Enter new password') : t('users.enterPassword', 'Enter password')}
                 />
                 <Button
                   type="button"
@@ -416,7 +416,7 @@ export function UserAccessManagement() {
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
               <Label htmlFor="isActive">
-                User is {formData.isActive ? 'Active' : 'Disabled'}
+                {t('users.userIs', 'User is')} {formData.isActive ? t('users.active', 'Active') : t('users.disabled', 'Disabled')}
               </Label>
             </div>
 
@@ -447,7 +447,7 @@ export function UserAccessManagement() {
                   className="text-xs"
                 >
                   <Shield className="mr-1 h-3 w-3" />
-                  Grant Full Access
+                  {t('users.grantFullAccess', 'Grant Full Access')}
                 </Button>
               </div>
               <div className="space-y-2">
@@ -521,7 +521,7 @@ export function UserAccessManagement() {
                   }}
                 />
                 <Label htmlFor="allCompanies" className="font-semibold text-blue-700 dark:text-blue-300">
-                  All Companies (Current & Future)
+                  {t('users.allCompaniesCurrentFuture', 'All Companies (Current & Future)')}
                 </Label>
               </div>
 
@@ -536,7 +536,7 @@ export function UserAccessManagement() {
                     }}
                   />
                   <Label htmlFor="canCreateCompanies" className="font-medium text-green-700 dark:text-green-300">
-                    Can Create New Companies
+                    {t('users.canCreateCompanies', 'Can Create New Companies')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-2 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
@@ -548,7 +548,7 @@ export function UserAccessManagement() {
                     }}
                   />
                   <Label htmlFor="canCreateEmployees" className="font-medium text-green-700 dark:text-green-300">
-                    Can Create Employees Inside Companies
+                    {t('users.canCreateEmployees', 'Can Create Employees Inside Companies')}
                   </Label>
                 </div>
               </div>
@@ -556,7 +556,7 @@ export function UserAccessManagement() {
               {/* Individual Company Selection */}
               {!accessData.hasAllCompaniesAccess && (
                 <div className="border rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
-                  <p className="text-sm text-muted-foreground mb-2">Select specific companies:</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('users.selectSpecificCompanies', 'Select specific companies:')}</p>
                   {companies.map((company) => (
                     <div key={company.id} className="flex items-center space-x-2">
                       <Checkbox
@@ -592,7 +592,7 @@ export function UserAccessManagement() {
                   }}
                 />
                 <Label htmlFor="allIndividuals" className="font-semibold text-purple-700 dark:text-purple-300">
-                  All Individuals (Current & Future)
+                  {t('users.allIndividualsCurrentFuture', 'All Individuals (Current & Future)')}
                 </Label>
               </div>
 
@@ -606,7 +606,7 @@ export function UserAccessManagement() {
                   }}
                 />
                 <Label htmlFor="canCreateIndividuals" className="font-medium text-green-700 dark:text-green-300">
-                  Can Create New Individuals
+                  {t('users.canCreateIndividuals', 'Can Create New Individuals')}
                 </Label>
               </div>
 
@@ -617,7 +617,7 @@ export function UserAccessManagement() {
                     <p className="text-sm text-muted-foreground">{t('users.noIndividualsAvailable')}</p>
                   ) : (
                     <>
-                      <p className="text-sm text-muted-foreground mb-2">Select specific individuals:</p>
+                      <p className="text-sm text-muted-foreground mb-2">{t('users.selectSpecificIndividuals', 'Select specific individuals:')}</p>
                       {individuals.map((individual) => (
                         <div key={individual.id} className="flex items-center space-x-2">
                           <Checkbox
