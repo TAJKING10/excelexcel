@@ -21,7 +21,7 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
           <div className="flex justify-between items-start">
             <div>
               <CardTitle className="text-2xl">
-                {t('payslip.annual_title', 'Livre de Paie')} {payslip.year}
+                {t('analytics.annualPayslip.title')} {payslip.year}
               </CardTitle>
               <p className="text-lg font-semibold mt-2">
                 {payslip.employee.lastName} {payslip.employee.firstName}
@@ -61,29 +61,29 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
       {/* Monthly Breakdown Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('payslip.monthly_breakdown', 'Détail Mensuel')}</CardTitle>
+          <CardTitle>{t('analytics.annualPayslip.monthlyBreakdown')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-24">Mois</TableHead>
-                  <TableHead className="w-24">Jours</TableHead>
-                  <TableHead className="w-20">Stat.</TableHead>
-                  <TableHead className="w-24">Classe</TableHead>
-                  <TableHead className="text-right">Rémun. Base</TableHead>
-                  <TableHead className="text-right">Brut Mensuel</TableHead>
-                  <TableHead className="text-right">Cotisable</TableHead>
-                  <TableHead className="text-right">Maladie</TableHead>
-                  <TableHead className="text-right">Pension</TableHead>
-                  <TableHead className="text-right">Déductions</TableHead>
-                  <TableHead className="text-right">Imposable</TableHead>
-                  <TableHead className="text-right">Impôts</TableHead>
-                  <TableHead className="text-right">CI-CO2</TableHead>
-                  <TableHead className="text-right">CIS</TableHead>
-                  <TableHead className="text-right">CISSM</TableHead>
-                  <TableHead className="text-right font-bold">Salaire Net</TableHead>
+                  <TableHead className="w-24">{t('analytics.annualPayslip.month')}</TableHead>
+                  <TableHead className="w-24">{t('analytics.annualPayslip.days')}</TableHead>
+                  <TableHead className="w-20">{t('analytics.annualPayslip.stat')}</TableHead>
+                  <TableHead className="w-24">{t('analytics.annualPayslip.class')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.baseRemuneration')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.monthlyGross')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.contributable')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.health')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.pension')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.deductions')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.taxable')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.taxes')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.ciCo2')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.cis')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.cissm')}</TableHead>
+                  <TableHead className="text-right font-bold">{t('analytics.annualPayslip.netSalary')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,7 +136,7 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
 
                 {/* Annual Total Row */}
                 <TableRow className="bg-muted/50 font-bold">
-                  <TableCell colSpan={4}>TOTAL ANNUEL</TableCell>
+                  <TableCell colSpan={4}>{t('analytics.annualPayslip.annualTotal')}</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(payslip.annualTotals.earnings.remunerationBase)}
                   </TableCell>
@@ -183,19 +183,19 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
       {/* Employer Contributions Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('payslip.employer_contributions', 'Cotisations Patronales')}</CardTitle>
+          <CardTitle>{t('analytics.annualPayslip.employerContributions')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-40">Mois</TableHead>
-                  <TableHead className="text-right">Maladie</TableHead>
-                  <TableHead className="text-right">Pension</TableHead>
-                  <TableHead className="text-right">Santé</TableHead>
-                  <TableHead className="text-right">Accident</TableHead>
-                  <TableHead className="text-right font-bold">Total Séc. Sociale</TableHead>
+                  <TableHead className="w-40">{t('analytics.annualPayslip.month')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.health')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.annualPayslip.pension')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.sante')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.accident')}</TableHead>
+                  <TableHead className="text-right font-bold">{t('analytics.annualPayslip.socialSecurityTotal')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -233,7 +233,7 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
 
                 {/* Total Row */}
                 <TableRow className="bg-muted/50 font-bold">
-                  <TableCell>TOTAL ANNUEL</TableCell>
+                  <TableCell>{t('analytics.annualPayslip.annualTotal')}</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(payslip.annualTotals.employerContrib.maladie)}
                   </TableCell>
@@ -259,21 +259,21 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
       {/* Annual Recapitulation */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('payslip.annual_recapitulation', 'Récapitulation Annuelle')}</CardTitle>
+          <CardTitle>{t('analytics.annualPayslip.annualRecapitulation')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Salaires</h3>
+              <h3 className="font-semibold text-lg">{t('analytics.annualPayslip.salaries')}</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Brut Total:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.totalGross')}</span>
                   <span className="font-bold">
                     {formatCurrency(payslip.recapitulation.totalGrossSalary)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Net Total:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.totalNet')}</span>
                   <span className="font-bold text-green-600">
                     {formatCurrency(payslip.recapitulation.totalNetSalary)}
                   </span>
@@ -282,16 +282,16 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
             </div>
 
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Cotisations</h3>
+              <h3 className="font-semibold text-lg">{t('analytics.annualPayslip.contributions')}</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employé:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.employee')}</span>
                   <span className="font-bold">
                     {formatCurrency(payslip.recapitulation.totalEmployeeContributions)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employeur:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.employer')}</span>
                   <span className="font-bold">
                     {formatCurrency(payslip.recapitulation.totalEmployerContributions)}
                   </span>
@@ -300,16 +300,16 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
             </div>
 
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg">Autres</h3>
+              <h3 className="font-semibold text-lg">{t('analytics.annualPayslip.other')}</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Impôts:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.taxesLabel')}</span>
                   <span className="font-bold">
                     {formatCurrency(payslip.recapitulation.totalTaxes)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Heures Travaillées:</span>
+                  <span className="text-muted-foreground">{t('analytics.annualPayslip.hoursWorked')}</span>
                   <span className="font-bold">
                     {payslip.recapitulation.totalHoursWorked}h
                   </span>
@@ -325,7 +325,7 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-blue-600 font-medium">Salaire Brut Annuel</p>
+                  <p className="text-sm text-blue-600 font-medium">{t('analytics.annualPayslip.annualGrossSalary')}</p>
                   <p className="text-2xl font-bold text-blue-700 mt-2">
                     {formatCurrency(payslip.annualTotals.earnings.grossMonthly)}
                   </p>
@@ -336,7 +336,7 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
             <Card className="bg-green-50 border-green-200">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-green-600 font-medium">Salaire Net Annuel</p>
+                  <p className="text-sm text-green-600 font-medium">{t('analytics.annualPayslip.annualNetSalary')}</p>
                   <p className="text-2xl font-bold text-green-700 mt-2">
                     {formatCurrency(payslip.annualTotals.netPay)}
                   </p>
@@ -347,7 +347,7 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
             <Card className="bg-orange-50 border-orange-200">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-orange-600 font-medium">Total Cotisations</p>
+                  <p className="text-sm text-orange-600 font-medium">{t('analytics.annualPayslip.totalContributions')}</p>
                   <p className="text-2xl font-bold text-orange-700 mt-2">
                     {formatCurrency(payslip.annualTotals.employeeContrib.total)}
                   </p>
@@ -358,7 +358,7 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
             <Card className="bg-purple-50 border-purple-200">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <p className="text-sm text-purple-600 font-medium">Impôts Annuels</p>
+                  <p className="text-sm text-purple-600 font-medium">{t('analytics.annualPayslip.annualTaxes')}</p>
                   <p className="text-2xl font-bold text-purple-700 mt-2">
                     {formatCurrency(payslip.annualTotals.employeeContrib.incomeTax)}
                   </p>
