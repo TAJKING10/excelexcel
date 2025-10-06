@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,7 +29,7 @@ export function CompanyDetail() {
   const { companyId } = useParams<{ companyId: string }>();
   const navigate = useNavigate();
   const { t } = useLanguageStore();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { companies, employees, getCompanyAnalytics, addEmployee } = useDataStore();
   const { toast } = useToast();
 
@@ -235,7 +235,7 @@ export function CompanyDetail() {
               <Button
                 onClick={() => {
                   const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-                  navigate(`${basePath}/payslips/create`);
+                  navigate(`${basePath}/payslips/create?companyId=${companyId}`);
                 }}
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -349,7 +349,7 @@ export function CompanyDetail() {
 function EmployeeListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { employees, updateEmployee, deleteEmployee } = useDataStore();
   const { toast } = useToast();
   const [editingEmployee, setEditingEmployee] = useState<string | null>(null);
@@ -571,7 +571,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
 function PayslipListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { payslips, employees } = useDataStore();
   const [selectedPayslip, setSelectedPayslip] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,10 +44,11 @@ export function CreatePayslip() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuthStore();
-  const { companies, employees, addPayslip } = useDataStore();
+  const { user } = useAuth();
+  const { companies, employees, generateEmployeeAnnualPayslip } = useDataStore();
+  const [searchParams] = useSearchParams();
 
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(searchParams.get('companyId') || '');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [autoCalc, setAutoCalc] = useState<boolean>(true);
@@ -248,7 +249,7 @@ export function CreatePayslip() {
     setMonthsData(newMonthsData);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedCompanyId || !selectedEmployeeId) {
       toast({
         title: 'Error',
@@ -260,73 +261,25 @@ export function CreatePayslip() {
 
     if (!selectedCompany || !selectedEmployee) return;
 
-    // Create individual monthly payslips
-    monthsData.forEach((month) => {
-      if (month.remunerationBase > 0) {
-        const payslip = {
-          employeeId: selectedEmployeeId,
-          companyId: selectedCompanyId,
-          period: { month: month.monthNumber, year },
-          employee: {
-            id: selectedEmployee.id,
-            firstName: selectedEmployee.firstName,
-            lastName: selectedEmployee.lastName,
-            email: selectedEmployee.email,
-            class: selectedEmployee.class,
-            hireDate: selectedEmployee.hireDate,
-            terminationDate: selectedEmployee.terminationDate,
-          },
-          company: {
-            id: selectedCompany.id,
-            name: selectedCompany.name,
-            country: selectedCompany.country,
-            currency: selectedCompany.currency,
-          },
-          earnings: {
-            remunerationBase: month.remunerationBase,
-            grossMonthly: month.grossMonthly,
-            cotisable: month.cotisable,
-            imposable: month.imposable,
-          },
-          employeeContrib: {
-            maladie: month.maladie,
-            pension: month.pension,
-            ciCo2: month.ciCo2,
-            cis: month.cis,
-            cissm: month.cissm,
-            deductions: month.deductions,
-            incomeTax: month.incomeTax,
-            total: month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax,
-          },
-          employerContrib: {
-            maladie: month.employerMaladie,
-            pension: month.employerPension,
-            sante: month.employerSante,
-            accident: month.employerAccident,
-            socialSecurityTotal: month.employerTotal,
-          },
-          netPay: month.netPay,
-          ytd: {
-            gross: 0,
-            net: 0,
-            employeeContribTotal: 0,
-            employerContribTotal: 0,
-            taxes: 0,
-          },
-          lines: [],
-        };
+    try {
+      // Create a single annual payslip with all 12 months of data
+      await generateEmployeeAnnualPayslip(selectedEmployeeId, year);
 
-        addPayslip(payslip);
-      }
-    });
+      toast({
+        title: 'Success',
+        description: `Annual payslip created successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+      });
 
-    const count = monthsData.filter(m => m.remunerationBase > 0).length;
-    toast({
-      title: 'Success',
-      description: `${count} payslip(s) created successfully`,
-    });
-
-    navigate('/admin/payslips');
+      // Navigate back to company detail
+      const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+      navigate(`${basePath}/companies/${selectedCompanyId}`);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create annual payslip',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

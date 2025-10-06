@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,7 @@ export function CompanyList() {
   const { t } = useLanguageStore();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { companies, employees, payslips, addCompany, updateCompany, deleteCompany } =
     useDataStore();
 
@@ -71,7 +71,7 @@ export function CompanyList() {
     };
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.name.trim()) {
       toast({
         title: t('common.error'),
@@ -81,19 +81,27 @@ export function CompanyList() {
       return;
     }
 
-    addCompany({
-      name: formData.name,
-      country: formData.country,
-      currency: formData.currency,
-    });
+    try {
+      await addCompany({
+        name: formData.name,
+        country: formData.country,
+        currency: formData.currency,
+      });
 
-    toast({
-      title: t('common.success'),
-      description: t('companies.createdSuccess'),
-    });
+      toast({
+        title: t('common.success'),
+        description: t('companies.createdSuccess'),
+      });
 
-    setFormData({ name: '', country: 'Luxembourg', currency: 'EUR' });
-    setIsAddDialogOpen(false);
+      setFormData({ name: '', country: 'Luxembourg', currency: 'EUR' });
+      setIsAddDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        title: t('common.error'),
+        description: error.message || 'Failed to create company',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleEdit = (company: Company) => {
@@ -106,7 +114,7 @@ export function CompanyList() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editingCompany) return;
 
     if (!formData.name.trim()) {
@@ -118,23 +126,31 @@ export function CompanyList() {
       return;
     }
 
-    updateCompany(editingCompany.id, {
-      name: formData.name,
-      country: formData.country,
-      currency: formData.currency,
-    });
+    try {
+      await updateCompany(editingCompany.id, {
+        name: formData.name,
+        country: formData.country,
+        currency: formData.currency,
+      });
 
-    toast({
-      title: t('common.success'),
-      description: t('common.update'),
-    });
+      toast({
+        title: t('common.success'),
+        description: t('common.update'),
+      });
 
-    setFormData({ name: '', country: 'Luxembourg', currency: 'EUR' });
-    setIsEditDialogOpen(false);
-    setEditingCompany(null);
+      setFormData({ name: '', country: 'Luxembourg', currency: 'EUR' });
+      setIsEditDialogOpen(false);
+      setEditingCompany(null);
+    } catch (error: any) {
+      toast({
+        title: t('common.error'),
+        description: error.message || 'Failed to update company',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleDelete = (companyId: string) => {
+  const handleDelete = async (companyId: string) => {
     const companyEmployees = employees.filter((e) => e.companyId === companyId);
 
     if (companyEmployees.length > 0) {
@@ -147,11 +163,19 @@ export function CompanyList() {
     }
 
     if (confirm(t('companies.confirmDelete'))) {
-      deleteCompany(companyId);
-      toast({
-        title: t('common.success'),
-        description: t('companies.deletedSuccess'),
-      });
+      try {
+        await deleteCompany(companyId);
+        toast({
+          title: t('common.success'),
+          description: t('companies.deletedSuccess'),
+        });
+      } catch (error: any) {
+        toast({
+          title: t('common.error'),
+          description: error.message || 'Failed to delete company',
+          variant: 'destructive',
+        });
+      }
     }
   };
 

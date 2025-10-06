@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { getDefaultRoute } from './lib/rbac';
 import { ProtectedRoute } from './components/guards/ProtectedRoute2';
+import { useDataStore } from './stores/data';
 
 // Layouts
 import { AdminShell } from './components/layout/AdminShell';
@@ -39,10 +40,23 @@ import AuthDebug from './components/AuthDebug';
 function AppRoutes() {
   const { user } = useAuth();
   const { i18n } = useTranslation();
+  const initializeData = useDataStore((state) => state.initializeData);
 
   useEffect(() => {
     i18n.changeLanguage('fr');
   }, [i18n]);
+
+  // Initialize data from Supabase when user is authenticated
+  useEffect(() => {
+    if (user) {
+      console.log('🔄 Initializing data from Supabase...');
+      initializeData().then(() => {
+        console.log('✅ Data initialized successfully');
+      }).catch((error) => {
+        console.error('❌ Failed to initialize data:', error);
+      });
+    }
+  }, [user, initializeData]);
 
   const defaultRoute = user ? getDefaultRoute(user.role) : '/login';
 

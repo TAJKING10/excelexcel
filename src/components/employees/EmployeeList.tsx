@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,7 +43,7 @@ import { useNavigate } from 'react-router-dom';
 export function EmployeeList() {
   const { t } = useLanguageStore();
   const { toast } = useToast();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { employees, companies, addEmployee, updateEmployee, deleteEmployee } = useDataStore();
 
@@ -119,7 +119,7 @@ export function EmployeeList() {
     });
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (
       !formData.companyId ||
       !formData.firstName ||
@@ -135,25 +135,35 @@ export function EmployeeList() {
       return;
     }
 
-    addEmployee({
-      companyId: formData.companyId,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      class: formData.class,
-      hireDate: formData.hireDate,
-      terminationDate: formData.terminationDate || null,
-      baseSalary: parseFloat(formData.baseSalary),
-      status: formData.status,
-    });
+    try {
+      await addEmployee({
+        companyId: formData.companyId,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        matricule: '', // Add default or make it required
+        class: formData.class,
+        taxClass: '2', // Add default
+        hireDate: formData.hireDate,
+        terminationDate: formData.terminationDate || null,
+        baseSalary: parseFloat(formData.baseSalary),
+        status: formData.status,
+      });
 
-    toast({
-      title: t('common.success'),
-      description: t('employees.addedSuccess'),
-    });
+      toast({
+        title: t('common.success'),
+        description: t('employees.addedSuccess'),
+      });
 
-    resetForm();
-    setIsAddDialogOpen(false);
+      resetForm();
+      setIsAddDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        title: t('common.error'),
+        description: error.message || 'Failed to add employee',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleEdit = (employee: Employee) => {
@@ -172,7 +182,7 @@ export function EmployeeList() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editingEmployee) return;
 
     if (
@@ -189,58 +199,82 @@ export function EmployeeList() {
       return;
     }
 
-    updateEmployee(editingEmployee.id, {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      class: formData.class,
-      hireDate: formData.hireDate,
-      terminationDate: formData.terminationDate || null,
-      baseSalary: parseFloat(formData.baseSalary),
-      status: formData.status,
-    });
+    try {
+      await updateEmployee(editingEmployee.id, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        class: formData.class,
+        hireDate: formData.hireDate,
+        terminationDate: formData.terminationDate || null,
+        baseSalary: parseFloat(formData.baseSalary),
+        status: formData.status,
+      });
 
-    toast({
-      title: t('common.success'),
-      description: t('employees.updatedSuccess'),
-    });
-
-    resetForm();
-    setIsEditDialogOpen(false);
-    setEditingEmployee(null);
-  };
-
-  const handleDelete = (employeeId: string) => {
-    if (confirm(t('employees.confirmDelete'))) {
-      deleteEmployee(employeeId);
       toast({
         title: t('common.success'),
-        description: t('employees.deletedSuccess'),
+        description: t('employees.updatedSuccess'),
+      });
+
+      resetForm();
+      setIsEditDialogOpen(false);
+      setEditingEmployee(null);
+    } catch (error: any) {
+      toast({
+        title: t('common.error'),
+        description: error.message || 'Failed to update employee',
+        variant: 'destructive',
       });
     }
   };
 
-  const handleTerminate = (employee: Employee) => {
-    if (employee.status === 'terminated') {
-      // Reactivate
-      updateEmployee(employee.id, {
-        status: 'active',
-        terminationDate: null,
-      });
+  const handleDelete = async (employeeId: string) => {
+    if (confirm(t('employees.confirmDelete'))) {
+      try {
+        await deleteEmployee(employeeId);
+        toast({
+          title: t('common.success'),
+          description: t('employees.deletedSuccess'),
+        });
+      } catch (error: any) {
+        toast({
+          title: t('common.error'),
+          description: error.message || 'Failed to delete employee',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handleTerminate = async (employee: Employee) => {
+    try {
+      if (employee.status === 'terminated') {
+        // Reactivate
+        await updateEmployee(employee.id, {
+          status: 'active',
+          terminationDate: null,
+        });
+        toast({
+          title: t('common.success'),
+          description: t('employees.reactivatedSuccess'),
+        });
+      } else {
+        // Terminate
+        const terminationDate = new Date().toISOString().split('T')[0];
+        await updateEmployee(employee.id, {
+          status: 'terminated',
+          terminationDate,
+        });
+        toast({
+          title: t('common.success'),
+          description: t('employees.terminatedSuccess'),
+        });
+      }
+    } catch (error: any) {
       toast({
-        title: t('common.success'),
-        description: t('employees.reactivatedSuccess'),
-      });
-    } else {
-      // Terminate
-      const terminationDate = new Date().toISOString().split('T')[0];
-      updateEmployee(employee.id, {
-        status: 'terminated',
-        terminationDate,
-      });
-      toast({
-        title: t('common.success'),
-        description: t('employees.terminatedSuccess'),
+        title: t('common.error'),
+        description: error.message || 'Failed to update employee status',
+        variant: 'destructive',
       });
     }
   };

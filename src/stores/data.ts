@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis, PayslipLine, ActivityLog } from '@/types';
 import { generateAnnualPayslip } from '@/lib/luxembourgPayroll';
+import { companyService, employeeService, annualPayslipService, activityLogService } from '@/services/supabase';
 
 interface DataState {
   companies: Company[];
@@ -11,12 +12,21 @@ interface DataState {
   individuals: Individual[];
   activityLogs: ActivityLog[];
   payrollTemplates?: Record<string, PayslipLine[]>;
-  addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => void;
-  updateCompany: (id: string, company: Partial<Company>) => void;
-  deleteCompany: (id: string) => void;
-  addEmployee: (employee: Omit<Employee, 'id'>) => void;
-  updateEmployee: (id: string, employee: Partial<Employee>) => void;
-  deleteEmployee: (id: string) => void;
+  isLoading: boolean;
+  error: string | null;
+
+  // Initialization
+  initializeData: () => Promise<void>;
+
+  // Company methods
+  addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => Promise<Company>;
+  updateCompany: (id: string, company: Partial<Company>) => Promise<Company>;
+  deleteCompany: (id: string) => Promise<void>;
+
+  // Employee methods
+  addEmployee: (employee: Omit<Employee, 'id'>) => Promise<Employee>;
+  updateEmployee: (id: string, employee: Partial<Employee>) => Promise<Employee>;
+  deleteEmployee: (id: string) => Promise<void>;
   addIndividual: (individual: Omit<Individual, 'id' | 'createdAt'>) => void;
   updateIndividual: (id: string, individual: Partial<Individual>) => void;
   deleteIndividual: (id: string) => void;
@@ -41,8 +51,10 @@ interface DataState {
     companiesData: Array<{ company: Company; analytics: CompanyAnalytics }>;
   };
   // Annual payslip methods
-  generateEmployeeAnnualPayslip: (employeeId: string, year: number) => AnnualPayslip;
-  getEmployeeAnnualPayslip: (employeeId: string, year: number) => AnnualPayslip | undefined;
+  generateEmployeeAnnualPayslip: (employeeId: string, year: number) => Promise<AnnualPayslip>;
+  getEmployeeAnnualPayslip: (employeeId: string, year: number) => Promise<AnnualPayslip | undefined>;
+  updateAnnualPayslip: (id: string, updates: Partial<Pick<AnnualPayslip, 'monthlyData' | 'annualTotals' | 'recapitulation'>>) => Promise<AnnualPayslip>;
+  deleteAnnualPayslip: (id: string) => Promise<void>;
   getCompanyAnnualAnalysis: (companyId: string, year: number) => CompanyAnnualAnalysis;
 }
 
@@ -363,39 +375,126 @@ export const useDataStore = create<DataState>((set, get) => ({
   individuals: mockIndividuals,
   activityLogs: [],
   payrollTemplates: {},
+  isLoading: false,
+  error: null,
 
-  addCompany: (company) =>
-    set((state) => ({
-      companies: [
-        ...state.companies,
-        { ...company, id: `company-${Date.now()}`, createdAt: new Date().toISOString() },
-      ],
-    })),
+  // Initialize data from Supabase
+  initializeData: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const [companies, employees, annualPayslips] = await Promise.all([
+        companyService.getAll(),
+        employeeService.getAll(),
+        annualPayslipService.getAll()
+      ]);
 
-  updateCompany: (id, company) =>
-    set((state) => ({
-      companies: state.companies.map((c) => (c.id === id ? { ...c, ...company } : c)),
-    })),
+      set({
+        companies,
+        employees,
+        annualPayslips,
+        isLoading: false
+      });
+    } catch (error: any) {
+      console.error('Failed to initialize data:', error);
+      set({ error: error.message, isLoading: false });
+    }
+  },
 
-  deleteCompany: (id) =>
-    set((state) => ({
-      companies: state.companies.filter((c) => c.id !== id),
-    })),
+  // Company CRUD with Supabase
+  addCompany: async (company) => {
+    set({ isLoading: true, error: null });
+    try {
+      const newCompany = await companyService.create(company);
+      set((state) => ({
+        companies: [...state.companies, newCompany],
+        isLoading: false
+      }));
+      return newCompany;
+    } catch (error: any) {
+      console.error('Failed to add company:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
-  addEmployee: (employee) =>
-    set((state) => ({
-      employees: [...state.employees, { ...employee, id: `emp-${Date.now()}` }],
-    })),
+  updateCompany: async (id, updates) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedCompany = await companyService.update(id, updates);
+      set((state) => ({
+        companies: state.companies.map((c) => (c.id === id ? updatedCompany : c)),
+        isLoading: false
+      }));
+      return updatedCompany;
+    } catch (error: any) {
+      console.error('Failed to update company:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
-  updateEmployee: (id, employee) =>
-    set((state) => ({
-      employees: state.employees.map((e) => (e.id === id ? { ...e, ...employee } : e)),
-    })),
+  deleteCompany: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await companyService.delete(id);
+      set((state) => ({
+        companies: state.companies.filter((c) => c.id !== id),
+        isLoading: false
+      }));
+    } catch (error: any) {
+      console.error('Failed to delete company:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
-  deleteEmployee: (id) =>
-    set((state) => ({
-      employees: state.employees.filter((e) => e.id !== id),
-    })),
+  // Employee CRUD with Supabase
+  addEmployee: async (employee) => {
+    set({ isLoading: true, error: null });
+    try {
+      const newEmployee = await employeeService.create(employee);
+      set((state) => ({
+        employees: [...state.employees, newEmployee],
+        isLoading: false
+      }));
+      return newEmployee;
+    } catch (error: any) {
+      console.error('Failed to add employee:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
+
+  updateEmployee: async (id, updates) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedEmployee = await employeeService.update(id, updates);
+      set((state) => ({
+        employees: state.employees.map((e) => (e.id === id ? updatedEmployee : e)),
+        isLoading: false
+      }));
+      return updatedEmployee;
+    } catch (error: any) {
+      console.error('Failed to update employee:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
+
+  deleteEmployee: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await employeeService.delete(id);
+      set((state) => ({
+        employees: state.employees.filter((e) => e.id !== id),
+        isLoading: false
+      }));
+    } catch (error: any) {
+      console.error('Failed to delete employee:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
   addIndividual: (individual) =>
     set((state) => ({
@@ -471,37 +570,26 @@ export const useDataStore = create<DataState>((set, get) => ({
       users: state.users.filter((u) => u.id !== id),
     })),
 
-  logActivity: (log) =>
-    set((state) => ({
-      activityLogs: [
-        ...state.activityLogs,
-        {
-          ...log,
-          id: `log-${Date.now()}-${Math.random()}`,
-          timestamp: new Date().toISOString(),
-        },
-      ],
-    })),
-
-  getActivityLogs: (filters) => {
-    const state = get();
-    let logs = [...state.activityLogs].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-
-    if (filters?.userId) {
-      logs = logs.filter((l) => l.userId === filters.userId);
+  logActivity: async (log) => {
+    try {
+      const newLog = await activityLogService.create(log);
+      set((state) => ({
+        activityLogs: [newLog, ...state.activityLogs]
+      }));
+    } catch (error) {
+      console.error('Failed to log activity:', error);
     }
+  },
 
-    if (filters?.entityType) {
-      logs = logs.filter((l) => l.entityType === filters.entityType);
+  getActivityLogs: async (filters) => {
+    try {
+      const logs = await activityLogService.getAll(filters);
+      set({ activityLogs: logs });
+      return logs;
+    } catch (error) {
+      console.error('Failed to get activity logs:', error);
+      return get().activityLogs;
     }
-
-    if (filters?.limit) {
-      logs = logs.slice(0, filters.limit);
-    }
-
-    return logs;
   },
 
   getCompanyAnalytics: (companyId: string): CompanyAnalytics => {
@@ -602,64 +690,119 @@ export const useDataStore = create<DataState>((set, get) => ({
     };
   },
 
-  // Annual payslip methods
-  generateEmployeeAnnualPayslip: (employeeId: string, year: number): AnnualPayslip => {
-    const state = get();
-    const employee = state.employees.find((e) => e.id === employeeId);
-    if (!employee) {
-      throw new Error(`Employee ${employeeId} not found`);
+  // Annual payslip methods with Supabase
+  generateEmployeeAnnualPayslip: async (employeeId: string, year: number): Promise<AnnualPayslip> => {
+    set({ isLoading: true, error: null });
+    try {
+      const state = get();
+      const employee = state.employees.find((e) => e.id === employeeId);
+      if (!employee) {
+        throw new Error(`Employee ${employeeId} not found`);
+      }
+
+      const company = state.companies.find((c) => c.id === employee.companyId);
+      if (!company) {
+        throw new Error(`Company ${employee.companyId} not found`);
+      }
+
+      // Check if already exists in Supabase
+      const existing = await annualPayslipService.getByEmployeeAndYear(employeeId, year);
+      if (existing) {
+        set({ isLoading: false });
+        return existing;
+      }
+
+      // Generate new annual payslip
+      const generatedPayslip = generateAnnualPayslip(
+        {
+          employeeId,
+          year,
+          baseSalary: employee.baseSalary,
+          taxClass: employee.taxClass,
+          workingHoursPerMonth: 173,
+        },
+        employee,
+        company
+      );
+
+      // Save to Supabase
+      const savedPayslip = await annualPayslipService.create(generatedPayslip);
+
+      // Store it in local state
+      set((state) => ({
+        annualPayslips: [...state.annualPayslips, savedPayslip],
+        isLoading: false
+      }));
+
+      return savedPayslip;
+    } catch (error: any) {
+      console.error('Failed to generate annual payslip:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
     }
-
-    const company = state.companies.find((c) => c.id === employee.companyId);
-    if (!company) {
-      throw new Error(`Company ${employee.companyId} not found`);
-    }
-
-    // Check if already exists
-    const existing = state.annualPayslips.find(
-      (p) => p.employeeId === employeeId && p.year === year
-    );
-    if (existing) {
-      return existing;
-    }
-
-    // Generate new annual payslip
-    const annualPayslip = generateAnnualPayslip(
-      {
-        employeeId,
-        year,
-        baseSalary: employee.baseSalary,
-        taxClass: employee.taxClass,
-        workingHoursPerMonth: 173,
-      },
-      employee,
-      company
-    );
-
-    // Store it
-    set((state) => ({
-      annualPayslips: [...state.annualPayslips, annualPayslip],
-    }));
-
-    return annualPayslip;
   },
 
-  getEmployeeAnnualPayslip: (employeeId: string, year: number): AnnualPayslip | undefined => {
-    const state = get();
-    let payslip = state.annualPayslips.find(
-      (p) => p.employeeId === employeeId && p.year === year
-    );
+  getEmployeeAnnualPayslip: async (employeeId: string, year: number): Promise<AnnualPayslip | undefined> => {
+    try {
+      const state = get();
+      // First check local state
+      let payslip = state.annualPayslips.find(
+        (p) => p.employeeId === employeeId && p.year === year
+      );
 
-    // Auto-generate if not found
-    if (!payslip) {
-      try {
-        payslip = get().generateEmployeeAnnualPayslip(employeeId, year);
-      } catch (error) {
-        console.error('Failed to generate annual payslip:', error);
+      // If not in local state, check Supabase
+      if (!payslip) {
+        payslip = await annualPayslipService.getByEmployeeAndYear(employeeId, year);
+
+        if (payslip) {
+          // Add to local state
+          set((state) => ({
+            annualPayslips: [...state.annualPayslips, payslip as AnnualPayslip]
+          }));
+        } else {
+          // Auto-generate if not found
+          payslip = await get().generateEmployeeAnnualPayslip(employeeId, year);
+        }
       }
-    }
 
-    return payslip;
+      return payslip;
+    } catch (error) {
+      console.error('Failed to get annual payslip:', error);
+      return undefined;
+    }
+  },
+
+  // Update annual payslip
+  updateAnnualPayslip: async (id: string, updates: Partial<Pick<AnnualPayslip, 'monthlyData' | 'annualTotals' | 'recapitulation'>>): Promise<AnnualPayslip> => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedPayslip = await annualPayslipService.update(id, updates);
+      set((state) => ({
+        annualPayslips: state.annualPayslips.map((p) => (p.id === id ? updatedPayslip : p)),
+        isLoading: false
+      }));
+      return updatedPayslip;
+    } catch (error: any) {
+      console.error('Failed to update annual payslip:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
+
+  // Delete annual payslip
+  deleteAnnualPayslip: async (id: string): Promise<void> => {
+    set({ isLoading: true, error: null });
+    try {
+      await annualPayslipService.delete(id);
+      set((state) => ({
+        annualPayslips: state.annualPayslips.filter((p) => p.id !== id),
+        isLoading: false
+      }));
+    } catch (error: any) {
+      console.error('Failed to delete annual payslip:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
   },
 
   getCompanyAnnualAnalysis: (companyId: string, year: number): CompanyAnnualAnalysis => {
