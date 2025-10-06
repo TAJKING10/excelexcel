@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,13 +45,16 @@ export function CreateAnnualPayslip() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuthStore();
-  const { companies, employees, individuals, addPayslip, payslips, updatePayslip } = useDataStore();
+  const { user } = useAuth();
+  const { companies, employees, individuals, getEmployeeAnnualPayslip, updateAnnualPayslip } = useDataStore();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(employeeId || '');
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [autoCalc, setAutoCalc] = useState<boolean>(false);
+  const [existingPayslipId, setExistingPayslipId] = useState<string | null>(null);
+
+  console.log('CreateAnnualPayslip - employeeId from URL:', employeeId);
 
   // Check if this is an individual or employee
   const isIndividual = individuals.some((i) => i.id === employeeId);
@@ -116,84 +119,97 @@ export function CreateAnnualPayslip() {
     }
   }, [employeeId, employees, isIndividual]);
 
-  // Load existing payslips when editing OR auto-populate for individuals
+  // Load existing annual payslip when editing
   useEffect(() => {
-    if (selectedEmployee) {
-      // Try to load existing payslips for this employee and year
-      const employeePayslips = payslips.filter(
-        (p) => p.employeeId === selectedEmployee.id && p.period.year === year
-      );
+    async function loadExistingPayslip() {
+      if (!selectedEmployeeId || !year) return;
 
-      if (employeePayslips.length > 0) {
-        // Load existing payslips
-        const newMonthsData = monthsData.map((month) => {
-          const existingPayslip = employeePayslips.find((p) => p.period.month === month.monthNumber);
+      try {
+        console.log('Loading annual payslip for employee:', selectedEmployeeId, 'year:', year);
+        const existing = await getEmployeeAnnualPayslip(selectedEmployeeId, year);
+        console.log('Annual payslip loaded:', existing);
 
-          if (existingPayslip) {
-            return {
-              ...month,
-              taxClass: existingPayslip.employee.class || '2',
-              remunerationBase: existingPayslip.earnings.remunerationBase,
-              grossMonthly: existingPayslip.earnings.grossMonthly,
-              cotisable: existingPayslip.earnings.cotisable,
-              maladie: existingPayslip.employeeContrib.maladie,
-              pension: existingPayslip.employeeContrib.pension,
-              ciCo2: existingPayslip.employeeContrib.ciCo2,
-              deductions: existingPayslip.employeeContrib.deductions,
-              imposable: existingPayslip.earnings.imposable,
-              incomeTax: existingPayslip.employeeContrib.incomeTax,
-              cis: existingPayslip.employeeContrib.cis,
-              cissm: existingPayslip.employeeContrib.cissm,
-              netPay: existingPayslip.netPay,
-              employerMaladie: existingPayslip.employerContrib.maladie,
-              employerPension: existingPayslip.employerContrib.pension,
-              employerSante: existingPayslip.employerContrib.sante,
-              employerAccident: existingPayslip.employerContrib.accident,
-              employerTotal: existingPayslip.employerContrib.socialSecurityTotal,
-            };
+        if (existing && existing.monthlyData && existing.monthlyData.length > 0) {
+          setExistingPayslipId(existing.id);
+          if (existing.companyId) {
+            setSelectedCompanyId(existing.companyId);
           }
-          return month;
-        });
-        setMonthsData(newMonthsData);
-      } else {
-        // Auto-populate for NEW payslips if baseSalary exists
-        const baseSalary = (selectedEmployee as any).baseSalary;
-        const taxClass = String((selectedEmployee as any).taxClass || '2');
+          console.log('Set existing payslip ID:', existing.id);
+          console.log('Set company ID:', existing.companyId);
 
-        if (baseSalary && baseSalary > 0) {
-          const newMonthsData = monthsData.map((month) => {
-            const calc = calculatePayslip({
-              remunerationBase: baseSalary,
-              taxClass: taxClass,
+          // Map existing data to monthsData format
+          const loadedMonths = existing.monthlyData.map((month: any) => ({
+            monthNumber: month.monthNumber,
+            monthName: month.monthName,
+            days: month.days,
+            daysImposable: month.daysImposable,
+            status: month.status,
+            taxClass: month.taxClass,
+            remunerationBase: month.earnings?.remunerationBase || 0,
+            grossMonthly: month.earnings?.grossMonthly || 0,
+            cotisable: month.earnings?.cotisable || 0,
+            maladie: month.employeeContrib?.maladie || 0,
+            pension: month.employeeContrib?.pension || 0,
+            ciCo2: month.employeeContrib?.ciCo2 || 0,
+            deductions: month.employeeContrib?.deductions || 0,
+            imposable: month.earnings?.imposable || 0,
+            incomeTax: month.employeeContrib?.incomeTax || 0,
+            cis: month.employeeContrib?.cis || 0,
+            cissm: month.employeeContrib?.cissm || 0,
+            netPay: month.netPay || 0,
+            employerMaladie: month.employerContrib?.maladie || 0,
+            employerPension: month.employerContrib?.pension || 0,
+            employerSante: month.employerContrib?.sante || 0,
+            employerAccident: month.employerContrib?.accident || 0,
+            employerTotal: month.employerContrib?.socialSecurityTotal || 0,
+            normalHours: 173,
+          }));
+          setMonthsData(loadedMonths);
+          console.log('Loaded months data:', loadedMonths);
+        } else if (selectedEmployee) {
+          // Auto-populate for NEW payslips if baseSalary exists
+          const baseSalary = (selectedEmployee as any).baseSalary;
+          const taxClass = String((selectedEmployee as any).taxClass || '2');
+
+          if (baseSalary && baseSalary > 0) {
+            const newMonthsData = monthsData.map((month) => {
+              const calc = calculatePayslip({
+                remunerationBase: baseSalary,
+                taxClass: taxClass,
+              });
+
+              return {
+                ...month,
+                taxClass: taxClass,
+                remunerationBase: baseSalary,
+                grossMonthly: calc.earnings.grossMonthly,
+                cotisable: calc.earnings.cotisable,
+                maladie: calc.employeeContrib.maladie,
+                pension: calc.employeeContrib.pension,
+                ciCo2: calc.employeeContrib.ciCo2,
+                deductions: calc.employeeContrib.deductions,
+                imposable: calc.earnings.imposable,
+                incomeTax: calc.employeeContrib.incomeTax,
+                cis: calc.employeeContrib.cis,
+                cissm: calc.employeeContrib.cissm,
+                netPay: calc.netPay,
+                employerMaladie: calc.employerContrib.maladie,
+                employerPension: calc.employerContrib.pension,
+                employerSante: calc.employerContrib.sante,
+                employerAccident: calc.employerContrib.accident,
+                employerTotal: calc.employerContrib.socialSecurityTotal,
+              };
             });
-
-            return {
-              ...month,
-              taxClass: taxClass,
-              remunerationBase: baseSalary,
-              grossMonthly: calc.earnings.grossMonthly,
-              cotisable: calc.earnings.cotisable,
-              maladie: calc.employeeContrib.maladie,
-              pension: calc.employeeContrib.pension,
-              ciCo2: calc.employeeContrib.ciCo2,
-              deductions: calc.employeeContrib.deductions,
-              imposable: calc.earnings.imposable,
-              incomeTax: calc.employeeContrib.incomeTax,
-              cis: calc.employeeContrib.cis,
-              cissm: calc.employeeContrib.cissm,
-              netPay: calc.netPay,
-              employerMaladie: calc.employerContrib.maladie,
-              employerPension: calc.employerContrib.pension,
-              employerSante: calc.employerContrib.sante,
-              employerAccident: calc.employerContrib.accident,
-              employerTotal: calc.employerContrib.socialSecurityTotal,
-            };
-          });
-          setMonthsData(newMonthsData);
+            setMonthsData(newMonthsData);
+          }
         }
+      } catch (error) {
+        console.error('Error loading existing payslip:', error);
       }
     }
-  }, [selectedEmployee, year]);
+
+    loadExistingPayslip();
+  }, [selectedEmployeeId, year, getEmployeeAnnualPayslip, selectedEmployee]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -304,110 +320,135 @@ export function CreateAnnualPayslip() {
     setMonthsData(newMonthsData);
   };
 
-  const handleSave = () => {
-    // Validation: For individuals, only need individual selected; for employees, need company too
-    if (isIndividual) {
-      if (!selectedEmployeeId || !selectedEmployee) {
-        toast({
-          title: t('common.error', 'Error'),
-          description: t('individuals.notFound', 'Individual not found'),
-          variant: 'destructive',
-        });
-        return;
-      }
-    } else {
-      if (!selectedCompanyId || !selectedEmployeeId) {
-        toast({
-          title: t('common.error', 'Error'),
-          description: t('payslips.selectCompanyEmployee', 'Please select a company and employee'),
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (!selectedCompany || !selectedEmployee) return;
+  const handleSave = async () => {
+    // Validation
+    if (!selectedEmployeeId || !selectedEmployee) {
+      toast({
+        title: 'Error',
+        description: 'Please select an employee',
+        variant: 'destructive',
+      });
+      return;
     }
 
-    // Create or update individual monthly payslips
-    let created = 0;
-    let updated = 0;
+    if (!isIndividual && !selectedCompanyId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a company',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    monthsData.forEach((month) => {
-      if (month.remunerationBase > 0) {
-        // Check if payslip already exists for this month
-        const existingPayslip = payslips.find(
-          (p) => p.employeeId === selectedEmployeeId && p.period.month === month.monthNumber && p.period.year === year
-        );
+    try {
+      // Format monthly data with proper structure
+      const formattedMonthlyData = monthsData.map(month => ({
+        monthNumber: month.monthNumber,
+        monthName: month.monthName,
+        days: month.days,
+        daysImposable: month.daysImposable,
+        status: month.status,
+        taxClass: month.taxClass,
+        earnings: {
+          remunerationBase: month.remunerationBase,
+          grossMonthly: month.grossMonthly,
+          cotisable: month.cotisable,
+          imposable: month.imposable,
+        },
+        employeeContrib: {
+          maladie: month.maladie,
+          pension: month.pension,
+          ciCo2: month.ciCo2,
+          cis: month.cis,
+          cissm: month.cissm,
+          deductions: month.deductions,
+          incomeTax: month.incomeTax,
+          total: month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax,
+        },
+        employerContrib: {
+          maladie: month.employerMaladie,
+          pension: month.employerPension,
+          sante: month.employerSante,
+          accident: month.employerAccident,
+          socialSecurityTotal: month.employerTotal,
+        },
+        netPay: month.netPay,
+      }));
 
-        const payslipData = {
-          employeeId: selectedEmployeeId,
-          companyId: isIndividual ? `individual-${selectedEmployeeId}` : selectedCompanyId,
-          period: { month: month.monthNumber, year },
-          employee: {
-            id: selectedEmployee.id,
-            firstName: selectedEmployee.firstName,
-            lastName: selectedEmployee.lastName,
-            email: selectedEmployee.email,
-            class: isIndividual ? 'Individual' : (selectedEmployee as any).class,
-            hireDate: isIndividual ? (selectedEmployee as any).createdAt : (selectedEmployee as any).hireDate,
-            terminationDate: null,
-          },
-          company: {
-            id: isIndividual ? `individual-${selectedEmployeeId}` : selectedCompany!.id,
-            name: isIndividual ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : selectedCompany!.name,
-            country: isIndividual ? (selectedEmployee as any).country : selectedCompany!.country,
-            currency: isIndividual ? (selectedEmployee as any).currency : selectedCompany!.currency,
-          },
-          earnings: {
-            remunerationBase: month.remunerationBase,
-            grossMonthly: month.grossMonthly,
-            cotisable: month.cotisable,
-            imposable: month.imposable,
-          },
-          employeeContrib: {
-            maladie: month.maladie,
-            pension: month.pension,
-            ciCo2: month.ciCo2,
-            cis: month.cis,
-            cissm: month.cissm,
-            deductions: month.deductions,
-            incomeTax: month.incomeTax,
-            total: month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax,
-          },
-          employerContrib: {
-            maladie: month.employerMaladie,
-            pension: month.employerPension,
-            sante: month.employerSante,
-            accident: month.employerAccident,
-            socialSecurityTotal: month.employerTotal,
-          },
-          netPay: month.netPay,
-          ytd: {
-            gross: 0,
-            net: 0,
-            employeeContribTotal: 0,
-            employerContribTotal: 0,
-            taxes: 0,
-          },
-          lines: [],
-        };
+      // Calculate annual totals
+      const annualTotals = {
+        earnings: {
+          remunerationBase: totals.remunerationBase,
+          grossMonthly: totals.grossMonthly,
+          cotisable: totals.cotisable,
+          imposable: totals.imposable,
+        },
+        employeeContrib: {
+          maladie: totals.maladie,
+          pension: totals.pension,
+          ciCo2: totals.ciCo2,
+          cis: totals.cis,
+          cissm: totals.cissm,
+          deductions: totals.deductions,
+          incomeTax: totals.incomeTax,
+          total: totals.employeeContribTotal,
+        },
+        employerContrib: {
+          maladie: totals.employerMaladie,
+          pension: totals.employerPension,
+          sante: totals.employerSante,
+          accident: totals.employerAccident,
+          socialSecurityTotal: totals.employerTotal,
+        },
+        netPay: totals.netPay,
+      };
 
-        if (existingPayslip) {
-          updatePayslip(existingPayslip.id, payslipData);
-          updated++;
-        } else {
-          addPayslip(payslipData);
-          created++;
-        }
+      const recapitulation = {
+        totalGrossSalary: totals.grossMonthly,
+        totalNetSalary: totals.netPay,
+        totalEmployeeContributions: totals.employeeContribTotal,
+        totalEmployerContributions: totals.employerTotal,
+        totalTaxes: totals.incomeTax,
+        totalHoursWorked: totals.normalHours,
+      };
+
+      if (existingPayslipId) {
+        // Update existing payslip
+        console.log('Updating annual payslip with ID:', existingPayslipId);
+        console.log('Monthly data:', formattedMonthlyData);
+        console.log('Annual totals:', annualTotals);
+
+        const result = await updateAnnualPayslip(existingPayslipId, {
+          monthlyData: formattedMonthlyData,
+          annualTotals,
+          recapitulation,
+        });
+
+        console.log('Update result:', result);
+
+        toast({
+          title: 'Success',
+          description: `Annual payslip updated successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'No existing payslip found to update. Please create a new one first.',
+          variant: 'destructive',
+        });
+        return;
       }
-    });
 
-    toast({
-      title: t('common.success', 'Success'),
-      description: t('payslips.saveSuccess', `${created} created, ${updated} updated successfully`),
-    });
-
-    navigate(-1);
+      // Navigate back
+      navigate(-1);
+    } catch (error: any) {
+      console.error('Save error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save annual payslip',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

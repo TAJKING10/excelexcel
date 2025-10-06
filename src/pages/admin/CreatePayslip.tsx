@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDataStore } from '@/stores/data';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,13 +45,17 @@ export function CreatePayslip() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { companies, employees, generateEmployeeAnnualPayslip } = useDataStore();
+  const { companies, employees, annualPayslips, getEmployeeAnnualPayslip, updateAnnualPayslip } = useDataStore();
   const [searchParams] = useSearchParams();
+  const { employeeId: urlEmployeeId } = useParams<{ employeeId?: string }>();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(searchParams.get('companyId') || '');
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(urlEmployeeId || '');
   const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [autoCalc, setAutoCalc] = useState<boolean>(true);
+  const [autoCalc, setAutoCalc] = useState<boolean>(false);
+  const [existingPayslipId, setExistingPayslipId] = useState<string | null>(null);
+
+  console.log('CreatePayslip mounted with urlEmployeeId:', urlEmployeeId);
 
   // Initialize 12 months with zeros
   const [monthsData, setMonthsData] = useState<MonthData[]>(() =>
@@ -88,6 +92,59 @@ export function CreatePayslip() {
       navigate('/');
     }
   }, [user, navigate]);
+
+  // Load existing annual payslip if it exists
+  useEffect(() => {
+    async function loadExistingPayslip() {
+      if (!selectedEmployeeId || !year) return;
+
+      try {
+        console.log('Loading existing payslip for employee:', selectedEmployeeId, 'year:', year);
+        const existing = await getEmployeeAnnualPayslip(selectedEmployeeId, year);
+        console.log('Existing payslip loaded:', existing);
+
+        if (existing && existing.monthlyData && existing.monthlyData.length > 0) {
+          setExistingPayslipId(existing.id);
+          setSelectedCompanyId(existing.companyId);
+          console.log('Set existing payslip ID:', existing.id);
+          console.log('Set company ID:', existing.companyId);
+
+          // Map existing data to monthsData format
+          const loadedMonths = existing.monthlyData.map((month: any) => ({
+            monthNumber: month.monthNumber,
+            monthName: month.monthName,
+            days: month.days,
+            daysImposable: month.daysImposable,
+            status: month.status,
+            taxClass: month.taxClass,
+            remunerationBase: month.earnings?.remunerationBase || 0,
+            grossMonthly: month.earnings?.grossMonthly || 0,
+            cotisable: month.earnings?.cotisable || 0,
+            maladie: month.employeeContrib?.maladie || 0,
+            pension: month.employeeContrib?.pension || 0,
+            ciCo2: month.employeeContrib?.ciCo2 || 0,
+            deductions: month.employeeContrib?.deductions || 0,
+            imposable: month.earnings?.imposable || 0,
+            incomeTax: month.employeeContrib?.incomeTax || 0,
+            cis: month.employeeContrib?.cis || 0,
+            cissm: month.employeeContrib?.cissm || 0,
+            netPay: month.netPay || 0,
+            employerMaladie: month.employerContrib?.maladie || 0,
+            employerPension: month.employerContrib?.pension || 0,
+            employerSante: month.employerContrib?.sante || 0,
+            employerAccident: month.employerContrib?.accident || 0,
+            employerTotal: month.employerContrib?.socialSecurityTotal || 0,
+            normalHours: 173,
+          }));
+          setMonthsData(loadedMonths);
+        }
+      } catch (error) {
+        console.error('Error loading existing payslip:', error);
+      }
+    }
+
+    loadExistingPayslip();
+  }, [selectedEmployeeId, year, getEmployeeAnnualPayslip]);
 
   const availableCompanies = user?.role === 'SUPER_ADMIN'
     ? companies
@@ -262,13 +319,103 @@ export function CreatePayslip() {
     if (!selectedCompany || !selectedEmployee) return;
 
     try {
-      // Create a single annual payslip with all 12 months of data
-      await generateEmployeeAnnualPayslip(selectedEmployeeId, year);
+      // Format monthly data with proper structure
+      const formattedMonthlyData = monthsData.map(month => ({
+        monthNumber: month.monthNumber,
+        monthName: month.monthName,
+        days: month.days,
+        daysImposable: month.daysImposable,
+        status: month.status,
+        taxClass: month.taxClass,
+        earnings: {
+          remunerationBase: month.remunerationBase,
+          grossMonthly: month.grossMonthly,
+          cotisable: month.cotisable,
+          imposable: month.imposable,
+        },
+        employeeContrib: {
+          maladie: month.maladie,
+          pension: month.pension,
+          ciCo2: month.ciCo2,
+          cis: month.cis,
+          cissm: month.cissm,
+          deductions: month.deductions,
+          incomeTax: month.incomeTax,
+          total: month.maladie + month.pension + month.ciCo2 + month.cis + month.cissm + month.deductions + month.incomeTax,
+        },
+        employerContrib: {
+          maladie: month.employerMaladie,
+          pension: month.employerPension,
+          sante: month.employerSante,
+          accident: month.employerAccident,
+          socialSecurityTotal: month.employerTotal,
+        },
+        netPay: month.netPay,
+      }));
 
-      toast({
-        title: 'Success',
-        description: `Annual payslip created successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
-      });
+      // Calculate annual totals
+      const annualTotals = {
+        earnings: {
+          remunerationBase: totals.remunerationBase,
+          grossMonthly: totals.grossMonthly,
+          cotisable: totals.cotisable,
+          imposable: totals.imposable,
+        },
+        employeeContrib: {
+          maladie: totals.maladie,
+          pension: totals.pension,
+          ciCo2: totals.ciCo2,
+          cis: totals.cis,
+          cissm: totals.cissm,
+          deductions: totals.deductions,
+          incomeTax: totals.incomeTax,
+          total: totals.employeeContribTotal,
+        },
+        employerContrib: {
+          maladie: totals.employerMaladie,
+          pension: totals.employerPension,
+          sante: totals.employerSante,
+          accident: totals.employerAccident,
+          socialSecurityTotal: totals.employerTotal,
+        },
+        netPay: totals.netPay,
+      };
+
+      const recapitulation = {
+        totalGrossSalary: totals.grossMonthly,
+        totalNetSalary: totals.netPay,
+        totalEmployeeContributions: totals.employeeContribTotal,
+        totalEmployerContributions: totals.employerTotal,
+        totalTaxes: totals.incomeTax,
+        totalHoursWorked: totals.normalHours,
+      };
+
+      if (existingPayslipId) {
+        // Update existing payslip
+        console.log('Updating payslip with ID:', existingPayslipId);
+        console.log('Monthly data:', formattedMonthlyData);
+        console.log('Annual totals:', annualTotals);
+
+        const result = await updateAnnualPayslip(existingPayslipId, {
+          monthlyData: formattedMonthlyData,
+          annualTotals,
+          recapitulation,
+        });
+
+        console.log('Update result:', result);
+
+        toast({
+          title: 'Success',
+          description: `Annual payslip updated successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'No existing payslip found to update',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       // Navigate back to company detail
       const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
@@ -276,7 +423,7 @@ export function CreatePayslip() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create annual payslip',
+        description: error.message || 'Failed to save annual payslip',
         variant: 'destructive',
       });
     }
