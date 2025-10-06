@@ -572,11 +572,11 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { payslips, employees } = useDataStore();
+  const { annualPayslips, employees } = useDataStore();
   const [selectedPayslip, setSelectedPayslip] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
-  const filteredPayslips = payslips.filter((p) => p.companyId === companyId);
+  const filteredPayslips = annualPayslips.filter((p) => p.companyId === companyId);
 
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find((e) => e.id === employeeId);
@@ -587,8 +587,6 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
     setSelectedPayslip(payslipId);
     setViewDialogOpen(true);
   };
-
-  const selectedPayslipData = payslips.find((p) => p.id === selectedPayslip);
 
   return (
     <>
@@ -605,25 +603,26 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('payslips.period')}</TableHead>
                   <TableHead>{t('payslips.employee')}</TableHead>
-                  <TableHead>{t('payslips.gross')}</TableHead>
-                  <TableHead>{t('payslips.net')}</TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Annual Gross</TableHead>
+                  <TableHead>Annual Net</TableHead>
                   <TableHead>{t('employees.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPayslips.map((payslip) => (
                   <TableRow key={payslip.id}>
-                    <TableCell>
-                      {String(payslip.period.month).padStart(2, '0')}/{payslip.period.year}
-                    </TableCell>
                     <TableCell>{getEmployeeName(payslip.employeeId)}</TableCell>
-                    <TableCell>{formatCurrency(payslip.earnings.grossMonthly)}</TableCell>
-                    <TableCell>{formatCurrency(payslip.netPay)}</TableCell>
+                    <TableCell>{payslip.year}</TableCell>
+                    <TableCell>{formatCurrency(payslip.annualTotals?.grossMonthly || 0)}</TableCell>
+                    <TableCell>{formatCurrency(payslip.annualTotals?.netPay || 0)}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => handleViewPayslip(payslip.id)}>
+                        <Button size="sm" variant="outline" onClick={() => {
+                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                          navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
+                        }}>
                           <Eye size={16} className="mr-2" />
                           {t('common.view', 'Voir')}
                         </Button>
@@ -632,11 +631,7 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                           navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
                         }}>
                           <FileSpreadsheet size={16} className="mr-2" />
-                          {t('payslips.annualTitle', 'Annuelle')}
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
-                          <Download size={16} className="mr-2" />
-                          {t('common.pdf', 'PDF')}
+                          {t('payslips.annualTitle', 'Edit')}
                         </Button>
                       </div>
                     </TableCell>
@@ -647,18 +642,6 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
           )}
         </CardContent>
       </Card>
-
-      {/* Payslip Detail Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t('payslips.title', 'Fiche de Paie')}</DialogTitle>
-          </DialogHeader>
-          {selectedPayslipData && (
-            <LuxembourgPayslipDetail payslip={selectedPayslipData} />
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

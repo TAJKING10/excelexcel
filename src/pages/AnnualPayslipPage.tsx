@@ -1,23 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AnnualPayslipView } from '@/components/payslips/AnnualPayslipView';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
-import { Download, ArrowLeft, Edit } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Download, ArrowLeft, Edit, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { AnnualPayslip } from '@/types';
 
 export default function AnnualPayslipPage() {
   const { employeeId, individualId } = useParams<{ employeeId?: string; individualId?: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [annualPayslip, setAnnualPayslip] = useState<AnnualPayslip | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
 
   const getEmployeeAnnualPayslip = useDataStore((state) => state.getEmployeeAnnualPayslip);
   const generateEmployeeAnnualPayslip = useDataStore((state) => state.generateEmployeeAnnualPayslip);
@@ -32,17 +35,28 @@ export default function AnnualPayslipPage() {
   const individual = individuals.find((i) => i.id === personId);
   const person = employee || individual;
 
-  let annualPayslip;
-  try {
-    annualPayslip = personId ? getEmployeeAnnualPayslip(personId, selectedYear) : undefined;
+  // Load annual payslip async
+  useEffect(() => {
+    async function loadPayslip() {
+      if (!personId) {
+        setLoading(false);
+        return;
+      }
 
-    // If not found, try to generate it
-    if (!annualPayslip && personId && person) {
-      annualPayslip = generateEmployeeAnnualPayslip(personId, selectedYear);
+      try {
+        setLoading(true);
+        const payslip = await getEmployeeAnnualPayslip(personId, selectedYear);
+        setAnnualPayslip(payslip);
+      } catch (error) {
+        console.error('Error loading annual payslip:', error);
+        setAnnualPayslip(undefined);
+      } finally {
+        setLoading(false);
+      }
     }
-  } catch (error) {
-    console.error('Error with annual payslip:', error);
-  }
+
+    loadPayslip();
+  }, [personId, selectedYear, getEmployeeAnnualPayslip]);
 
   // Generate year options (last 5 years)
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -102,6 +116,19 @@ export default function AnnualPayslipPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading annual payslip...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!annualPayslip) {
     return (
       <div className="container mx-auto p-6">
@@ -118,17 +145,17 @@ export default function AnnualPayslipPage() {
           <CardContent className="space-y-4">
             <div className="text-center">
               <p className="text-muted-foreground mb-4">
-                {t('payslips.cannotGenerate', 'Impossible de générer la fiche de paie annuelle pour {name}').replace('{name}', `${person?.firstName} ${person?.lastName}`)}
+                No annual payslip found for {person?.firstName} {person?.lastName} ({selectedYear})
               </p>
               <p className="text-sm text-muted-foreground mb-2">
-                Employee ID: {personId} | {t('payslips.year', 'Année')}: {selectedYear}
+                Employee ID: {personId} | Year: {selectedYear}
               </p>
               <div className="mt-6">
                 <Button onClick={() => {
                   const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-                  navigate(`${basePath}/payslips/create-annual/${personId}`);
+                  navigate(`${basePath}/companies`);
                 }}>
-                  {t('payslips.createAnnual', 'Créer Fiche de Paie Annuelle')} {selectedYear}
+                  Go back to companies
                 </Button>
               </div>
             </div>

@@ -440,57 +440,67 @@ export const annualPayslipService = {
   },
 
   async getByEmployeeAndYear(employeeId: string, year: number): Promise<AnnualPayslip | null> {
-    const { data, error } = await supabase
+    // First get the annual payslip
+    const { data: payslipData, error: payslipError } = await supabase
       .from('annual_payslips')
-      .select(`
-        *,
-        employee:employees(*),
-        company:companies(*)
-      `)
+      .select('*')
       .eq('employee_id', employeeId)
       .eq('year', year)
+      .maybeSingle();
+
+    if (payslipError) throw payslipError;
+    if (!payslipData) return null;
+
+    // Then fetch employee and company separately
+    const { data: employeeData } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('id', payslipData.employee_id)
       .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
-    }
+    const { data: companyData } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', payslipData.company_id)
+      .single();
+
+    if (!employeeData || !companyData) return null;
 
     return {
-      id: data.id,
-      employeeId: data.employee_id,
-      companyId: data.company_id,
-      year: data.year,
+      id: payslipData.id,
+      employeeId: payslipData.employee_id,
+      companyId: payslipData.company_id,
+      year: payslipData.year,
       employee: {
-        id: data.employee.id,
-        firstName: data.employee.first_name,
-        lastName: data.employee.last_name,
-        email: data.employee.email,
-        class: data.employee.class,
-        hireDate: data.employee.hire_date,
-        terminationDate: data.employee.termination_date,
-        matricule: data.employee.matricule,
-        identityNumber: data.employee.identity_number,
-        address: data.employee.address,
-        city: data.employee.city,
-        postalCode: data.employee.postal_code,
-        anciennete: data.employee.anciennete
+        id: employeeData.id,
+        firstName: employeeData.first_name,
+        lastName: employeeData.last_name,
+        email: employeeData.email,
+        class: employeeData.class,
+        hireDate: employeeData.hire_date,
+        terminationDate: employeeData.termination_date,
+        matricule: employeeData.matricule,
+        identityNumber: employeeData.identity_number,
+        address: employeeData.address,
+        city: employeeData.city,
+        postalCode: employeeData.postal_code,
+        anciennete: employeeData.anciennete
       },
       company: {
-        id: data.company.id,
-        name: data.company.name,
-        country: data.company.country,
-        currency: data.company.currency,
-        address: data.company.address,
-        city: data.company.city,
-        postalCode: data.company.postal_code,
-        registrationNumber: data.company.registration_number
+        id: companyData.id,
+        name: companyData.name,
+        country: companyData.country,
+        currency: companyData.currency,
+        address: companyData.address,
+        city: companyData.city,
+        postalCode: companyData.postal_code,
+        registrationNumber: companyData.registration_number
       },
-      monthlyData: data.monthly_data || [],
-      annualTotals: data.annual_totals || {},
-      recapitulation: data.recapitulation || {},
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
+      monthlyData: payslipData.monthly_data || [],
+      annualTotals: payslipData.annual_totals || {},
+      recapitulation: payslipData.recapitulation || {},
+      createdAt: payslipData.created_at,
+      updatedAt: payslipData.updated_at
     };
   },
 
