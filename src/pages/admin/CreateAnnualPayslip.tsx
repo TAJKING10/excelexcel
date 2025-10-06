@@ -138,32 +138,60 @@ export function CreateAnnualPayslip() {
           console.log('Set company ID:', existing.companyId);
 
           // Map existing data to monthsData format
-          const loadedMonths = existing.monthlyData.map((month: any) => ({
-            monthNumber: month.monthNumber,
-            monthName: month.monthName,
-            days: month.days,
-            daysImposable: month.daysImposable,
-            status: month.status,
-            taxClass: month.taxClass,
-            remunerationBase: month.earnings?.remunerationBase || 0,
-            grossMonthly: month.earnings?.grossMonthly || 0,
-            cotisable: month.earnings?.cotisable || 0,
-            maladie: month.employeeContrib?.maladie || 0,
-            pension: month.employeeContrib?.pension || 0,
-            ciCo2: month.employeeContrib?.ciCo2 || 0,
-            deductions: month.employeeContrib?.deductions || 0,
-            imposable: month.earnings?.imposable || 0,
-            incomeTax: month.employeeContrib?.incomeTax || 0,
-            cis: month.employeeContrib?.cis || 0,
-            cissm: month.employeeContrib?.cissm || 0,
-            netPay: month.netPay || 0,
-            employerMaladie: month.employerContrib?.maladie || 0,
-            employerPension: month.employerContrib?.pension || 0,
-            employerSante: month.employerContrib?.sante || 0,
-            employerAccident: month.employerContrib?.accident || 0,
-            employerTotal: month.employerContrib?.socialSecurityTotal || 0,
-            normalHours: 173,
-          }));
+          const loadedMonths = existing.monthlyData.map((month: any) => {
+            // Auto-calculate employer contributions if they're missing (all zeros)
+            const hasEmployerData =
+              (month.employerContrib?.maladie || 0) > 0 ||
+              (month.employerContrib?.pension || 0) > 0 ||
+              (month.employerContrib?.sante || 0) > 0 ||
+              (month.employerContrib?.accident || 0) > 0;
+
+            let employerContrib = {
+              employerMaladie: month.employerContrib?.maladie || 0,
+              employerPension: month.employerContrib?.pension || 0,
+              employerSante: month.employerContrib?.sante || 0,
+              employerAccident: month.employerContrib?.accident || 0,
+              employerTotal: month.employerContrib?.socialSecurityTotal || 0,
+            };
+
+            // If no employer data exists, calculate it from employee contributions
+            if (!hasEmployerData && (month.earnings?.remunerationBase || 0) > 0) {
+              const calc = calculatePayslip({
+                remunerationBase: month.earnings.remunerationBase,
+                taxClass: String(month.taxClass || '2'),
+              });
+              employerContrib = {
+                employerMaladie: calc.employerContrib.maladie,
+                employerPension: calc.employerContrib.pension,
+                employerSante: calc.employerContrib.sante,
+                employerAccident: calc.employerContrib.accident,
+                employerTotal: calc.employerContrib.socialSecurityTotal,
+              };
+            }
+
+            return {
+              monthNumber: month.monthNumber,
+              monthName: month.monthName,
+              days: month.days,
+              daysImposable: month.daysImposable,
+              status: month.status,
+              taxClass: month.taxClass,
+              remunerationBase: month.earnings?.remunerationBase || 0,
+              grossMonthly: month.earnings?.grossMonthly || 0,
+              cotisable: month.earnings?.cotisable || 0,
+              maladie: month.employeeContrib?.maladie || 0,
+              pension: month.employeeContrib?.pension || 0,
+              ciCo2: month.employeeContrib?.ciCo2 || 0,
+              deductions: month.employeeContrib?.deductions || 0,
+              imposable: month.earnings?.imposable || 0,
+              incomeTax: month.employeeContrib?.incomeTax || 0,
+              cis: month.employeeContrib?.cis || 0,
+              cissm: month.employeeContrib?.cissm || 0,
+              netPay: month.netPay || 0,
+              ...employerContrib,
+              normalHours: 173,
+            };
+          });
           setMonthsData(loadedMonths);
           console.log('Loaded months data:', loadedMonths);
         } else if (selectedEmployee) {
@@ -268,32 +296,49 @@ export function CreateAnnualPayslip() {
       [field]: numValue,
     };
 
-    // Recalculate if auto-calc is on and remuneration base changes
-    if (autoCalc && field === 'remunerationBase' && numValue > 0) {
+    // If auto-calc is on and remuneration base, gross, or tax class changes, recalculate everything
+    if (autoCalc && (field === 'remunerationBase' || field === 'taxClass' || field === 'grossMonthly')) {
+      const remunerationBase = field === 'remunerationBase' ? numValue : newMonthsData[monthIndex].remunerationBase;
+      const taxClass = field === 'taxClass' ? numValue : newMonthsData[monthIndex].taxClass;
+
+      if (remunerationBase > 0) {
+        const calc = calculatePayslip({
+          remunerationBase: remunerationBase,
+          taxClass: String(taxClass),
+        });
+
+        newMonthsData[monthIndex] = {
+          ...newMonthsData[monthIndex],
+          grossMonthly: calc.earnings.grossMonthly,
+          cotisable: calc.earnings.cotisable,
+          maladie: calc.employeeContrib.maladie,
+          pension: calc.employeeContrib.pension,
+          ciCo2: calc.employeeContrib.ciCo2,
+          deductions: calc.employeeContrib.deductions,
+          imposable: calc.earnings.imposable,
+          incomeTax: calc.employeeContrib.incomeTax,
+          cis: calc.employeeContrib.cis,
+          cissm: calc.employeeContrib.cissm,
+          netPay: calc.netPay,
+          employerMaladie: calc.employerContrib.maladie,
+          employerPension: calc.employerContrib.pension,
+          employerSante: calc.employerContrib.sante,
+          employerAccident: calc.employerContrib.accident,
+          employerTotal: calc.employerContrib.socialSecurityTotal,
+        };
+      }
+    } else if (!autoCalc && field === 'remunerationBase' && numValue > 0) {
+      // Even when auto-calc is off, if remuneration base changes, recalculate employer contributions
       const calc = calculatePayslip({
         remunerationBase: numValue,
-        taxClass: newMonthsData[monthIndex].taxClass,
+        taxClass: String(newMonthsData[monthIndex].taxClass),
       });
 
-      newMonthsData[monthIndex] = {
-        ...newMonthsData[monthIndex],
-        grossMonthly: calc.earnings.grossMonthly,
-        cotisable: calc.earnings.cotisable,
-        maladie: calc.employeeContrib.maladie,
-        pension: calc.employeeContrib.pension,
-        ciCo2: calc.employeeContrib.ciCo2,
-        deductions: calc.employeeContrib.deductions,
-        imposable: calc.earnings.imposable,
-        incomeTax: calc.employeeContrib.incomeTax,
-        cis: calc.employeeContrib.cis,
-        cissm: calc.employeeContrib.cissm,
-        netPay: calc.netPay,
-        employerMaladie: calc.employerContrib.maladie,
-        employerPension: calc.employerContrib.pension,
-        employerSante: calc.employerContrib.sante,
-        employerAccident: calc.employerContrib.accident,
-        employerTotal: calc.employerContrib.socialSecurityTotal,
-      };
+      newMonthsData[monthIndex].employerMaladie = calc.employerContrib.maladie;
+      newMonthsData[monthIndex].employerPension = calc.employerContrib.pension;
+      newMonthsData[monthIndex].employerSante = calc.employerContrib.sante;
+      newMonthsData[monthIndex].employerAccident = calc.employerContrib.accident;
+      newMonthsData[monthIndex].employerTotal = calc.employerContrib.socialSecurityTotal;
     } else {
       // Always recalculate Net Pay and Employer Total based on current values
       const month = newMonthsData[monthIndex];
