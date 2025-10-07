@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis, PayslipLine, ActivityLog } from '@/types';
-import { generateAnnualPayslip } from '@/lib/luxembourgPayroll';
+import { generateAnnualPayslip, calculatePayslip } from '@/lib/luxembourgPayroll';
 import { companyService, employeeService, individualService, payslipService, annualPayslipService, individualAnnualPayslipService, activityLogService } from '@/services/supabase';
 
 interface DataState {
@@ -889,41 +889,54 @@ export const useDataStore = create<DataState>((set, get) => ({
         return existing;
       }
 
-      // Generate empty annual payslip template for individual (all values at 0)
+      // Generate annual payslip with auto-calculated values from base salary
+      const baseSalary = individual.baseSalary || 0;
+      const taxClass = String(individual.taxClass || 2);
+
       const monthlyData = [];
       for (let month = 1; month <= 12; month++) {
+        // Calculate payslip for this month
+        const calc = baseSalary > 0
+          ? calculatePayslip({ remunerationBase: baseSalary, taxClass })
+          : {
+              earnings: { remunerationBase: 0, grossMonthly: 0, cotisable: 0, imposable: 0 },
+              employeeContrib: { maladie: 0, pension: 0, ciCo2: 0, cis: 0, cissm: 0, deductions: 0, incomeTax: 0, total: 0 },
+              employerContrib: { maladie: 0, pension: 0, sante: 0, accident: 0, socialSecurityTotal: 0 },
+              netPay: 0
+            };
+
         monthlyData.push({
           monthName: ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][month - 1],
           monthNumber: month,
           days: `1-${new Date(year, month, 0).getDate()}`,
           daysImposable: new Date(year, month, 0).getDate(),
           status: 'Empl.',
-          taxClass: individual.taxClass,
+          taxClass: taxClass,
           earnings: {
-            remunerationBase: 0,
-            grossMonthly: 0,
-            cotisable: 0,
-            imposable: 0
+            remunerationBase: calc.earnings.remunerationBase,
+            grossMonthly: calc.earnings.grossMonthly,
+            cotisable: calc.earnings.cotisable,
+            imposable: calc.earnings.imposable
           },
           employeeContrib: {
-            maladie: 0,
-            pension: 0,
-            ciCo2: 0,
-            cis: 0,
-            cissm: 0,
-            deductions: 0,
-            incomeTax: 0,
-            total: 0
+            maladie: calc.employeeContrib.maladie,
+            pension: calc.employeeContrib.pension,
+            ciCo2: calc.employeeContrib.ciCo2,
+            cis: calc.employeeContrib.cis,
+            cissm: calc.employeeContrib.cissm,
+            deductions: calc.employeeContrib.deductions,
+            incomeTax: calc.employeeContrib.incomeTax,
+            total: calc.employeeContrib.total
           },
           employerContrib: {
-            maladie: 0,
-            pension: 0,
-            sante: 0,
-            accident: 0,
-            socialSecurityTotal: 0
+            maladie: calc.employerContrib.maladie,
+            pension: calc.employerContrib.pension,
+            sante: calc.employerContrib.sante,
+            accident: calc.employerContrib.accident,
+            socialSecurityTotal: calc.employerContrib.socialSecurityTotal
           },
           workingHours: {
-            normalHours: 0,
+            normalHours: 173,
             supplementaryHours: 0,
             holidays: 0,
             publicHolidayExtra: 0,
@@ -932,7 +945,7 @@ export const useDataStore = create<DataState>((set, get) => ({
             sickLeave: 0,
             unemployment: 0
           },
-          netPay: 0
+          netPay: calc.netPay
         });
       }
 
@@ -969,37 +982,37 @@ export const useDataStore = create<DataState>((set, get) => ({
         monthlyData,
         annualTotals: {
           earnings: {
-            remunerationBase: 0,
-            grossMonthly: 0,
-            cotisable: 0,
-            imposable: 0
+            remunerationBase: monthlyData.reduce((sum, m) => sum + m.earnings.remunerationBase, 0),
+            grossMonthly: monthlyData.reduce((sum, m) => sum + m.earnings.grossMonthly, 0),
+            cotisable: monthlyData.reduce((sum, m) => sum + m.earnings.cotisable, 0),
+            imposable: monthlyData.reduce((sum, m) => sum + m.earnings.imposable, 0)
           },
           employeeContrib: {
-            maladie: 0,
-            pension: 0,
-            ciCo2: 0,
-            cis: 0,
-            cissm: 0,
-            deductions: 0,
-            incomeTax: 0,
-            total: 0
+            maladie: monthlyData.reduce((sum, m) => sum + m.employeeContrib.maladie, 0),
+            pension: monthlyData.reduce((sum, m) => sum + m.employeeContrib.pension, 0),
+            ciCo2: monthlyData.reduce((sum, m) => sum + m.employeeContrib.ciCo2, 0),
+            cis: monthlyData.reduce((sum, m) => sum + m.employeeContrib.cis, 0),
+            cissm: monthlyData.reduce((sum, m) => sum + m.employeeContrib.cissm, 0),
+            deductions: monthlyData.reduce((sum, m) => sum + m.employeeContrib.deductions, 0),
+            incomeTax: monthlyData.reduce((sum, m) => sum + m.employeeContrib.incomeTax, 0),
+            total: monthlyData.reduce((sum, m) => sum + m.employeeContrib.total, 0)
           },
           employerContrib: {
-            maladie: 0,
-            pension: 0,
-            sante: 0,
-            accident: 0,
-            socialSecurityTotal: 0
+            maladie: monthlyData.reduce((sum, m) => sum + m.employerContrib.maladie, 0),
+            pension: monthlyData.reduce((sum, m) => sum + m.employerContrib.pension, 0),
+            sante: monthlyData.reduce((sum, m) => sum + m.employerContrib.sante, 0),
+            accident: monthlyData.reduce((sum, m) => sum + m.employerContrib.accident, 0),
+            socialSecurityTotal: monthlyData.reduce((sum, m) => sum + m.employerContrib.socialSecurityTotal, 0)
           },
-          netPay: 0
+          netPay: monthlyData.reduce((sum, m) => sum + m.netPay, 0)
         },
         recapitulation: {
-          totalGrossSalary: 0,
-          totalNetSalary: 0,
-          totalEmployeeContributions: 0,
-          totalEmployerContributions: 0,
-          totalTaxes: 0,
-          totalHoursWorked: 0
+          totalGrossSalary: monthlyData.reduce((sum, m) => sum + m.earnings.grossMonthly, 0),
+          totalNetSalary: monthlyData.reduce((sum, m) => sum + m.netPay, 0),
+          totalEmployeeContributions: monthlyData.reduce((sum, m) => sum + m.employeeContrib.total, 0),
+          totalEmployerContributions: monthlyData.reduce((sum, m) => sum + m.employerContrib.socialSecurityTotal, 0),
+          totalTaxes: monthlyData.reduce((sum, m) => sum + m.employeeContrib.incomeTax, 0),
+          totalHoursWorked: monthlyData.reduce((sum, m) => sum + (m.workingHours?.normalHours || 0), 0)
         }
       };
 

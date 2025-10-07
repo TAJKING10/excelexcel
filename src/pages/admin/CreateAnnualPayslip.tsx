@@ -46,7 +46,7 @@ export function CreateAnnualPayslip() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { companies, employees, individuals, getEmployeeAnnualPayslip, updateAnnualPayslip } = useDataStore();
+  const { companies, employees, individuals, getEmployeeAnnualPayslip, getIndividualAnnualPayslip, updateAnnualPayslip } = useDataStore();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(employeeId || '');
@@ -125,8 +125,10 @@ export function CreateAnnualPayslip() {
       if (!selectedEmployeeId || !year) return;
 
       try {
-        console.log('Loading annual payslip for employee:', selectedEmployeeId, 'year:', year);
-        const existing = await getEmployeeAnnualPayslip(selectedEmployeeId, year);
+        console.log('Loading annual payslip for employee:', selectedEmployeeId, 'year:', year, 'isIndividual:', isIndividual);
+        const existing = isIndividual
+          ? await getIndividualAnnualPayslip(selectedEmployeeId, year)
+          : await getEmployeeAnnualPayslip(selectedEmployeeId, year);
         console.log('Annual payslip loaded:', existing);
 
         if (existing && existing.monthlyData && existing.monthlyData.length > 0) {
@@ -237,7 +239,7 @@ export function CreateAnnualPayslip() {
     }
 
     loadExistingPayslip();
-  }, [selectedEmployeeId, year, getEmployeeAnnualPayslip, selectedEmployee]);
+  }, [selectedEmployeeId, year, getEmployeeAnnualPayslip, getIndividualAnnualPayslip, selectedEmployee, isIndividual]);
 
   // Calculate totals
   const totals = useMemo(() => {
