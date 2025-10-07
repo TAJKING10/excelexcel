@@ -52,6 +52,7 @@ export function EmployeeList() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [filterCompanyId, setFilterCompanyId] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [searchName, setSearchName] = useState<string>('');
 
   const [formData, setFormData] = useState({
     companyId: '',
@@ -95,6 +96,17 @@ export function EmployeeList() {
     // Status filter
     if (filterStatus !== 'all' && employee.status !== filterStatus) {
       return false;
+    }
+
+    // Name search filter
+    if (searchName.trim() !== '') {
+      const searchLower = searchName.toLowerCase().trim();
+      const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase();
+      const reverseName = `${employee.lastName} ${employee.firstName}`.toLowerCase();
+
+      if (!fullName.includes(searchLower) && !reverseName.includes(searchLower)) {
+        return false;
+      }
     }
 
     return true;
@@ -311,7 +323,16 @@ export function EmployeeList() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>{t('employees.name')}</Label>
+              <Input
+                placeholder={t('employees.searchByName', { defaultValue: 'Search by name...' })}
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                className="w-full"
+              />
+            </div>
             {user?.role === 'SUPER_ADMIN' && (
               <div className="space-y-2">
                 <Label>{t('companies.name')}</Label>
