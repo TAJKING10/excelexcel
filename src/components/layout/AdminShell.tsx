@@ -30,7 +30,7 @@ export function AdminShell() {
     { path: '/admin/companies', icon: Building2, label: t('companies.title') },
     { path: '/admin/employees', icon: Users, label: t('employees.title') },
     { path: '/admin/individuals', icon: UserCheck, label: t('individuals.title') },
-    { path: '/admin/payslips', icon: FileText, label: t('payslips.title') },
+//     { path: '/admin/payslips', icon: FileText, label: t('payslips.title') },
     { path: '/admin/users', icon: Shield, label: t('users.accessSummary') },
   ]
 
