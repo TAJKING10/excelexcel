@@ -72,7 +72,11 @@ export function CompanyList() {
   };
 
   const handleAdd = async () => {
+    console.log('🔥 handleAdd called');
+    console.log('📝 Form data:', formData);
+
     if (!formData.name.trim()) {
+      console.log('❌ Validation failed: name is empty');
       toast({
         title: t('common.error'),
         description: t('companies.nameRequired'),
@@ -81,12 +85,16 @@ export function CompanyList() {
       return;
     }
 
+    console.log('✅ Validation passed, attempting to create company...');
+
     try {
-      await addCompany({
+      const newCompany = await addCompany({
         name: formData.name,
         country: formData.country,
         currency: formData.currency,
       });
+
+      console.log('✅ Company created successfully:', newCompany);
 
       toast({
         title: t('common.success'),
@@ -96,6 +104,10 @@ export function CompanyList() {
       setFormData({ name: '', country: 'Luxembourg', currency: 'EUR' });
       setIsAddDialogOpen(false);
     } catch (error: any) {
+      console.error('❌ Error creating company:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+
       toast({
         title: t('common.error'),
         description: error.message || 'Failed to create company',
