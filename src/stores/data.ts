@@ -367,19 +367,20 @@ const mockPayslips: Payslip[] = [
 const mockIndividuals: Individual[] = [];
 
 export const useDataStore = create<DataState>((set, get) => ({
-  companies: mockCompanies,
-  employees: mockEmployees,
-  payslips: mockPayslips,
+  companies: [],
+  employees: [],
+  payslips: [],
   annualPayslips: [],
   users: [],
-  individuals: mockIndividuals,
+  individuals: [],
   activityLogs: [],
   payrollTemplates: {},
-  isLoading: false,
+  isLoading: true,
   error: null,
 
   // Initialize data from Supabase
   initializeData: async () => {
+    console.log('🔄 Starting initializeData...');
     set({ isLoading: true, error: null });
     try {
       const [companies, employees, annualPayslips] = await Promise.all([
@@ -388,6 +389,12 @@ export const useDataStore = create<DataState>((set, get) => ({
         annualPayslipService.getAll()
       ]);
 
+      console.log('✅ Data loaded:', {
+        companiesCount: companies.length,
+        employeesCount: employees.length,
+        annualPayslipsCount: annualPayslips.length
+      });
+
       set({
         companies,
         employees,
@@ -395,7 +402,7 @@ export const useDataStore = create<DataState>((set, get) => ({
         isLoading: false
       });
     } catch (error: any) {
-      console.error('Failed to initialize data:', error);
+      console.error('❌ Failed to initialize data:', error);
       set({ error: error.message, isLoading: false });
     }
   },
@@ -595,63 +602,103 @@ export const useDataStore = create<DataState>((set, get) => ({
   getCompanyAnalytics: (companyId: string): CompanyAnalytics => {
     const state = get();
     const employees = state.employees.filter((e) => e.companyId === companyId);
-    const payslips = state.payslips.filter((p) => p.companyId === companyId);
+    const currentYear = new Date().getFullYear();
+    const annualPayslips = state.annualPayslips.filter(
+      (p) => p.companyId === companyId && p.year === currentYear
+    );
 
     const activeEmployees = employees.filter((e) => e.status === 'active').length;
     const terminatedEmployees = employees.filter((e) => e.status === 'terminated').length;
-    const monthlyPayroll = payslips.reduce((sum, p) => sum + p.earnings.grossMonthly, 0);
-    const totalSocialCharges = payslips.reduce(
-      (sum, p) => sum + p.employerContrib.socialSecurityTotal,
+
+    // Calculate totals from annual payslips
+    const monthlyPayroll = annualPayslips.reduce(
+      (sum, p) => sum + (p.annualTotals?.earnings?.grossMonthly || 0),
+      0
+    );
+    const totalSocialCharges = annualPayslips.reduce(
+      (sum, p) => sum + (p.annualTotals?.employerContrib?.socialSecurityTotal || 0),
       0
     );
 
-    // Generate monthly data (last 12 months)
+    // Generate monthly data from annual payslips (current year, 12 months)
     const netVsGross = Array.from({ length: 12 }, (_, i) => {
-      const month = new Date();
-      month.setMonth(month.getMonth() - (11 - i));
-      const monthStr = month.toLocaleString('default', { month: 'short', year: 'numeric' });
+      const monthNumber = i + 1;
+      const monthName = new Date(currentYear, i, 1).toLocaleString('default', {
+        month: 'short',
+        year: 'numeric'
+      });
 
-      const monthPayslips = payslips.filter(
-        (p) =>
-          p.period.month === month.getMonth() + 1 && p.period.year === month.getFullYear()
-      );
+      // Sum up all employees' data for this month
+      let gross = 0;
+      let net = 0;
+
+      annualPayslips.forEach((annualPayslip) => {
+        const monthData = annualPayslip.monthlyData?.find((m: any) => m.monthNumber === monthNumber);
+        if (monthData) {
+          gross += monthData.earnings?.grossMonthly || 0;
+          net += monthData.netPay || 0;
+        }
+      });
 
       return {
-        month: monthStr,
-        gross: monthPayslips.reduce((sum, p) => sum + p.earnings.grossMonthly, 0),
-        net: monthPayslips.reduce((sum, p) => sum + p.netPay, 0),
+        month: monthName,
+        gross,
+        net,
       };
     });
 
-    // Monthly contributions (derived from employer contributions on payslips)
-    const contributions = netVsGross.map((item) => {
-      // Parse month/year back from the formatted string
-      const [monthAbbr, yearStr] = item.month.split(' ');
-      const parsedDate = new Date(`${monthAbbr} 1, ${yearStr}`);
-      const monthPayslips = payslips.filter(
-        (p) => p.period.month === parsedDate.getMonth() + 1 && p.period.year === parsedDate.getFullYear()
-      );
+    // Monthly contributions
+    const contributions = Array.from({ length: 12 }, (_, i) => {
+      const monthNumber = i + 1;
+      const monthName = new Date(currentYear, i, 1).toLocaleString('default', {
+        month: 'short',
+        year: 'numeric'
+      });
+
+      let maladie = 0;
+      let pension = 0;
+      let sante = 0;
+      let accident = 0;
+
+      annualPayslips.forEach((annualPayslip) => {
+        const monthData = annualPayslip.monthlyData?.find((m: any) => m.monthNumber === monthNumber);
+        if (monthData) {
+          maladie += monthData.employerContrib?.maladie || 0;
+          pension += monthData.employerContrib?.pension || 0;
+          sante += monthData.employerContrib?.sante || 0;
+          accident += monthData.employerContrib?.accident || 0;
+        }
+      });
 
       return {
-        month: item.month,
-        maladie: monthPayslips.reduce((sum, p) => sum + (p.employerContrib?.maladie || 0), 0),
-        pension: monthPayslips.reduce((sum, p) => sum + (p.employerContrib?.pension || 0), 0),
-        sante: monthPayslips.reduce((sum, p) => sum + (p.employerContrib?.sante || 0), 0),
-        accident: monthPayslips.reduce((sum, p) => sum + (p.employerContrib?.accident || 0), 0),
+        month: monthName,
+        maladie,
+        pension,
+        sante,
+        accident,
       };
     });
 
-    // Monthly taxes (derived from employee income tax on payslips)
-    const taxes = netVsGross.map((item) => {
-      const [monthAbbr, yearStr] = item.month.split(' ');
-      const parsedDate = new Date(`${monthAbbr} 1, ${yearStr}`);
-      const monthPayslips = payslips.filter(
-        (p) => p.period.month === parsedDate.getMonth() + 1 && p.period.year === parsedDate.getFullYear()
-      );
+    // Monthly taxes
+    const taxes = Array.from({ length: 12 }, (_, i) => {
+      const monthNumber = i + 1;
+      const monthName = new Date(currentYear, i, 1).toLocaleString('default', {
+        month: 'short',
+        year: 'numeric'
+      });
+
+      let amount = 0;
+
+      annualPayslips.forEach((annualPayslip) => {
+        const monthData = annualPayslip.monthlyData?.find((m: any) => m.monthNumber === monthNumber);
+        if (monthData) {
+          amount += monthData.employeeContrib?.incomeTax || 0;
+        }
+      });
 
       return {
-        month: item.month,
-        amount: monthPayslips.reduce((sum, p) => sum + (p.employeeContrib?.incomeTax || 0), 0),
+        month: monthName,
+        amount,
       };
     });
 
@@ -728,11 +775,16 @@ export const useDataStore = create<DataState>((set, get) => ({
       // Save to Supabase
       const savedPayslip = await annualPayslipService.create(generatedPayslip);
 
-      // Store it in local state
-      set((state) => ({
-        annualPayslips: [...state.annualPayslips, savedPayslip],
-        isLoading: false
-      }));
+      // Store it in local state (check for duplicates first)
+      set((state) => {
+        const alreadyExists = state.annualPayslips.some((p) => p.id === savedPayslip.id);
+        return {
+          annualPayslips: alreadyExists
+            ? state.annualPayslips
+            : [...state.annualPayslips, savedPayslip],
+          isLoading: false
+        };
+      });
 
       return savedPayslip;
     } catch (error: any) {
@@ -755,10 +807,17 @@ export const useDataStore = create<DataState>((set, get) => ({
         payslip = await annualPayslipService.getByEmployeeAndYear(employeeId, year);
 
         if (payslip) {
-          // Add to local state
-          set((state) => ({
-            annualPayslips: [...state.annualPayslips, payslip as AnnualPayslip]
-          }));
+          // Add to local state only if it doesn't already exist (double-check to prevent duplicates)
+          const currentState = get();
+          const alreadyExists = currentState.annualPayslips.some(
+            (p) => p.id === payslip!.id
+          );
+
+          if (!alreadyExists) {
+            set((state) => ({
+              annualPayslips: [...state.annualPayslips, payslip as AnnualPayslip]
+            }));
+          }
         } else {
           // Auto-generate if not found
           payslip = await get().generateEmployeeAnnualPayslip(employeeId, year);
@@ -815,19 +874,19 @@ export const useDataStore = create<DataState>((set, get) => ({
     const employees = state.employees.filter((e) => e.companyId === companyId);
     const activeEmployees = employees.filter((e) => e.status === 'active');
 
-    // Generate annual payslips for all employees
-    const employeePayslips: AnnualPayslip[] = employees.map((employee) => {
-      return get().getEmployeeAnnualPayslip(employee.id, year) as AnnualPayslip;
-    }).filter(Boolean);
+    // Get annual payslips from state (they should be pre-loaded)
+    const employeePayslips: AnnualPayslip[] = state.annualPayslips.filter(
+      (p) => p.companyId === companyId && p.year === year
+    );
 
     // Calculate totals
     const totals = employeePayslips.reduce(
       (acc, payslip) => {
-        acc.totalGrossSalary += payslip.recapitulation.totalGrossSalary;
-        acc.totalNetSalary += payslip.recapitulation.totalNetSalary;
-        acc.totalEmployeeContributions += payslip.recapitulation.totalEmployeeContributions;
-        acc.totalEmployerContributions += payslip.recapitulation.totalEmployerContributions;
-        acc.totalTaxes += payslip.recapitulation.totalTaxes;
+        acc.totalGrossSalary += payslip.recapitulation?.totalGrossSalary || 0;
+        acc.totalNetSalary += payslip.recapitulation?.totalNetSalary || 0;
+        acc.totalEmployeeContributions += payslip.recapitulation?.totalEmployeeContributions || 0;
+        acc.totalEmployerContributions += payslip.recapitulation?.totalEmployerContributions || 0;
+        acc.totalTaxes += payslip.recapitulation?.totalTaxes || 0;
         return acc;
       },
       {

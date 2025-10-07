@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
@@ -30,10 +30,11 @@ export function CompanyDetail() {
   const navigate = useNavigate();
   const { t } = useLanguageStore();
   const { user } = useAuth();
-  const { companies, employees, getCompanyAnalytics, addEmployee } = useDataStore();
+  const { companies, employees, getCompanyAnalytics, addEmployee, getEmployeeAnnualPayslip, isLoading } = useDataStore();
   const { toast } = useToast();
 
   const [isAddEmployeeDialogOpen, setIsAddEmployeeDialogOpen] = useState(false);
+  const [isLoadingPayslips, setIsLoadingPayslips] = useState(false);
   const [employeeForm, setEmployeeForm] = useState({
     firstName: '',
     lastName: '',
@@ -44,18 +45,65 @@ export function CompanyDetail() {
     status: 'active' as 'active' | 'terminated',
   });
 
+  // Calculate derived values (before early returns)
+  const company = companyId ? companies.find((c) => c.id === companyId) : undefined;
+  const companyEmployees = companyId ? employees.filter((e) => e.companyId === companyId) : [];
+
+  // Load annual payslips for all employees in this company
+  // This hook must run before any early returns
+  useEffect(() => {
+    async function loadAnnualPayslips() {
+      if (!companyId || !company || companyEmployees.length === 0 || isLoading) return;
+
+      setIsLoadingPayslips(true);
+      try {
+        const currentYear = new Date().getFullYear();
+        // Load annual payslips for all company employees (current year)
+        await Promise.all(
+          companyEmployees.map((employee) =>
+            getEmployeeAnnualPayslip(employee.id, currentYear)
+          )
+        );
+      } catch (error) {
+        console.error('Error loading annual payslips:', error);
+      } finally {
+        setIsLoadingPayslips(false);
+      }
+    }
+
+    loadAnnualPayslips();
+  }, [companyId, company, companyEmployees.length, getEmployeeAnnualPayslip, isLoading]);
+
+  // NOW we can do early returns AFTER all hooks have been called
   if (!companyId) {
-    return <div>Company not found</div>;
+    return <div className="flex items-center justify-center min-h-screen">Company ID not found</div>;
   }
 
-  const company = companies.find((c) => c.id === companyId);
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading company data...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!company) {
-    return <div>Company not found</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2">Company not found</p>
+          <p className="text-muted-foreground mb-4">The company you're looking for doesn't exist.</p>
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
+        </div>
+      </div>
+    );
   }
 
   const analytics = getCompanyAnalytics(companyId);
-  const companyEmployees = employees.filter((e) => e.companyId === companyId);
 
   const handleAddEmployee = () => {
     if (!employeeForm.firstName.trim() || !employeeForm.lastName.trim()) {
@@ -572,9 +620,12 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
   const { t } = useLanguageStore();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { annualPayslips, employees } = useDataStore();
+  const { annualPayslips, employees, deleteAnnualPayslip } = useDataStore();
+  const { toast } = useToast();
   const [selectedPayslip, setSelectedPayslip] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [payslipToDelete, setPayslipToDelete] = useState<{ id: string; name: string; year: number } | null>(null);
 
   const filteredPayslips = annualPayslips.filter((p) => p.companyId === companyId);
 
@@ -586,6 +637,32 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
   const handleViewPayslip = (payslipId: string) => {
     setSelectedPayslip(payslipId);
     setViewDialogOpen(true);
+  };
+
+  const handleDeleteClick = (payslipId: string, employeeId: string, year: number) => {
+    const employeeName = getEmployeeName(employeeId);
+    setPayslipToDelete({ id: payslipId, name: employeeName, year });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!payslipToDelete) return;
+
+    try {
+      await deleteAnnualPayslip(payslipToDelete.id);
+      toast({
+        title: t('common.success', 'Success'),
+        description: `Annual payslip for ${payslipToDelete.name} (${payslipToDelete.year}) deleted successfully`,
+      });
+      setDeleteDialogOpen(false);
+      setPayslipToDelete(null);
+    } catch (error: any) {
+      toast({
+        title: t('common.error', 'Error'),
+        description: error.message || 'Failed to delete payslip',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -633,6 +710,15 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                           <FileSpreadsheet size={16} className="mr-2" />
                           {t('payslips.annualTitle', 'Edit')}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteClick(payslip.id, payslip.employeeId, payslip.year)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 size={16} className="mr-2" />
+                          {t('common.delete', 'Delete')}
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -642,6 +728,34 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('payslips.deleteConfirm', 'Confirm Deletion')}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              {t('payslips.deleteMessage', 'Are you sure you want to delete the annual payslip for')}
+            </p>
+            <p className="text-sm font-semibold mt-2">
+              {payslipToDelete?.name} ({payslipToDelete?.year})?
+            </p>
+            <p className="text-sm text-red-600 mt-2">
+              {t('common.actionIrreversible', 'This action cannot be undone.')}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              {t('common.delete', 'Delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
