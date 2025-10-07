@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, FileText, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react'
+import { Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, FileSpreadsheet } from 'lucide-react'
 import type { Individual } from '@/types'
 
 export function IndividualList() {
@@ -55,34 +55,46 @@ export function IndividualList() {
     })
   }
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.firstName.trim() || !form.lastName.trim()) {
       toast({ title: t('common.error'), description: t('individuals.nameRequired'), variant: 'destructive' })
       return
     }
-    addIndividual(form)
-    toast({ title: t('common.success'), description: t('individuals.createdSuccess') })
-    resetForm()
-    setIsAddDialogOpen(false)
+    try {
+      await addIndividual(form)
+      toast({ title: t('common.success'), description: t('individuals.createdSuccess') })
+      resetForm()
+      setIsAddDialogOpen(false)
+    } catch (error: any) {
+      toast({ title: t('common.error'), description: error.message || 'Failed to add individual', variant: 'destructive' })
+    }
   }
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!editingIndividual) return
     if (!form.firstName.trim() || !form.lastName.trim()) {
       toast({ title: t('common.error'), description: t('individuals.nameRequired'), variant: 'destructive' })
       return
     }
-    updateIndividual(editingIndividual.id, form)
-    toast({ title: t('common.success'), description: t('common.update') })
-    resetForm()
-    setEditingIndividual(null)
-    setIsEditDialogOpen(false)
+    try {
+      await updateIndividual(editingIndividual.id, form)
+      toast({ title: t('common.success'), description: t('common.update') })
+      resetForm()
+      setEditingIndividual(null)
+      setIsEditDialogOpen(false)
+    } catch (error: any) {
+      toast({ title: t('common.error'), description: error.message || 'Failed to update individual', variant: 'destructive' })
+    }
   }
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete ${name}?`)) {
-      deleteIndividual(id)
-      toast({ title: t('common.success'), description: t('actions.delete') })
+      try {
+        await deleteIndividual(id)
+        toast({ title: t('common.success'), description: t('actions.delete') })
+      } catch (error: any) {
+        toast({ title: t('common.error'), description: error.message || 'Failed to delete individual', variant: 'destructive' })
+      }
     }
   }
 
@@ -163,9 +175,9 @@ export function IndividualList() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? `/admin/individuals/${individual.id}` : `/individuals/${individual.id}`)}>
-                              <FileText size={16} className="mr-2" />
-                              {t('payslips.create')}
+                            <DropdownMenuItem onClick={() => navigate(`/admin/individuals/${individual.id}/annual-payslip`)}>
+                              <FileSpreadsheet size={16} className="mr-2" />
+                              Créer fiche de paie
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(individual)}>
                               <Edit size={16} className="mr-2" />

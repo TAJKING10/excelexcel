@@ -17,6 +17,7 @@ import { ActivityLogViewer } from './pages/admin/ActivityLogViewer';
 import CreatePayslip from './pages/admin/CreatePayslip';
 import CreateAnnualPayslip from './pages/admin/CreateAnnualPayslip';
 import { Individuals as AdminIndividuals } from './pages/admin/Individuals';
+import { IndividualPayslip } from './pages/admin/IndividualPayslip';
 import { CompanyList } from './components/companies/CompanyList';
 import { CompanyDetail } from './pages/CompanyDetail';
 import { IndividualDetail } from './pages/IndividualDetail';
@@ -94,6 +95,8 @@ function AppRoutes() {
         <Route path="companies/:companyId" element={<CompanyDetail />} />
         <Route path="individuals" element={<AdminIndividuals />} />
         <Route path="individuals/:individualId" element={<IndividualDetail />} />
+        <Route path="individuals/:individualId/payslip" element={<IndividualPayslip />} />
+        <Route path="individuals/:individualId/payslip/:payslipId" element={<IndividualPayslip />} />
         <Route path="individuals/:individualId/annual-payslip" element={<AnnualPayslipPage />} />
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/:employeeId/annual-payslip" element={<AnnualPayslipPage />} />

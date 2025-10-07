@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis, PayslipLine, ActivityLog } from '@/types';
 import { generateAnnualPayslip } from '@/lib/luxembourgPayroll';
-import { companyService, employeeService, annualPayslipService, activityLogService } from '@/services/supabase';
+import { companyService, employeeService, individualService, payslipService, annualPayslipService, individualAnnualPayslipService, activityLogService } from '@/services/supabase';
 
 interface DataState {
   companies: Company[];
@@ -27,12 +27,17 @@ interface DataState {
   addEmployee: (employee: Omit<Employee, 'id'>) => Promise<Employee>;
   updateEmployee: (id: string, employee: Partial<Employee>) => Promise<Employee>;
   deleteEmployee: (id: string) => Promise<void>;
-  addIndividual: (individual: Omit<Individual, 'id' | 'createdAt'>) => void;
-  updateIndividual: (id: string, individual: Partial<Individual>) => void;
-  deleteIndividual: (id: string) => void;
-  addPayslip: (payslip: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updatePayslip: (id: string, payslip: Partial<Payslip>) => void;
-  deletePayslip: (id: string) => void;
+
+  // Individual methods
+  addIndividual: (individual: Omit<Individual, 'id' | 'createdAt'>) => Promise<Individual>;
+  updateIndividual: (id: string, individual: Partial<Individual>) => Promise<Individual>;
+  deleteIndividual: (id: string) => Promise<void>;
+
+  // Payslip methods
+  addPayslip: (payslip: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Payslip>;
+  updatePayslip: (id: string, payslip: Partial<Payslip>) => Promise<Payslip>;
+  deletePayslip: (id: string) => Promise<void>;
+  getPayslipsByIndividual: (individualId: string) => Promise<Payslip[]>;
   savePayrollTemplate: (companyId: string, lines: PayslipLine[]) => void;
   getPayrollTemplate: (companyId: string) => PayslipLine[];
   addUser: (user: Omit<User, 'id'>) => void;
@@ -52,7 +57,9 @@ interface DataState {
   };
   // Annual payslip methods
   generateEmployeeAnnualPayslip: (employeeId: string, year: number) => Promise<AnnualPayslip>;
+  generateIndividualAnnualPayslip: (individualId: string, year: number) => Promise<AnnualPayslip>;
   getEmployeeAnnualPayslip: (employeeId: string, year: number) => Promise<AnnualPayslip | undefined>;
+  getIndividualAnnualPayslip: (individualId: string, year: number) => Promise<AnnualPayslip | undefined>;
   updateAnnualPayslip: (id: string, updates: Partial<Pick<AnnualPayslip, 'monthlyData' | 'annualTotals' | 'recapitulation'>>) => Promise<AnnualPayslip>;
   deleteAnnualPayslip: (id: string) => Promise<void>;
   getCompanyAnnualAnalysis: (companyId: string, year: number) => CompanyAnnualAnalysis;
@@ -383,21 +390,24 @@ export const useDataStore = create<DataState>((set, get) => ({
     console.log('🔄 Starting initializeData...');
     set({ isLoading: true, error: null });
     try {
-      const [companies, employees, annualPayslips] = await Promise.all([
+      const [companies, employees, individuals, annualPayslips] = await Promise.all([
         companyService.getAll(),
         employeeService.getAll(),
+        individualService.getAll(),
         annualPayslipService.getAll()
       ]);
 
       console.log('✅ Data loaded:', {
         companiesCount: companies.length,
         employeesCount: employees.length,
+        individualsCount: individuals.length,
         annualPayslipsCount: annualPayslips.length
       });
 
       set({
         companies,
         employees,
+        individuals,
         annualPayslips,
         isLoading: false
       });
@@ -503,48 +513,117 @@ export const useDataStore = create<DataState>((set, get) => ({
     }
   },
 
-  addIndividual: (individual) =>
-    set((state) => ({
-      individuals: [
-        ...state.individuals,
-        { ...individual, id: `ind-${Date.now()}`, createdAt: new Date().toISOString() },
-      ],
-    })),
+  // Individual CRUD with Supabase
+  addIndividual: async (individual) => {
+    set({ isLoading: true, error: null });
+    try {
+      const newIndividual = await individualService.create(individual);
+      set((state) => ({
+        individuals: [...state.individuals, newIndividual],
+        isLoading: false
+      }));
+      return newIndividual;
+    } catch (error: any) {
+      console.error('Failed to add individual:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
-  updateIndividual: (id, individual) =>
-    set((state) => ({
-      individuals: state.individuals.map((i) => (i.id === id ? { ...i, ...individual } : i)),
-    })),
+  updateIndividual: async (id, updates) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedIndividual = await individualService.update(id, updates);
+      set((state) => ({
+        individuals: state.individuals.map((i) => (i.id === id ? updatedIndividual : i)),
+        isLoading: false
+      }));
+      return updatedIndividual;
+    } catch (error: any) {
+      console.error('Failed to update individual:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
-  deleteIndividual: (id) =>
-    set((state) => ({
-      individuals: state.individuals.filter((i) => i.id !== id),
-    })),
+  deleteIndividual: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await individualService.delete(id);
+      set((state) => ({
+        individuals: state.individuals.filter((i) => i.id !== id),
+        isLoading: false
+      }));
+    } catch (error: any) {
+      console.error('Failed to delete individual:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
-  addPayslip: (payslip) =>
-    set((state) => ({
-      payslips: [
-        ...state.payslips,
-        {
-          ...payslip,
-          id: `pay-${Date.now()}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-    })),
+  // Payslip CRUD with Supabase
+  addPayslip: async (payslip) => {
+    set({ isLoading: true, error: null });
+    try {
+      const newPayslip = await payslipService.create(payslip);
+      set((state) => ({
+        payslips: [...state.payslips, newPayslip],
+        isLoading: false
+      }));
+      return newPayslip;
+    } catch (error: any) {
+      console.error('Failed to add payslip:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
-  updatePayslip: (id, payslip) =>
-    set((state) => ({
-      payslips: state.payslips.map((p) =>
-        p.id === id ? { ...p, ...payslip, updatedAt: new Date().toISOString() } : p
-      ),
-    })),
+  updatePayslip: async (id, updates) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedPayslip = await payslipService.update(id, updates);
+      set((state) => ({
+        payslips: state.payslips.map((p) => (p.id === id ? updatedPayslip : p)),
+        isLoading: false
+      }));
+      return updatedPayslip;
+    } catch (error: any) {
+      console.error('Failed to update payslip:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
 
-  deletePayslip: (id) =>
-    set((state) => ({
-      payslips: state.payslips.filter((p) => p.id !== id),
-    })),
+  deletePayslip: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await payslipService.delete(id);
+      set((state) => ({
+        payslips: state.payslips.filter((p) => p.id !== id),
+        isLoading: false
+      }));
+    } catch (error: any) {
+      console.error('Failed to delete payslip:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
+
+  getPayslipsByIndividual: async (individualId: string) => {
+    try {
+      const payslips = await payslipService.getAll({ individualId });
+      set((state) => ({
+        payslips: [
+          ...state.payslips.filter(p => p.individualId !== individualId),
+          ...payslips
+        ]
+      }));
+      return payslips;
+    } catch (error: any) {
+      console.error('Failed to get payslips:', error);
+      return [];
+    }
+  },
 
   // Save and load reusable company payroll templates (structured lines)
   savePayrollTemplate: (companyId: string, lines: PayslipLine[]) =>
@@ -794,6 +873,158 @@ export const useDataStore = create<DataState>((set, get) => ({
     }
   },
 
+  generateIndividualAnnualPayslip: async (individualId: string, year: number): Promise<AnnualPayslip> => {
+    set({ isLoading: true, error: null });
+    try {
+      const state = get();
+      const individual = state.individuals.find((i) => i.id === individualId);
+      if (!individual) {
+        throw new Error(`Individual ${individualId} not found`);
+      }
+
+      // Check if already exists in Supabase
+      const existing = await individualAnnualPayslipService.getByIndividualAndYear(individualId, year);
+      if (existing) {
+        set({ isLoading: false });
+        return existing;
+      }
+
+      // Generate empty annual payslip template for individual (all values at 0)
+      const monthlyData = [];
+      for (let month = 1; month <= 12; month++) {
+        monthlyData.push({
+          monthName: ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][month - 1],
+          monthNumber: month,
+          days: `1-${new Date(year, month, 0).getDate()}`,
+          daysImposable: new Date(year, month, 0).getDate(),
+          status: 'Empl.',
+          taxClass: individual.taxClass,
+          earnings: {
+            remunerationBase: 0,
+            grossMonthly: 0,
+            cotisable: 0,
+            imposable: 0
+          },
+          employeeContrib: {
+            maladie: 0,
+            pension: 0,
+            ciCo2: 0,
+            cis: 0,
+            cissm: 0,
+            deductions: 0,
+            incomeTax: 0,
+            total: 0
+          },
+          employerContrib: {
+            maladie: 0,
+            pension: 0,
+            sante: 0,
+            accident: 0,
+            socialSecurityTotal: 0
+          },
+          workingHours: {
+            normalHours: 0,
+            supplementaryHours: 0,
+            holidays: 0,
+            publicHolidayExtra: 0,
+            familyLeave: 0,
+            paternityLeave: 0,
+            sickLeave: 0,
+            unemployment: 0
+          },
+          netPay: 0
+        });
+      }
+
+      const generatedPayslip = {
+        employeeId: individualId,
+        individualId: individualId,
+        companyId: null,
+        year,
+        employee: {
+          id: individual.id,
+          firstName: individual.firstName,
+          lastName: individual.lastName,
+          email: individual.email,
+          class: 'Individual',
+          hireDate: individual.createdAt,
+          terminationDate: null,
+          matricule: individual.matricule || '',
+          identityNumber: '',
+          address: individual.address || '',
+          city: '',
+          postalCode: '',
+          anciennete: null
+        },
+        company: {
+          id: `individual-${individualId}`,
+          name: `${individual.firstName} ${individual.lastName}`,
+          country: individual.country,
+          currency: individual.currency,
+          address: '',
+          city: '',
+          postalCode: '',
+          registrationNumber: ''
+        },
+        monthlyData,
+        annualTotals: {
+          earnings: {
+            remunerationBase: 0,
+            grossMonthly: 0,
+            cotisable: 0,
+            imposable: 0
+          },
+          employeeContrib: {
+            maladie: 0,
+            pension: 0,
+            ciCo2: 0,
+            cis: 0,
+            cissm: 0,
+            deductions: 0,
+            incomeTax: 0,
+            total: 0
+          },
+          employerContrib: {
+            maladie: 0,
+            pension: 0,
+            sante: 0,
+            accident: 0,
+            socialSecurityTotal: 0
+          },
+          netPay: 0
+        },
+        recapitulation: {
+          totalGrossSalary: 0,
+          totalNetSalary: 0,
+          totalEmployeeContributions: 0,
+          totalEmployerContributions: 0,
+          totalTaxes: 0,
+          totalHoursWorked: 0
+        }
+      };
+
+      // Save to individual_payslips table (separate from companies)
+      const savedPayslip = await individualAnnualPayslipService.create(generatedPayslip as any);
+
+      // Store it in local state (check for duplicates first)
+      set((state) => {
+        const alreadyExists = state.annualPayslips.some((p) => p.id === savedPayslip.id);
+        return {
+          annualPayslips: alreadyExists
+            ? state.annualPayslips
+            : [...state.annualPayslips, savedPayslip],
+          isLoading: false
+        };
+      });
+
+      return savedPayslip;
+    } catch (error: any) {
+      console.error('Failed to generate annual payslip for individual:', error);
+      set({ error: error.message, isLoading: false });
+      throw error;
+    }
+  },
+
   getEmployeeAnnualPayslip: async (employeeId: string, year: number): Promise<AnnualPayslip | undefined> => {
     try {
       const state = get();
@@ -831,11 +1062,56 @@ export const useDataStore = create<DataState>((set, get) => ({
     }
   },
 
+  getIndividualAnnualPayslip: async (individualId: string, year: number): Promise<AnnualPayslip | undefined> => {
+    try {
+      const state = get();
+      // First check local state - look by individualId
+      let payslip = state.annualPayslips.find(
+        (p) => p.individualId === individualId && p.year === year
+      );
+
+      // If not in local state, check Supabase individual_payslips table
+      if (!payslip) {
+        payslip = await individualAnnualPayslipService.getByIndividualAndYear(individualId, year);
+
+        if (payslip) {
+          const currentState = get();
+          const alreadyExists = currentState.annualPayslips.some(
+            (p) => p.id === payslip!.id
+          );
+
+          if (!alreadyExists) {
+            set((state) => ({
+              annualPayslips: [...state.annualPayslips, payslip as AnnualPayslip]
+            }));
+          }
+        }
+      }
+
+      return payslip;
+    } catch (error) {
+      console.error('Failed to get individual annual payslip:', error);
+      return undefined;
+    }
+  },
+
   // Update annual payslip
   updateAnnualPayslip: async (id: string, updates: Partial<Pick<AnnualPayslip, 'monthlyData' | 'annualTotals' | 'recapitulation'>>): Promise<AnnualPayslip> => {
     set({ isLoading: true, error: null });
     try {
-      const updatedPayslip = await annualPayslipService.update(id, updates);
+      // Find the payslip in local state to determine if it's for an individual or employee
+      const state = get();
+      const existingPayslip = state.annualPayslips.find((p) => p.id === id);
+
+      let updatedPayslip;
+      if (existingPayslip?.individualId) {
+        // Use individual payslip service
+        updatedPayslip = await individualAnnualPayslipService.update(id, updates);
+      } else {
+        // Use regular employee payslip service
+        updatedPayslip = await annualPayslipService.update(id, updates);
+      }
+
       set((state) => ({
         annualPayslips: state.annualPayslips.map((p) => (p.id === id ? updatedPayslip : p)),
         isLoading: false
@@ -852,7 +1128,18 @@ export const useDataStore = create<DataState>((set, get) => ({
   deleteAnnualPayslip: async (id: string): Promise<void> => {
     set({ isLoading: true, error: null });
     try {
-      await annualPayslipService.delete(id);
+      // Find the payslip in local state to determine if it's for an individual or employee
+      const state = get();
+      const existingPayslip = state.annualPayslips.find((p) => p.id === id);
+
+      if (existingPayslip?.individualId) {
+        // Use individual payslip service
+        await individualAnnualPayslipService.delete(id);
+      } else {
+        // Use regular employee payslip service
+        await annualPayslipService.delete(id);
+      }
+
       set((state) => ({
         annualPayslips: state.annualPayslips.filter((p) => p.id !== id),
         isLoading: false

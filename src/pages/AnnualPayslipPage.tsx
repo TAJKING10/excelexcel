@@ -23,13 +23,16 @@ export default function AnnualPayslipPage() {
   const [loading, setLoading] = useState(true);
 
   const getEmployeeAnnualPayslip = useDataStore((state) => state.getEmployeeAnnualPayslip);
+  const getIndividualAnnualPayslip = useDataStore((state) => state.getIndividualAnnualPayslip);
   const generateEmployeeAnnualPayslip = useDataStore((state) => state.generateEmployeeAnnualPayslip);
+  const generateIndividualAnnualPayslip = useDataStore((state) => state.generateIndividualAnnualPayslip);
   const employees = useDataStore((state) => state.employees);
   const individuals = useDataStore((state) => state.individuals);
 
   const canEdit = user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips;
 
   const personId = employeeId || individualId;
+  const isIndividual = !!individualId;
 
   const employee = employees.find((e) => e.id === personId);
   const individual = individuals.find((i) => i.id === personId);
@@ -45,7 +48,9 @@ export default function AnnualPayslipPage() {
 
       try {
         setLoading(true);
-        const payslip = await getEmployeeAnnualPayslip(personId, selectedYear);
+        const payslip = isIndividual
+          ? await getIndividualAnnualPayslip(personId, selectedYear)
+          : await getEmployeeAnnualPayslip(personId, selectedYear);
         setAnnualPayslip(payslip);
       } catch (error) {
         console.error('Error loading annual payslip:', error);
@@ -56,7 +61,7 @@ export default function AnnualPayslipPage() {
     }
 
     loadPayslip();
-  }, [personId, selectedYear, getEmployeeAnnualPayslip]);
+  }, [personId, selectedYear, isIndividual, getEmployeeAnnualPayslip, getIndividualAnnualPayslip]);
 
   // Generate year options (last 5 years)
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -148,14 +153,33 @@ export default function AnnualPayslipPage() {
                 No annual payslip found for {person?.firstName} {person?.lastName} ({selectedYear})
               </p>
               <p className="text-sm text-muted-foreground mb-2">
-                Employee ID: {personId} | Year: {selectedYear}
+                {isIndividual ? 'Individual' : 'Employee'} ID: {personId} | Year: {selectedYear}
               </p>
-              <div className="mt-6">
-                <Button onClick={() => {
-                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-                  navigate(`${basePath}/companies`);
-                }}>
-                  Go back to companies
+              <div className="mt-6 flex gap-4 justify-center">
+                <Button
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      const payslip = isIndividual
+                        ? await generateIndividualAnnualPayslip(personId, selectedYear)
+                        : await generateEmployeeAnnualPayslip(personId, selectedYear);
+                      setAnnualPayslip(payslip);
+                    } catch (error: any) {
+                      console.error('Failed to generate:', error);
+                      alert(`Error: ${error.message}`);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="bg-primary"
+                >
+                  Generate Annual Payslip
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(-1)}
+                >
+                  Go Back
                 </Button>
               </div>
             </div>

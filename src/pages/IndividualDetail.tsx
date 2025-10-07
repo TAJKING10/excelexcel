@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
@@ -22,8 +22,14 @@ export function IndividualDetail() {
   const navigate = useNavigate();
   const { t } = useLanguageStore();
   const { user } = useAuthStore();
-  const { individuals, payslips, addPayslip } = useDataStore();
+  const { individuals, payslips, addPayslip, getPayslipsByIndividual } = useDataStore();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (individualId) {
+      getPayslipsByIndividual(individualId);
+    }
+  }, [individualId]);
 
   const [isCreatePayslipDialogOpen, setIsCreatePayslipDialogOpen] = useState(false);
   const [payslipForm, setPayslipForm] = useState({
@@ -44,7 +50,7 @@ export function IndividualDetail() {
   }
 
   // Get payslips for this individual
-  const individualPayslips = payslips.filter((p) => p.employeeId === individualId);
+  const individualPayslips = payslips.filter((p) => p.individualId === individualId);
 
   // Calculate stats
   const lastPayslip = individualPayslips.sort((a, b) => {
@@ -71,8 +77,9 @@ export function IndividualDetail() {
     const netPay = payslipForm.grossMonthly - totalContrib;
 
     addPayslip({
-      employeeId: individualId,
-      companyId: 'individual-' + individualId, // Individuals don't have a company
+      individualId: individualId,
+      companyId: null, // Individuals don't have a company
+      employeeId: null,
       period: payslipForm.period,
       employee: {
         id: individual.id,
@@ -213,10 +220,10 @@ export function IndividualDetail() {
         {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
           <Button onClick={() => {
             const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-            navigate(`${basePath}/payslips/create-annual/${individualId}`);
+            navigate(`${basePath}/individuals/${individualId}/payslip`);
           }}>
             <Plus className="mr-2 h-4 w-4" />
-            {t('payslips.createAnnual', 'Create Annual Payslip')}
+            Créer fiche de paie
           </Button>
         )}
       </div>
@@ -299,36 +306,23 @@ export function IndividualDetail() {
                         <TableCell>{formatCurrency(payslip.netPay)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            {(user?.role === 'SUPER_ADMIN' || user?.access?.canViewPayslips) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-                                  navigate(`${basePath}/individuals/${individualId}/annual-payslip`);
-                                }}
-                                title={t('payslips.viewAnnual', 'View Annual Payslip')}
-                              >
-                                <FileSpreadsheet size={16} className="mr-2" />
-                                {t('payslips.annual', 'Annual')}
-                              </Button>
-                            )}
                             {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
                                   const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-                                  navigate(`${basePath}/payslips/create-annual/${individualId}`);
+                                  navigate(`${basePath}/individuals/${individualId}/payslip/${payslip.id}`);
                                 }}
-                                title={t('payslips.editAnnual', 'Edit Annual Payslip')}
+                                title="Edit Payslip"
                               >
                                 <Edit size={16} className="mr-2" />
-                                {t('common.edit', 'Edit')}
+                                Modifier
                               </Button>
                             )}
                             <Button size="sm" variant="outline" onClick={() => generatePayslipPDF(payslip)}>
-                              <Download size={16} />
+                              <Download size={16} className="mr-2" />
+                              PDF
                             </Button>
                           </div>
                         </TableCell>
