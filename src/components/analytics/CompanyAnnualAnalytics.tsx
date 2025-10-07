@@ -32,7 +32,6 @@ export function CompanyAnnualAnalytics({ companyId, defaultYear }: CompanyAnnual
     : 0;
 
   // Generate year options (last 5 years)
-  const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
