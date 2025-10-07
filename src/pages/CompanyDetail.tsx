@@ -692,8 +692,8 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                   <TableRow key={payslip.id}>
                     <TableCell>{getEmployeeName(payslip.employeeId)}</TableCell>
                     <TableCell>{payslip.year}</TableCell>
-                    <TableCell>{formatCurrency(payslip.annualTotals?.grossMonthly || 0)}</TableCell>
-                    <TableCell>{formatCurrency(payslip.annualTotals?.netPay || 0)}</TableCell>
+                    <TableCell>{formatCurrency(payslip.recapitulation?.totalGrossSalary || 0)}</TableCell>
+                    <TableCell>{formatCurrency(payslip.recapitulation?.totalNetSalary || 0)}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => {

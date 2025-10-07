@@ -15,9 +15,10 @@ interface CompanyAnnualAnalyticsProps {
   defaultYear?: number;
 }
 
-export function CompanyAnnualAnalytics({ companyId, defaultYear = 2024 }: CompanyAnnualAnalyticsProps) {
+export function CompanyAnnualAnalytics({ companyId, defaultYear }: CompanyAnnualAnalyticsProps) {
   const { t } = useTranslation();
-  const [selectedYear, setSelectedYear] = useState(defaultYear);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(defaultYear || currentYear);
   const getCompanyAnnualAnalysis = useDataStore((state) => state.getCompanyAnnualAnalysis);
 
   const analysis: CompanyAnnualAnalysis = getCompanyAnnualAnalysis(companyId, selectedYear);
