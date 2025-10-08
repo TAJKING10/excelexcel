@@ -165,29 +165,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <Card className="bg-muted/50">
-        <CardHeader>
-          <CardTitle className="text-base">{t('dashboard.quickActions')}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/individuals/create')}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('dashboard.addIndividual')}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/payslips/create')}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('payslips.create')}
-          </Button>
-          <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
-            {t('payslips.import')}
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            {t('payslips.exportTemplate')}
-          </Button>
-        </CardContent>
-      </Card>
+   
 
       {/* Overview Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -415,19 +393,7 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/admin/payslips')}>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center">
-              <FileText className="mr-2 h-5 w-5" />
-              {t('dashboard.viewAllPayslips')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {t('dashboard.viewAllPayslipsDesc')}
-            </p>
-          </CardContent>
-        </Card>
+
       </div>
     </div>
   );
