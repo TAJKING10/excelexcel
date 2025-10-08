@@ -107,7 +107,7 @@ export function CompanyDetail() {
 
   const analytics = getCompanyAnalytics(companyId);
 
-  const handleAddEmployee = () => {
+  const handleAddEmployee = async () => {
     if (!employeeForm.firstName.trim() || !employeeForm.lastName.trim()) {
       toast({ title: 'Error', description: 'Name fields are required', variant: 'destructive' });
       return;
@@ -121,25 +121,29 @@ export function CompanyDetail() {
       return;
     }
 
-    addEmployee({
-      ...employeeForm,
-      companyId: companyId!,
-      terminationDate: null,
-    });
+    try {
+      await addEmployee({
+        ...employeeForm,
+        companyId: companyId!,
+        terminationDate: null,
+      });
 
-    toast({ title: 'Success', description: 'Employee added successfully' });
-    setEmployeeForm({
-      firstName: '',
-      lastName: '',
-      email: '',
-      matricule: '',
-      class: '',
-      taxClass: '2',
-      hireDate: new Date().toISOString().split('T')[0],
-      baseSalary: 0,
-      status: 'active',
-    });
-    setIsAddEmployeeDialogOpen(false);
+      toast({ title: 'Success', description: 'Employee added successfully' });
+      setEmployeeForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        matricule: '',
+        class: '',
+        taxClass: '2',
+        hireDate: new Date().toISOString().split('T')[0],
+        baseSalary: 0,
+        status: 'active',
+      });
+      setIsAddEmployeeDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to add employee', variant: 'destructive' });
+    }
   };
 
   const StatCard = ({ icon: Icon, title, value, subtitle }: { icon: any; title: string; value: string | number; subtitle?: string }) => (
@@ -727,28 +731,30 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" onClick={() => {
-                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
                           navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
                         }}>
                           <Eye size={16} className="mr-2" />
                           {t('common.view', 'Voir')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => {
-                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
                           navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
                         }}>
                           <FileSpreadsheet size={16} className="mr-2" />
-                          {t('payslips.annualTitle', 'Edit')}
+                          {t('payslips.annualTitle', 'Fiche de Paie Annuelle')}
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteClick(payslip.id, payslip.employeeId, payslip.year)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 size={16} className="mr-2" />
-                          {t('common.delete', 'Delete')}
-                        </Button>
+                        {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteClick(payslip.id, payslip.employeeId, payslip.year)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 size={16} className="mr-2" />
+                            {t('common.delete', 'Supprimer')}
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

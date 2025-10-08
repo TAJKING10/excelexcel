@@ -2,7 +2,7 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useLanguageStore } from '@/stores/language'
-import { useAuthStore } from '@/stores/auth'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -27,7 +27,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation()
   const { t } = useLanguageStore()
-  const { logout, user } = useAuthStore()
+  const { user, logout } = useAuth()
 
   // Navigation based on role
   const getNavItems = () => {
@@ -45,9 +45,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
     // Employee role navigation
     return [
-      { path: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
-      { path: '/payslips', icon: FileText, label: t('nav.payslips') },
-      { path: '/profile', icon: UserCircle, label: t('nav.profile') },
+      { path: '/employee/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+      { path: '/employee/payslips', icon: FileText, label: t('nav.payslips') },
+      { path: '/employee/profile', icon: UserCircle, label: t('nav.profile') },
     ]
   }
 

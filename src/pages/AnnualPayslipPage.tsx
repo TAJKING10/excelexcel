@@ -226,12 +226,12 @@ export default function AnnualPayslipPage() {
             <Button
               variant="outline"
               onClick={() => {
-                const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
                 navigate(`${basePath}/payslips/create-annual/${personId}`);
               }}
             >
               <Edit className="mr-2 h-4 w-4" />
-              {t('common.edit', 'Edit')}
+              {t('common.edit', 'Modifier')}
             </Button>
           )}
 

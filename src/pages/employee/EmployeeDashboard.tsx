@@ -95,18 +95,22 @@ export function EmployeeDashboard() {
   };
 
   // Handlers for creating company and individual
-  const handleAddCompany = () => {
+  const handleAddCompany = async () => {
     if (!companyForm.name.trim()) {
       toast({ title: t('common.error'), description: t('companies.nameRequired'), variant: 'destructive' });
       return;
     }
-    addCompany(companyForm);
-    toast({ title: t('common.success'), description: t('companies.createdSuccess') });
-    setCompanyForm({ name: '', country: 'Luxembourg', currency: 'EUR' });
-    setIsAddCompanyDialogOpen(false);
+    try {
+      await addCompany(companyForm);
+      toast({ title: t('common.success'), description: t('companies.createdSuccess') });
+      setCompanyForm({ name: '', country: 'Luxembourg', currency: 'EUR' });
+      setIsAddCompanyDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: t('common.error'), description: error.message || 'Failed to create company', variant: 'destructive' });
+    }
   };
 
-  const handleAddIndividual = () => {
+  const handleAddIndividual = async () => {
     if (!individualForm.firstName.trim() || !individualForm.lastName.trim()) {
       toast({ title: t('common.error'), description: t('individuals.nameRequired'), variant: 'destructive' });
       return;
@@ -115,21 +119,25 @@ export function EmployeeDashboard() {
       toast({ title: t('common.error'), description: t('employees.validSalaryRequired', 'Valid base salary is required'), variant: 'destructive' });
       return;
     }
-    addIndividual(individualForm);
-    toast({ title: t('common.success'), description: t('individuals.createdSuccess') });
-    setIndividualForm({
-      firstName: '',
-      lastName: '',
-      email: '',
-      country: 'Luxembourg',
-      currency: 'EUR',
-      status: 'active',
-      baseSalary: 0,
-      taxClass: 2,
-      matricule: '',
-      address: '',
-    });
-    setIsAddIndividualDialogOpen(false);
+    try {
+      await addIndividual(individualForm);
+      toast({ title: t('common.success'), description: t('individuals.createdSuccess') });
+      setIndividualForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        country: 'Luxembourg',
+        currency: 'EUR',
+        status: 'active',
+        baseSalary: 0,
+        taxClass: 2,
+        matricule: '',
+        address: '',
+      });
+      setIsAddIndividualDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: t('common.error'), description: error.message || 'Failed to create individual', variant: 'destructive' });
+    }
   };
 
   return (
