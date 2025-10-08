@@ -18,6 +18,7 @@ import CreatePayslip from './pages/admin/CreatePayslip';
 import CreateAnnualPayslip from './pages/admin/CreateAnnualPayslip';
 import { Individuals as AdminIndividuals } from './pages/admin/Individuals';
 import { IndividualPayslip } from './pages/admin/IndividualPayslip';
+import { Settings as AdminSettings } from './pages/admin/Settings';
 import { CompanyList } from './components/companies/CompanyList';
 import { CompanyDetail } from './pages/CompanyDetail';
 import { IndividualDetail } from './pages/IndividualDetail';
@@ -108,7 +109,7 @@ function AppRoutes() {
         <Route path="payslips/explorer" element={<Explorer />} />
         <Route path="users" element={<UserAccessManagement />} />
         <Route path="activity-log" element={<ActivityLogViewer />} />
-        <Route path="settings" element={<div className="p-6">Settings (Coming Soon)</div>} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       {/* EMPLOYEE Routes */}
@@ -131,6 +132,7 @@ function AppRoutes() {
         <Route path="payslips/create" element={<CreatePayslip />} />
         <Route path="payslips/create-annual" element={<CreateAnnualPayslip />} />
         <Route path="payslips/create-annual/:employeeId" element={<CreateAnnualPayslip />} />
+        <Route path="settings" element={<Profile />} />
       </Route>
 
       {/* Root redirect */}

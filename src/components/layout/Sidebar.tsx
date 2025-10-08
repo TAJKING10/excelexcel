@@ -125,11 +125,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </Link>
         )}
 
-        <Link to="/settings">
+        <Link to={user?.role === 'SUPER_ADMIN' ? '/admin/settings' : '/employee/settings'}>
           <Button
             variant="ghost"
             className={cn(
               "w-full justify-start h-11 text-[#64748B] hover:text-[#003ABD] hover:bg-[#eff6ff] transition-advensys font-medium dark:text-[#94a3b8] dark:hover:text-[#60a5fa] dark:hover:bg-[#1e293b]",
+              location.pathname.includes('/settings') && "bg-[#eff6ff] text-[#003ABD] dark:bg-[#1e293b] dark:text-[#60a5fa]",
               collapsed ? "px-2 justify-center" : "px-4"
             )}
           >
