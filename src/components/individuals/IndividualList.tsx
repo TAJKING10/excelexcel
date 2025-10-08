@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, FileSpreadsheet } from 'lucide-react'
+import { Plus, FileText, MoreHorizontal, Edit, Trash2, Eye, FileSpreadsheet, Search } from 'lucide-react'
 import type { Individual } from '@/types'
 
 export function IndividualList() {
@@ -26,6 +26,7 @@ export function IndividualList() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingIndividual, setEditingIndividual] = useState<Individual | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const [form, setForm] = useState({
     firstName: '',
@@ -115,6 +116,11 @@ export function IndividualList() {
     setIsEditDialogOpen(true)
   }
 
+  const filteredIndividuals = individuals.filter((individual) => {
+    const fullName = `${individual.firstName} ${individual.lastName}`.toLowerCase()
+    return fullName.includes(searchQuery.toLowerCase())
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -127,12 +133,26 @@ export function IndividualList() {
 
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-card-foreground">{t('individuals.title')}</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-card-foreground">{t('individuals.title')}</CardTitle>
+            <div className="relative w-72">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                type="text"
+                placeholder="Rechercher par nom..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {individuals.length === 0 ? (
+          {filteredIndividuals.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">{t('dashboard.noIndividualsYet')}</p>
+              <p className="text-muted-foreground">
+                {searchQuery ? 'Aucun individu trouvé' : t('dashboard.noIndividualsYet')}
+              </p>
             </div>
           ) : (
             <Table>
@@ -147,7 +167,7 @@ export function IndividualList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {individuals.map((individual) => (
+                {filteredIndividuals.map((individual) => (
                   <TableRow key={individual.id} className="hover:bg-muted/50">
                     <TableCell className="text-foreground">{individual.lastName}</TableCell>
                     <TableCell className="text-foreground">{individual.firstName}</TableCell>
