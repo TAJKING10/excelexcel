@@ -404,10 +404,7 @@ export function EmployeeDashboard() {
               {t('dashboard.createCompany')}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => navigate('/employee/payslips')}>
-            <FileText className="h-4 w-4 mr-2" />
-            {t('dashboard.viewAllPayslips')}
-          </Button>
+        
           {user?.access?.canCreateIndividuals && (
             <Button variant="outline" size="sm" onClick={() => setIsAddIndividualDialogOpen(true)}>
               <UserCircle className="h-4 w-4 mr-2" />
