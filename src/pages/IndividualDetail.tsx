@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,7 @@ export function IndividualDetail() {
   const { individualId } = useParams<{ individualId: string }>();
   const navigate = useNavigate();
   const { t } = useLanguageStore();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { individuals, payslips, addPayslip, getPayslipsByIndividual } = useDataStore();
   const { toast } = useToast();
 
@@ -198,7 +198,7 @@ export function IndividualDetail() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? '/admin/individuals' : '/')}
+            onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? '/admin/individuals' : '/employee/dashboard')}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -219,7 +219,7 @@ export function IndividualDetail() {
         </div>
         {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
           <Button onClick={() => {
-            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
             navigate(`${basePath}/individuals/${individualId}/payslip`);
           }}>
             <Plus className="mr-2 h-4 w-4" />
@@ -269,7 +269,7 @@ export function IndividualDetail() {
             <h3 className="text-lg font-semibold">{t('payslips.title', 'Payslips')}</h3>
             {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
               <Button onClick={() => {
-                const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
                 navigate(`${basePath}/payslips/create-annual/${individualId}`);
               }}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -311,7 +311,7 @@ export function IndividualDetail() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
                                   navigate(`${basePath}/individuals/${individualId}/payslip/${payslip.id}`);
                                 }}
                                 title="Edit Payslip"

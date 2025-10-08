@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +21,7 @@ import {
 
 export function Payslips() {
   const { t } = useLanguageStore();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const { payslips, employees, companies } = useDataStore();
   const [selectedPayslip, setSelectedPayslip] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguageStore } from '@/stores/language';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { UserCircle, Mail, User, Building2, Save } from 'lucide-react';
 
 export function Profile() {
   const { t } = useLanguageStore();
-  const { user, updateUser } = useAuthStore();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -28,8 +28,8 @@ export function Profile() {
     }
 
     if (user) {
-      updateUser(user.id, form);
-      toast({ title: t('common.success'), description: t('profile.updatedSuccess') });
+      // TODO: Implement profile update in AuthContext
+      toast({ title: t('common.info'), description: 'Profile update coming soon!', variant: 'default' });
       setIsEditing(false);
     }
   };

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,7 +37,7 @@ export function AdminDashboard() {
   const { t } = useLanguageStore();
   const { companies, employees, payslips, users, getAllAnalytics } = useDataStore();
   const navigate = useNavigate();
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser } = useAuth();
 
   // Get comprehensive analytics
   const analytics = getAllAnalytics();

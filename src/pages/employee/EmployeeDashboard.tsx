@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
-import { useAuthStore } from '@/stores/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,7 @@ import {
 
 export function EmployeeDashboard() {
   const { t } = useLanguageStore();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { employees, payslips, companies, individuals, addCompany, addIndividual } = useDataStore();
@@ -137,7 +137,7 @@ export function EmployeeDashboard() {
       {/* Welcome Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">
-          {t('dashboard.welcome')}, {user?.firstName}!
+          {t('dashboard.welcome')}, {user?.firstName || user?.username || 'User'}!
         </h1>
         <p className="text-muted-foreground">
           {t('dashboard.managePayslips')}
@@ -245,7 +245,7 @@ export function EmployeeDashboard() {
                       <Card
                         key={company.id}
                         className="hover:shadow-lg transition-shadow cursor-pointer border-2"
-                        onClick={() => navigate(`/companies/${company.id}`)}
+                        onClick={() => navigate(`/employee/companies/${company.id}`)}
                       >
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2 text-lg">
@@ -273,7 +273,7 @@ export function EmployeeDashboard() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/companies/${company.id}`);
+                              navigate(`/employee/companies/${company.id}`);
                             }}
                           >
                             {t('dashboard.viewDetails')}
@@ -353,8 +353,8 @@ export function EmployeeDashboard() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-                            navigate(`${basePath}/payslips/create-annual/${individual.id}`);
+                            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                            navigate(`${basePath}/individuals/${individual.id}/annual-payslip`);
                           }}
                         >
                           {t('payslips.create')}
@@ -382,7 +382,7 @@ export function EmployeeDashboard() {
               {t('dashboard.createCompany')}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => navigate('/payslips')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/employee/payslips')}>
             <FileText className="h-4 w-4 mr-2" />
             {t('dashboard.viewAllPayslips')}
           </Button>

@@ -163,7 +163,7 @@ export function CompanyDetail() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? '/admin/companies' : '/')}
+            onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? '/admin/companies' : '/employee/dashboard')}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
