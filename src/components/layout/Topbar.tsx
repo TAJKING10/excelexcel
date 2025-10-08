@@ -110,12 +110,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                   </Link>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem asChild>
-                <Link to="/settings" className="cursor-pointer">
-                  <Settings className="mr-2 h-4 w-4" />
-                  {t('nav.settings')}
-                </Link>
-              </DropdownMenuItem>
+           
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />

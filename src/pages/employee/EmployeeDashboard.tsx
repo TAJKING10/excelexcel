@@ -404,7 +404,7 @@ export function EmployeeDashboard() {
               {t('dashboard.createCompany')}
             </Button>
           )}
-        
+
           {user?.access?.canCreateIndividuals && (
             <Button variant="outline" size="sm" onClick={() => setIsAddIndividualDialogOpen(true)}>
               <UserCircle className="h-4 w-4 mr-2" />
