@@ -163,10 +163,10 @@ export function IndividualList() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(user?.role === 'SUPER_ADMIN' ? `/admin/individuals/${individual.id}` : `/individuals/${individual.id}`)}
+                          onClick={() => navigate(`/admin/individuals/${individual.id}/annual-payslip`)}
                         >
-                          <Eye size={16} className="mr-2" />
-                          {t('actions.view')}
+                          <FileSpreadsheet size={16} className="mr-2" />
+                          Créer fiche de paie
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -175,10 +175,6 @@ export function IndividualList() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/admin/individuals/${individual.id}/annual-payslip`)}>
-                              <FileSpreadsheet size={16} className="mr-2" />
-                              Créer fiche de paie
-                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(individual)}>
                               <Edit size={16} className="mr-2" />
                               {t('employees.edit')}
