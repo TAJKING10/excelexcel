@@ -537,7 +537,7 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => {
-                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
                           navigate(`${basePath}/employees/${employee.id}/annual-payslip`);
                         }}>
                           <FileSpreadsheet size={16} className="mr-2" />
