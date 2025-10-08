@@ -39,7 +39,9 @@ export function CompanyDetail() {
     firstName: '',
     lastName: '',
     email: '',
+    matricule: '',
     class: '',
+    taxClass: '2',
     hireDate: new Date().toISOString().split('T')[0],
     baseSalary: 0,
     status: 'active' as 'active' | 'terminated',
@@ -130,7 +132,9 @@ export function CompanyDetail() {
       firstName: '',
       lastName: '',
       email: '',
+      matricule: '',
       class: '',
+      taxClass: '2',
       hireDate: new Date().toISOString().split('T')[0],
       baseSalary: 0,
       status: 'active',
@@ -338,6 +342,15 @@ export function CompanyDetail() {
               />
             </div>
             <div>
+              <Label htmlFor="emp-matricule">Matricule</Label>
+              <Input
+                id="emp-matricule"
+                value={employeeForm.matricule}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, matricule: e.target.value })}
+                placeholder="1989 11 24 004 47"
+              />
+            </div>
+            <div>
               <Label htmlFor="emp-class">{t('employees.class') || 'Class'}</Label>
               <Input
                 id="emp-class"
@@ -345,6 +358,23 @@ export function CompanyDetail() {
                 onChange={(e) => setEmployeeForm({ ...employeeForm, class: e.target.value })}
                 placeholder="e.g., Cadre A, Employé B"
               />
+            </div>
+            <div>
+              <Label htmlFor="emp-taxClass">Classe d'impôt</Label>
+              <Select
+                value={employeeForm.taxClass}
+                onValueChange={(value) => setEmployeeForm({ ...employeeForm, taxClass: value })}
+              >
+                <SelectTrigger id="emp-taxClass">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Class 1</SelectItem>
+                  <SelectItem value="1a">Class 1a</SelectItem>
+                  <SelectItem value="2">Class 2</SelectItem>
+                  <SelectItem value="0.15">15% (0.15)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="emp-hireDate">{t('employees.hireDate') || 'Hire Date'}</Label>
