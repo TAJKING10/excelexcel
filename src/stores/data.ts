@@ -689,11 +689,12 @@ export const useDataStore = create<DataState>((set, get) => ({
     const activeEmployees = employees.filter((e) => e.status === 'active').length;
     const terminatedEmployees = employees.filter((e) => e.status === 'terminated').length;
 
-    // Calculate totals from annual payslips
-    const monthlyPayroll = annualPayslips.reduce(
-      (sum, p) => sum + (p.annualTotals?.earnings?.grossMonthly || 0),
-      0
-    );
+    // Calculate totals - use base salaries for active employees as monthly payroll
+    const monthlyPayroll = employees
+      .filter((e) => e.status === 'active')
+      .reduce((sum, e) => sum + (e.baseSalary || 0), 0);
+
+    // Calculate total social charges from annual payslips (annual total, not monthly)
     const totalSocialCharges = annualPayslips.reduce(
       (sum, p) => sum + (p.annualTotals?.employerContrib?.socialSecurityTotal || 0),
       0
@@ -799,7 +800,11 @@ export const useDataStore = create<DataState>((set, get) => ({
     const totalEmployees = state.employees.length;
     const activeEmployees = state.employees.filter((e) => e.status === 'active').length;
     const totalPayslips = state.payslips.length;
-    const totalPayroll = state.payslips.reduce((sum, p) => sum + p.earnings.grossMonthly, 0);
+
+    // Calculate total monthly payroll from active employees' base salaries
+    const totalPayroll = state.employees
+      .filter((e) => e.status === 'active')
+      .reduce((sum, e) => sum + (e.baseSalary || 0), 0);
 
     const companiesData = state.companies.map((company) => ({
       company,
