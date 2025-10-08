@@ -46,7 +46,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     // Employee role navigation
     return [
       { path: '/employee/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
-      { path: '/employee/payslips', icon: FileText, label: t('nav.payslips') },
+//       { path: '/employee/payslips', icon: FileText, label: t('nav.payslips') },
       { path: '/employee/profile', icon: UserCircle, label: t('nav.profile') },
     ]
   }
