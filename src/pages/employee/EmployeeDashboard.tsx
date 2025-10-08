@@ -356,18 +356,32 @@ export function EmployeeDashboard() {
                             {individual.status}
                           </Badge>
                         </div>
-                        <Button
-                          className="w-full mt-4"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
-                            navigate(`${basePath}/individuals/${individual.id}/annual-payslip`);
-                          }}
-                        >
-                          {t('payslips.create')}
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
+                        <div className="flex flex-col gap-2 mt-4">
+                          <Button
+                            className="w-full"
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                              navigate(`${basePath}/individuals/${individual.id}/annual-payslip`);
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            {t('payslips.annualTitle', 'Fiche de Paie Annuelle')}
+                          </Button>
+                          <Button
+                            className="w-full"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                              navigate(`${basePath}/individuals/${individual.id}`);
+                            }}
+                          >
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                            {t('dashboard.viewDetails', 'View Details')}
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
