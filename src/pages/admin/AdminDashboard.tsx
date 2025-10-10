@@ -90,20 +90,10 @@ export function AdminDashboard() {
   const payslipsDelta = monthlyPayslips - lastMonthPayslips;
   const payslipsDeltaPercent = lastMonthPayslips > 0 ? ((payslipsDelta / lastMonthPayslips) * 100).toFixed(1) : 0;
 
-  // Recent activity (last 5 payslips)
-  const recentPayslips = [...payslips]
+  // Recent activity (last 5 individuals)
+  const recentIndividuals = [...individuals]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
-
-  const getEmployeeName = (employeeId: string) => {
-    const employee = employees.find((e) => e.id === employeeId);
-    return employee ? `${employee.firstName} ${employee.lastName}` : t('common.unknown');
-  };
-
-  const getCompanyName = (companyId: string) => {
-    const company = companies.find((c) => c.id === companyId);
-    return company?.name || t('common.unknown');
-  };
 
   // Chart data - Companies growth
   const companiesData = Array.from({ length: 6 }, (_, i) => {
@@ -288,7 +278,7 @@ export function AdminDashboard() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/payslips')}
+            onClick={() => navigate('/admin/individuals')}
           >
             {t('dashboard.viewAll')}
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -298,33 +288,39 @@ export function AdminDashboard() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('payslips.period')}</TableHead>
-                <TableHead>{t('payslips.employee')}</TableHead>
-                <TableHead>{t('payslips.company')}</TableHead>
-                <TableHead>{t('dashboard.createdAt')}</TableHead>
+                <TableHead>{t('employees.firstname')}</TableHead>
+                <TableHead>{t('employees.name')}</TableHead>
+                <TableHead>{t('employees.email')}</TableHead>
+                <TableHead>{t('companies.country')}</TableHead>
+                <TableHead>{t('employees.status')}</TableHead>
                 <TableHead>{t('employees.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentPayslips.length === 0 ? (
+              {recentIndividuals.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     {t('dashboard.noRecentActivity')}
                   </TableCell>
                 </TableRow>
               ) : (
-                recentPayslips.map((payslip) => (
-                  <TableRow key={payslip.id}>
+                recentIndividuals.map((individual) => (
+                  <TableRow key={individual.id}>
+                    <TableCell>{individual.firstName}</TableCell>
+                    <TableCell>{individual.lastName}</TableCell>
+                    <TableCell>{individual.email}</TableCell>
+                    <TableCell>{individual.country}</TableCell>
                     <TableCell>
-                      {payslip.period.month}/{payslip.period.year}
+                      <Badge variant={individual.status === 'active' ? 'default' : 'secondary'}>
+                        {individual.status}
+                      </Badge>
                     </TableCell>
-                    <TableCell>{getEmployeeName(payslip.employeeId)}</TableCell>
-                    <TableCell>{getCompanyName(payslip.companyId)}</TableCell>
                     <TableCell>
-                      {new Date(payslip.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/admin/individuals/${individual.id}`)}
+                      >
                         {t('dashboard.view')}
                       </Button>
                     </TableCell>
