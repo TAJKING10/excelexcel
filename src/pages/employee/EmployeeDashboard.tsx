@@ -187,14 +187,14 @@ export function EmployeeDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              {t('nav.payslips')}
+              <UserCircle className="h-4 w-4 text-primary" />
+              {t('nav.individuals')}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{accessiblePayslips.length}</div>
+            <div className="text-2xl font-bold">{accessibleIndividuals.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t('dashboard.totalPayslipsCreated')}
+              {t('dashboard.totalIndividuals', 'Total individuals managed')}
             </p>
           </CardContent>
         </Card>
