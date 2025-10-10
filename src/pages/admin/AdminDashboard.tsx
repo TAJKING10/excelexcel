@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguageStore } from '@/stores/language';
 import { useDataStore } from '@/stores/data';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,6 +20,7 @@ import {
   Download,
   ArrowUp,
   ArrowDown,
+  UserCircle,
 } from 'lucide-react';
 import {
   BarChart,
@@ -35,9 +37,32 @@ import {
 
 export function AdminDashboard() {
   const { t } = useLanguageStore();
-  const { companies, employees, payslips, users, getAllAnalytics } = useDataStore();
+  const { companies, employees, payslips, users, individuals, getAllAnalytics } = useDataStore();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const [totalAdvensysStaff, setTotalAdvensysStaff] = useState(0);
+
+  // Fetch employee users count from database
+  useEffect(() => {
+    const fetchEmployeeCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'EMPLOYEE');
+
+        if (error) {
+          console.error('Error fetching employee count:', error);
+        } else {
+          setTotalAdvensysStaff(count || 0);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+      }
+    };
+
+    fetchEmployeeCount();
+  }, []);
 
   // Get comprehensive analytics
   const analytics = getAllAnalytics();
@@ -48,7 +73,7 @@ export function AdminDashboard() {
   const activeEmployees = analytics.activeEmployees;
   const totalPayslips = analytics.totalPayslips;
   const totalPayroll = analytics.totalPayroll;
-  const totalAdvensysStaff = users.filter(u => u.role === 'EMPLOYEE').length;
+  const totalIndividuals = individuals.length;
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
   const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
@@ -184,12 +209,11 @@ export function AdminDashboard() {
           onClick={() => navigate('/admin/companies')}
         />
         <StatCard
-          icon={FileText}
-          title={t('nav.payslips')}
-          value={monthlyPayslips}
-          subtitle={`${t('dashboard.thisMonth')} (${totalPayslips} ${t('common.total')})`}
-          delta={{ value: payslipsDelta, percent: payslipsDeltaPercent.toString() }}
-          onClick={() => navigate(`/admin/payslips?period=${currentYear}-${String(currentMonth).padStart(2, '0')}`)}
+          icon={UserCircle}
+          title={t('nav.individuals')}
+          value={totalIndividuals}
+          subtitle={t('dashboard.totalIndividualsManaged', 'Total individuals managed')}
+          onClick={() => navigate('/admin/individuals')}
         />
         <StatCard
           icon={TrendingUp}
