@@ -319,9 +319,10 @@ export function AdminDashboard() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/admin/individuals/${individual.id}`)}
+                        onClick={() => navigate(`/admin/individuals/${individual.id}/annual-payslip`)}
                       >
-                        {t('dashboard.view')}
+                        <FileText className="h-4 w-4 mr-2" />
+                        {t('payslips.annualTitle', 'Fiche de paie annuelle')}
                       </Button>
                     </TableCell>
                   </TableRow>
