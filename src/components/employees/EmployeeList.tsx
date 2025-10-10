@@ -70,6 +70,8 @@ export function EmployeeList() {
   const availableCompanies =
     user?.role === 'SUPER_ADMIN'
       ? companies
+      : user?.access?.hasAllCompaniesAccess
+      ? companies
       : user?.access?.companyIds
       ? companies.filter((c) => user.access?.companyIds.includes(c.id))
       : [];
@@ -81,7 +83,7 @@ export function EmployeeList() {
       // Super admin sees all
     } else if (user?.role === 'EMPLOYEE' && user?.access) {
       // Employee - only see employees from companies they have access to
-      if (!user.access.companyIds.includes(employee.companyId)) {
+      if (!user.access.hasAllCompaniesAccess && !user.access.companyIds?.includes(employee.companyId)) {
         return false;
       }
     } else {
@@ -300,7 +302,7 @@ export function EmployeeList() {
             {filteredEmployees.length} {t('employees.count')}
           </p>
         </div>
-        {user?.role === 'SUPER_ADMIN' && (
+        {(user?.role === 'SUPER_ADMIN' || user?.access?.canCreateEmployees) && (
           <Button
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {

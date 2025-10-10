@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguageStore } from '@/stores/language'
 import { useDataStore } from '@/stores/data'
-import { useAuthStore } from '@/stores/auth'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -18,7 +18,7 @@ import type { Individual } from '@/types'
 
 export function IndividualList() {
   const { t } = useLanguageStore()
-  const { user } = useAuthStore()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { individuals, addIndividual, updateIndividual, deleteIndividual } = useDataStore()
   const { toast } = useToast()
@@ -27,6 +27,25 @@ export function IndividualList() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingIndividual, setEditingIndividual] = useState<Individual | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Filter individuals based on user role and access
+  const accessibleIndividuals = useMemo(() => {
+    if (user?.role === 'SUPER_ADMIN') {
+      return individuals
+    }
+
+    // Employee - filter by access
+    if (user?.role === 'EMPLOYEE' && user.access) {
+      // If user has access to all individuals, return all
+      if (user.access.hasAllIndividualsAccess) {
+        return individuals
+      }
+      // Otherwise filter by specific individual IDs
+      return individuals.filter(i => user.access?.individualIds?.includes(i.id))
+    }
+
+    return []
+  }, [individuals, user])
 
   const [form, setForm] = useState({
     firstName: '',
@@ -116,19 +135,23 @@ export function IndividualList() {
     setIsEditDialogOpen(true)
   }
 
-  const filteredIndividuals = individuals.filter((individual) => {
+  const filteredIndividuals = accessibleIndividuals.filter((individual) => {
     const fullName = `${individual.firstName} ${individual.lastName}`.toLowerCase()
     return fullName.includes(searchQuery.toLowerCase())
   })
+
+  const canCreateIndividuals = user?.role === 'SUPER_ADMIN' || user?.access?.canCreateIndividuals
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-foreground">{t('individuals.title')}</h2>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus size={16} className="mr-2" />
-          {t('individuals.create')}
-        </Button>
+        {canCreateIndividuals && (
+          <Button onClick={() => setIsAddDialogOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus size={16} className="mr-2" />
+            {t('individuals.create')}
+          </Button>
+        )}
       </div>
 
       <Card className="bg-card border-border">

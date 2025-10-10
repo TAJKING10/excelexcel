@@ -41,8 +41,13 @@ export function CompanyList() {
     }
 
     // Employee - filter by access
-    if (user?.role === 'EMPLOYEE' && user.access?.companyIds) {
-      return companies.filter(c => user.access?.companyIds.includes(c.id));
+    if (user?.role === 'EMPLOYEE' && user.access) {
+      // If user has access to all companies, return all
+      if (user.access.hasAllCompaniesAccess) {
+        return companies;
+      }
+      // Otherwise filter by specific company IDs
+      return companies.filter(c => user.access?.companyIds?.includes(c.id));
     }
 
     return [];
@@ -191,7 +196,7 @@ export function CompanyList() {
     }
   };
 
-  const canManageCompanies = user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips;
+  const canManageCompanies = user?.role === 'SUPER_ADMIN' || user?.access?.canCreateCompanies;
 
   return (
     <div className="space-y-6">
