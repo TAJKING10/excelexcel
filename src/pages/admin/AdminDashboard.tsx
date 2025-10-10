@@ -95,32 +95,46 @@ export function AdminDashboard() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
-  // Chart data - Companies growth
+  // Chart data - Companies growth (real data based on creation dates)
   const companiesData = Array.from({ length: 6 }, (_, i) => {
     const month = new Date();
     month.setMonth(month.getMonth() - (5 - i));
+    const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+    const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+
+    // Count companies created up to this month
+    const companiesCount = companies.filter(c =>
+      new Date(c.createdAt) <= monthEnd
+    ).length;
+
+    // Count employees created up to this month
+    const employeesCount = employees.filter(e =>
+      new Date(e.createdAt) <= monthEnd
+    ).length;
+
     return {
       month: month.toLocaleString('default', { month: 'short' }),
-      companies: Math.floor(Math.random() * 5) + totalCompanies - 3 + i,
-      employees: Math.floor(Math.random() * 10) + totalEmployees - 15 + i * 3,
+      companies: companiesCount,
+      employees: employeesCount,
     };
   });
 
-  // Payslips per month
-  const payslipsPerMonth = Array.from({ length: 6 }, (_, i) => {
+  // Individuals per month (real data based on creation date)
+  const individualsPerMonth = Array.from({ length: 6 }, (_, i) => {
     const month = new Date();
     month.setMonth(month.getMonth() - (5 - i));
     const monthStr = month.toLocaleString('default', { month: 'short' });
-    const monthNum = month.getMonth() + 1;
-    const yearNum = month.getFullYear();
+    const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+    const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
 
-    const count = payslips.filter(
-      (p) => p.period.month === monthNum && p.period.year === yearNum
+    // Count individuals created up to this month
+    const count = individuals.filter(ind =>
+      new Date(ind.createdAt) <= monthEnd
     ).length;
 
     return {
       month: monthStr,
-      count: count || Math.floor(Math.random() * 20) + 10,
+      count: count,
     };
   });
 
@@ -247,14 +261,14 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Payslips per Month */}
+        {/* Individuals Growth */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('dashboard.payslipsPerMonth')}</CardTitle>
+            <CardTitle>{t('dashboard.individualsGrowth', 'Croissance des Individus')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={payslipsPerMonth}>
+              <BarChart data={individualsPerMonth}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -263,7 +277,7 @@ export function AdminDashboard() {
                 <Bar
                   dataKey="count"
                   fill="#8b5cf6"
-                  name={t('nav.payslips')}
+                  name={t('nav.individuals', 'Individus')}
                 />
               </BarChart>
             </ResponsiveContainer>
