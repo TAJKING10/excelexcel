@@ -37,7 +37,6 @@ import AnnualPayslipPage from './pages/AnnualPayslipPage';
 
 // Auth
 import LoginPage from './pages/LoginPage';
-import AuthDebug from './components/AuthDebug';
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -63,9 +62,7 @@ function AppRoutes() {
   const defaultRoute = user ? getDefaultRoute(user.role) : '/login';
 
   return (
-    <>
-      <AuthDebug />
-      <Routes>
+    <Routes>
       {/* Auth routes - always available */}
       <Route path="/login" element={<LoginPage />} />
 
@@ -138,7 +135,6 @@ function AppRoutes() {
       {/* Root redirect */}
       <Route path="*" element={<Navigate to={defaultRoute} replace />} />
     </Routes>
-    </>
   );
 }
 
