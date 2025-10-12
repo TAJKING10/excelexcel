@@ -26,7 +26,9 @@
     "profile": "Profile",
     "settings": "Settings",
     "logout": "Logout",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "annualPayslips": "Annual Payslips",
+    "activityLog": "Activity Log"
   },
   "dashboard": {
     "welcome": "Welcome",
@@ -87,7 +89,8 @@
     "companiesAnalytics": "Companies Analytics",
     "individualsGrowth": "Individuals Growth",
     "totalIndividualsManaged": "Total individuals managed",
-    "totalIndividuals": "Total individuals"
+    "totalIndividuals": "Total individuals",
+    "vsLastMonth": "vs last month"
   },
   "common": {
     "total": "total",
@@ -119,7 +122,19 @@
     "warning": "Warning",
     "info": "Information",
     "optional": "Optional",
-    "required": "Required"
+    "required": "Required",
+    "language": "Language",
+    "french": "French",
+    "english": "English",
+    "unknown": "Unknown",
+    "active": "Active",
+    "name": "Name",
+    "email": "Email",
+    "actions": "Actions",
+    "note": "Note",
+    "individual": "Individual",
+    "employee": "Employee",
+    "searchByName": "Search by name..."
   },
   "companies": {
     "title": "Companies",
@@ -145,7 +160,13 @@
     "createdSuccess": "Company created successfully",
     "deletedSuccess": "Company deleted successfully",
     "deleteBlocked": "Company has employees. Please remove them first.",
-    "confirmDelete": "Are you sure you want to delete this company?"
+    "confirmDelete": "Are you sure you want to delete this company?",
+    "createFailed": "Failed to create company",
+    "updateFailed": "Failed to update company",
+    "deleteFailed": "Failed to delete company",
+    "enterName": "Enter company name",
+    "noCompaniesAvailable": "No companies available",
+    "allCompanies": "All Companies"
   },
   "employees": {
     "title": "Employees",
@@ -180,6 +201,7 @@
     "filters": "Filters",
     "allCompanies": "All Companies",
     "allStatuses": "All Statuses",
+    "allEmployees": "All Employees",
     "noEmployees": "No employees found",
     "fillRequired": "Please fill in all required fields",
     "addedSuccess": "Employee added successfully",
@@ -197,7 +219,8 @@
     "class1": "Class 1",
     "class1a": "Class 1a",
     "class2": "Class 2",
-    "select": "Select employee"
+    "select": "Select employee",
+    "baseSalaryMonthly": "Base Salary (Monthly)"
   },
   "individuals": {
     "title": "Individuals",
@@ -211,7 +234,14 @@
     "information": "Individual Information",
     "nameRequired": "Name fields are required",
     "notFound": "Individual not found",
-    "createdSuccess": "Individual created successfully"
+    "createdSuccess": "Individual created successfully",
+    "addFailed": "Failed to add individual",
+    "updateFailed": "Failed to update individual",
+    "deleteFailed": "Failed to delete individual",
+    "createFailed": "Failed to create individual",
+    "confirmDelete": "Are you sure you want to delete",
+    "noIndividualsFound": "No individuals found",
+    "noIndividualsAvailable": "No individuals available"
   },
   "users": {
     "username": "Username",
@@ -220,6 +250,7 @@
     "noUsers": "No users found. Add a user to get started.",
     "editUserAccess": "Edit User Access",
     "addNewUser": "Add New User",
+    "addNew": "Add New User",
     "configureDetails": "Configure user details and access permissions",
     "canViewPayslips": "Can View Payslips",
     "canEditPayslips": "Can Edit Payslips",
@@ -228,7 +259,27 @@
     "companyAccess": "Company Access",
     "individualAccess": "Individual Access",
     "noIndividualsAvailable": "No individuals available",
-    "user": "User"
+    "user": "User",
+    "management": "User Management",
+    "managementDescription": "Create and manage employee accounts",
+    "employeeAccounts": "Employee Accounts",
+    "editAccess": "Edit User Access",
+    "configureAccess": "Configure user details and access permissions",
+    "usernameRequired": "Username",
+    "password": "Password",
+    "leaveBlankToKeep": "(leave blank to keep current)",
+    "enterNewPassword": "Enter new password",
+    "enterPassword": "Enter password",
+    "grantFullAccess": "Grant Full Access",
+    "noAccessConfigured": "No access configured",
+    "updatedSuccess": "User updated successfully",
+    "createdSuccess": "User created successfully",
+    "deletedSuccess": "User deleted successfully",
+    "saveFailed": "Failed to save user",
+    "deleteFailed": "Failed to delete user",
+    "confirmDelete": "Are you sure you want to delete this user? This action cannot be undone.",
+    "passwordUpdateNote": "Password updates for existing users require additional setup",
+    "noUsersFound": "No users found. Click \"Add New User\" to create one."
   },
   "payslips": {
     "title": "Payslips",
@@ -238,6 +289,7 @@
     "createAnnual": "Create Annual Payslip",
     "createQuick": "Create Quick Payslip",
     "annualTitle": "Annual Payslip",
+    "annualPayslipTitle": "Annual Payslip",
     "annual": "Annual",
     "period": "Period",
     "employee": "Employee",
@@ -268,6 +320,7 @@
     "exportTemplate": "Export Excel Template",
     "noPayslips": "No payslips found",
     "noPayslipsYet": "No payslips yet",
+    "noPayslipsFound": "No payslips found",
     "viewAndManage": "View and manage all payslips",
     "month": "Month",
     "monthly": "Monthly",
@@ -283,6 +336,8 @@
     "autoCalculate": "Auto-calculate",
     "savePayslips": "Save Payslips",
     "payrollBook": "Payroll Book",
+    "createPayslip": "Create Payslip",
+    "confirmDelete": "Are you sure you want to delete this payslip?",
     "earnings": {
       "title": "Earnings",
       "grossMonthly": "Monthly Gross",
@@ -451,19 +506,6 @@
     "next": "Next",
     "finish": "Finish"
   },
-  "common": {
-    "loading": "Loading...",
-    "noData": "No data",
-    "error": "Error",
-    "success": "Success",
-    "warning": "Warning",
-    "info": "Information",
-    "language": "Language",
-    "french": "French",
-    "english": "English",
-    "unknown": "Unknown",
-    "required": "Required"
-  },
   "profile": {
     "title": "Profile",
     "subtitle": "Manage your personal information and account settings",
@@ -483,6 +525,9 @@
     "accessibleIndividuals": "Accessible Individuals",
     "allFieldsRequired": "All fields are required",
     "updatedSuccess": "Profile updated successfully"
+  },
+  "settings": {
+    "currentSessionActive": "Current session • Last active: Now"
   },
   "explorer": {
     "subtitle": "Filter, read, compare, and export payslips",
@@ -511,5 +556,55 @@
     "employerChargesBreakdown": "Employer Charges Breakdown",
     "ofCharges": "% of charges",
     "salariesPlusEmployerCharges": "Salaries + Employer Charges"
+  },
+  "permissions": {
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "analytics": "Analytics",
+    "canViewPayslips": "Can View Payslips",
+    "canEditPayslips": "Can Edit Payslips",
+    "canDeletePayslips": "Can Delete Payslips",
+    "canViewAnalytics": "Can View Analytics",
+    "canCreateCompanies": "Can Create New Companies",
+    "canCreateEmployees": "Can Create Employees Inside Companies",
+    "canCreateIndividuals": "Can Create New Individuals"
+  },
+  "access": {
+    "companyAccess": "Company Access",
+    "individualAccess": "Individual Access",
+    "allCompanies": "All Companies",
+    "allIndividuals": "All Individuals",
+    "allCompaniesFuture": "All Companies (Current & Future)",
+    "allIndividualsFuture": "All Individuals (Current & Future)",
+    "selectSpecificCompanies": "Select specific companies:",
+    "selectSpecificIndividuals": "Select specific individuals:"
+  },
+  "validation": {
+    "allFieldsRequired": "All fields are required",
+    "passwordRequired": "Password is required for new users",
+    "required": "Required"
+  },
+  "errors": {
+    "failedToLoad": "Failed to load data"
+  },
+  "countries": {
+    "luxembourg": "Luxembourg",
+    "france": "France",
+    "belgium": "Belgium",
+    "germany": "Germany"
+  },
+  "excel": {
+    "changeFile": "Change File",
+    "onlySupportedFormats": "Only .xlsx and .xls files are supported",
+    "rows": "rows",
+    "columns": "columns",
+    "mapColumnsDescription": "Map Excel columns to payslip fields. Required fields are marked with *.",
+    "example": "Example:",
+    "selectField": "Select field...",
+    "readyToImport": "Ready to import",
+    "preview": "Preview:",
+    "showingRows": "Showing 5 of",
+    "fixErrorsBeforeImport": "Please go back and fix the errors before importing."
   }
 }

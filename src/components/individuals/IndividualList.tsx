@@ -86,7 +86,7 @@ export function IndividualList() {
       resetForm()
       setIsAddDialogOpen(false)
     } catch (error: any) {
-      toast({ title: t('common.error'), description: error.message || 'Failed to add individual', variant: 'destructive' })
+      toast({ title: t('common.error'), description: error.message || t('individuals.addFailed'), variant: 'destructive' })
     }
   }
 
@@ -103,17 +103,17 @@ export function IndividualList() {
       setEditingIndividual(null)
       setIsEditDialogOpen(false)
     } catch (error: any) {
-      toast({ title: t('common.error'), description: error.message || 'Failed to update individual', variant: 'destructive' })
+      toast({ title: t('common.error'), description: error.message || t('individuals.updateFailed'), variant: 'destructive' })
     }
   }
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Are you sure you want to delete ${name}?`)) {
+    if (confirm(t('individuals.confirmDelete', { name }))) {
       try {
         await deleteIndividual(id)
         toast({ title: t('common.success'), description: t('actions.delete') })
       } catch (error: any) {
-        toast({ title: t('common.error'), description: error.message || 'Failed to delete individual', variant: 'destructive' })
+        toast({ title: t('common.error'), description: error.message || t('individuals.deleteFailed'), variant: 'destructive' })
       }
     }
   }
@@ -162,7 +162,7 @@ export function IndividualList() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
               <Input
                 type="text"
-                placeholder="Rechercher par nom..."
+                placeholder={t('common.searchByName')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -174,7 +174,7 @@ export function IndividualList() {
           {filteredIndividuals.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
-                {searchQuery ? 'Aucun individu trouvé' : t('dashboard.noIndividualsYet')}
+                {searchQuery ? t('individuals.noIndividualsFound') : t('dashboard.noIndividualsYet')}
               </p>
             </div>
           ) : (
@@ -209,7 +209,7 @@ export function IndividualList() {
                           onClick={() => navigate(`/admin/individuals/${individual.id}/annual-payslip`)}
                         >
                           <FileSpreadsheet size={16} className="mr-2" />
-                          Créer fiche de paie
+                          {t('payslips.createPayslip')}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -280,10 +280,10 @@ export function IndividualList() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Luxembourg">Luxembourg</SelectItem>
-                  <SelectItem value="France">France</SelectItem>
-                  <SelectItem value="Belgium">Belgium</SelectItem>
-                  <SelectItem value="Germany">Germany</SelectItem>
+                  <SelectItem value="Luxembourg">{t('countries.luxembourg')}</SelectItem>
+                  <SelectItem value="France">{t('countries.france')}</SelectItem>
+                  <SelectItem value="Belgium">{t('countries.belgium')}</SelectItem>
+                  <SelectItem value="Germany">{t('countries.germany')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -307,13 +307,13 @@ export function IndividualList() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="active">{t('common.active')}</SelectItem>
+                  <SelectItem value="terminated">{t('employees.terminated')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="add-baseSalary">Base Salary (Monthly)</Label>
+              <Label htmlFor="add-baseSalary">{t('employees.baseSalaryMonthly')}</Label>
               <Input
                 id="add-baseSalary"
                 type="number"
@@ -323,20 +323,20 @@ export function IndividualList() {
               />
             </div>
             <div>
-              <Label htmlFor="add-taxClass">Tax Class</Label>
+              <Label htmlFor="add-taxClass">{t('employees.taxClass')}</Label>
               <Select value={String(form.taxClass)} onValueChange={(value) => setForm({ ...form, taxClass: parseInt(value) })}>
                 <SelectTrigger id="add-taxClass">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Class 1</SelectItem>
-                  <SelectItem value="1a">Class 1a</SelectItem>
-                  <SelectItem value="2">Class 2</SelectItem>
+                  <SelectItem value="1">{t('employees.class')} 1</SelectItem>
+                  <SelectItem value="1a">{t('employees.class')} 1a</SelectItem>
+                  <SelectItem value="2">{t('employees.class')} 2</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="add-matricule">Matricule (Optional)</Label>
+              <Label htmlFor="add-matricule">{t('employees.matricule')} ({t('common.optional')})</Label>
               <Input
                 id="add-matricule"
                 value={form.matricule}
@@ -345,7 +345,7 @@ export function IndividualList() {
               />
             </div>
             <div>
-              <Label htmlFor="add-address">Address (Optional)</Label>
+              <Label htmlFor="add-address">{t('employees.address')} ({t('common.optional')})</Label>
               <Input
                 id="add-address"
                 value={form.address}
@@ -402,10 +402,10 @@ export function IndividualList() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Luxembourg">Luxembourg</SelectItem>
-                  <SelectItem value="France">France</SelectItem>
-                  <SelectItem value="Belgium">Belgium</SelectItem>
-                  <SelectItem value="Germany">Germany</SelectItem>
+                  <SelectItem value="Luxembourg">{t('countries.luxembourg')}</SelectItem>
+                  <SelectItem value="France">{t('countries.france')}</SelectItem>
+                  <SelectItem value="Belgium">{t('countries.belgium')}</SelectItem>
+                  <SelectItem value="Germany">{t('countries.germany')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -429,13 +429,13 @@ export function IndividualList() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="active">{t('common.active')}</SelectItem>
+                  <SelectItem value="terminated">{t('employees.terminated')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="edit-baseSalary">Base Salary (Monthly)</Label>
+              <Label htmlFor="edit-baseSalary">{t('employees.baseSalaryMonthly')}</Label>
               <Input
                 id="edit-baseSalary"
                 type="number"
@@ -445,20 +445,20 @@ export function IndividualList() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-taxClass">Tax Class</Label>
+              <Label htmlFor="edit-taxClass">{t('employees.taxClass')}</Label>
               <Select value={String(form.taxClass)} onValueChange={(value) => setForm({ ...form, taxClass: parseInt(value) })}>
                 <SelectTrigger id="edit-taxClass">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Class 1</SelectItem>
-                  <SelectItem value="1a">Class 1a</SelectItem>
-                  <SelectItem value="2">Class 2</SelectItem>
+                  <SelectItem value="1">{t('employees.class')} 1</SelectItem>
+                  <SelectItem value="1a">{t('employees.class')} 1a</SelectItem>
+                  <SelectItem value="2">{t('employees.class')} 2</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="edit-matricule">Matricule (Optional)</Label>
+              <Label htmlFor="edit-matricule">{t('employees.matricule')} ({t('common.optional')})</Label>
               <Input
                 id="edit-matricule"
                 value={form.matricule}
@@ -467,7 +467,7 @@ export function IndividualList() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-address">Address (Optional)</Label>
+              <Label htmlFor="edit-address">{t('employees.address')} ({t('common.optional')})</Label>
               <Input
                 id="edit-address"
                 value={form.address}

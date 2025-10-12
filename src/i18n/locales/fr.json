@@ -26,7 +26,9 @@
     "profile": "Profil",
     "settings": "Paramètres",
     "logout": "Déconnexion",
-    "analytics": "Analytique"
+    "analytics": "Analytique",
+    "annualPayslips": "Fiches de Paie Annuelles",
+    "activityLog": "Journal d'Activité"
   },
   "dashboard": {
     "welcome": "Bienvenue",
@@ -87,7 +89,8 @@
     "companiesAnalytics": "Analytique des entreprises",
     "individualsGrowth": "Croissance des Individus",
     "totalIndividualsManaged": "Total des individus gérés",
-    "totalIndividuals": "Total des individus"
+    "totalIndividuals": "Total des individus",
+    "vsLastMonth": "vs mois dernier"
   },
   "common": {
     "total": "total",
@@ -119,7 +122,19 @@
     "warning": "Avertissement",
     "info": "Information",
     "optional": "Optionnel",
-    "required": "Requis"
+    "required": "Requis",
+    "language": "Langue",
+    "french": "Français",
+    "english": "Anglais",
+    "unknown": "Inconnu",
+    "active": "Actif",
+    "name": "Nom",
+    "email": "Email",
+    "actions": "Actions",
+    "note": "Note",
+    "individual": "Individu",
+    "employee": "Employé",
+    "searchByName": "Rechercher par nom..."
   },
   "companies": {
     "title": "Entreprises",
@@ -145,7 +160,13 @@
     "createdSuccess": "Entreprise créée avec succès",
     "deletedSuccess": "Entreprise supprimée avec succès",
     "deleteBlocked": "L'entreprise a des employés. Veuillez les supprimer d'abord.",
-    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette entreprise ?"
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette entreprise ?",
+    "createFailed": "Échec de la création de l'entreprise",
+    "updateFailed": "Échec de la mise à jour de l'entreprise",
+    "deleteFailed": "Échec de la suppression de l'entreprise",
+    "enterName": "Entrez le nom de l'entreprise",
+    "noCompaniesAvailable": "Aucune entreprise disponible",
+    "allCompanies": "Toutes les Entreprises"
   },
   "employees": {
     "title": "Employés",
@@ -180,6 +201,7 @@
     "filters": "Filtres",
     "allCompanies": "Toutes les entreprises",
     "allStatuses": "Tous les statuts",
+    "allEmployees": "Tous les Employés",
     "noEmployees": "Aucun employé trouvé",
     "fillRequired": "Veuillez remplir tous les champs requis",
     "addedSuccess": "Employé ajouté avec succès",
@@ -197,7 +219,8 @@
     "class1": "Classe 1",
     "class1a": "Classe 1a",
     "class2": "Classe 2",
-    "select": "Sélectionner un employé"
+    "select": "Sélectionner un employé",
+    "baseSalaryMonthly": "Salaire de Base (Mensuel)"
   },
   "individuals": {
     "title": "Individus",
@@ -211,7 +234,14 @@
     "information": "Informations Individu",
     "nameRequired": "Les champs de nom sont requis",
     "notFound": "Individu non trouvé",
-    "createdSuccess": "Individu créé avec succès"
+    "createdSuccess": "Individu créé avec succès",
+    "addFailed": "Échec de l'ajout de l'individu",
+    "updateFailed": "Échec de la mise à jour de l'individu",
+    "deleteFailed": "Échec de la suppression de l'individu",
+    "createFailed": "Échec de la création de l'individu",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer",
+    "noIndividualsFound": "Aucun individu trouvé",
+    "noIndividualsAvailable": "Aucun individu disponible"
   },
   "users": {
     "username": "Nom d'utilisateur",
@@ -220,6 +250,7 @@
     "noUsers": "Aucun utilisateur trouvé. Ajoutez un utilisateur pour commencer.",
     "editUserAccess": "Modifier l'accès utilisateur",
     "addNewUser": "Ajouter un nouvel utilisateur",
+    "addNew": "Ajouter un Nouvel Utilisateur",
     "configureDetails": "Configurer les détails utilisateur et les autorisations d'accès",
     "canViewPayslips": "Peut voir les fiches de paie",
     "canEditPayslips": "Peut modifier les fiches de paie",
@@ -228,7 +259,27 @@
     "companyAccess": "Accès entreprise",
     "individualAccess": "Accès individu",
     "noIndividualsAvailable": "Aucun individu disponible",
-    "user": "Utilisateur"
+    "user": "Utilisateur",
+    "management": "Gestion des Utilisateurs",
+    "managementDescription": "Créer et gérer les comptes employés",
+    "employeeAccounts": "Comptes Employés",
+    "editAccess": "Modifier l'Accès Utilisateur",
+    "configureAccess": "Configurer les détails utilisateur et les autorisations d'accès",
+    "usernameRequired": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "leaveBlankToKeep": "(laisser vide pour conserver l'actuel)",
+    "enterNewPassword": "Entrez le nouveau mot de passe",
+    "enterPassword": "Entrez le mot de passe",
+    "grantFullAccess": "Accorder Accès Complet",
+    "noAccessConfigured": "Aucun accès configuré",
+    "updatedSuccess": "Utilisateur mis à jour avec succès",
+    "createdSuccess": "Utilisateur créé avec succès",
+    "deletedSuccess": "Utilisateur supprimé avec succès",
+    "saveFailed": "Échec de l'enregistrement de l'utilisateur",
+    "deleteFailed": "Échec de la suppression de l'utilisateur",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action ne peut pas être annulée.",
+    "passwordUpdateNote": "Les mises à jour de mot de passe pour les utilisateurs existants nécessitent une configuration supplémentaire",
+    "noUsersFound": "Aucun utilisateur trouvé. Cliquez sur \"Ajouter un Nouvel Utilisateur\" pour en créer un."
   },
   "payslips": {
     "title": "Fiches de paie",
@@ -238,6 +289,7 @@
     "createAnnual": "Créer Fiche de Paie Annuelle",
     "createQuick": "Créer Fiche de Paie Rapide",
     "annualTitle": "Fiche de Paie Annuelle",
+    "annualPayslipTitle": "Fiche de Paie Annuelle",
     "annual": "Annuelle",
     "period": "Période",
     "employee": "Employé",
@@ -268,6 +320,7 @@
     "exportTemplate": "Exporter modèle Excel",
     "noPayslips": "Aucune fiche de paie trouvée",
     "noPayslipsYet": "Aucune fiche de paie pour l'instant",
+    "noPayslipsFound": "Aucune fiche de paie trouvée",
     "viewAndManage": "Voir et gérer toutes les fiches de paie",
     "month": "Mois",
     "monthly": "Mensuel",
@@ -283,6 +336,8 @@
     "autoCalculate": "Calcul automatique",
     "savePayslips": "Enregistrer les Fiches",
     "payrollBook": "Livre de Paie",
+    "createPayslip": "Créer Fiche de Paie",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette fiche de paie ?",
     "earnings": {
       "title": "Gains",
       "grossMonthly": "Brut mensuel",
@@ -451,19 +506,6 @@
     "next": "Suivant",
     "finish": "Terminer"
   },
-  "common": {
-    "loading": "Chargement...",
-    "noData": "Aucune donnée",
-    "error": "Erreur",
-    "success": "Succès",
-    "warning": "Avertissement",
-    "info": "Information",
-    "language": "Langue",
-    "french": "Français",
-    "english": "Anglais",
-    "unknown": "Inconnu",
-    "required": "Requis"
-  },
   "profile": {
     "title": "Profil",
     "subtitle": "Gérer vos informations personnelles et paramètres de compte",
@@ -483,6 +525,9 @@
     "accessibleIndividuals": "Individus accessibles",
     "allFieldsRequired": "Tous les champs sont requis",
     "updatedSuccess": "Profil mis à jour avec succès"
+  },
+  "settings": {
+    "currentSessionActive": "Session actuelle • Dernière activité : Maintenant"
   },
   "explorer": {
     "subtitle": "Filtrer, lire, comparer et exporter les fiches de paie",
@@ -511,5 +556,55 @@
     "employerChargesBreakdown": "Répartition des Charges Patronales",
     "ofCharges": "% des charges",
     "salariesPlusEmployerCharges": "Salaires + Charges patronales"
+  },
+  "permissions": {
+    "view": "Voir",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "analytics": "Analytique",
+    "canViewPayslips": "Peut Voir les Fiches de Paie",
+    "canEditPayslips": "Peut Modifier les Fiches de Paie",
+    "canDeletePayslips": "Peut Supprimer les Fiches de Paie",
+    "canViewAnalytics": "Peut Voir l'Analytique",
+    "canCreateCompanies": "Peut Créer de Nouvelles Entreprises",
+    "canCreateEmployees": "Peut Créer des Employés dans les Entreprises",
+    "canCreateIndividuals": "Peut Créer de Nouveaux Individus"
+  },
+  "access": {
+    "companyAccess": "Accès Entreprise",
+    "individualAccess": "Accès Individu",
+    "allCompanies": "Toutes les Entreprises",
+    "allIndividuals": "Tous les Individus",
+    "allCompaniesFuture": "Toutes les Entreprises (Actuelles et Futures)",
+    "allIndividualsFuture": "Tous les Individus (Actuels et Futurs)",
+    "selectSpecificCompanies": "Sélectionner des entreprises spécifiques :",
+    "selectSpecificIndividuals": "Sélectionner des individus spécifiques :"
+  },
+  "validation": {
+    "allFieldsRequired": "Tous les champs sont requis",
+    "passwordRequired": "Le mot de passe est requis pour les nouveaux utilisateurs",
+    "required": "Requis"
+  },
+  "errors": {
+    "failedToLoad": "Échec du chargement des données"
+  },
+  "countries": {
+    "luxembourg": "Luxembourg",
+    "france": "France",
+    "belgium": "Belgique",
+    "germany": "Allemagne"
+  },
+  "excel": {
+    "changeFile": "Changer de Fichier",
+    "onlySupportedFormats": "Seuls les fichiers .xlsx et .xls sont pris en charge",
+    "rows": "lignes",
+    "columns": "colonnes",
+    "mapColumnsDescription": "Associer les colonnes Excel aux champs de fiche de paie. Les champs requis sont marqués d'un *.",
+    "example": "Exemple :",
+    "selectField": "Sélectionner un champ...",
+    "readyToImport": "Prêt à importer",
+    "preview": "Aperçu :",
+    "showingRows": "Affichage de 5 sur",
+    "fixErrorsBeforeImport": "Veuillez revenir en arrière et corriger les erreurs avant d'importer."
   }
 }

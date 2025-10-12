@@ -145,8 +145,8 @@ export function UserAccessManagement() {
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load data',
+        title: t('common.error'),
+        description: t('errors.failedToLoadData'),
         variant: 'destructive',
       });
     } finally {
@@ -211,8 +211,8 @@ export function UserAccessManagement() {
   const handleSave = async () => {
     if (!formData.username || !formData.firstName || !formData.lastName || !formData.email) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
+        title: t('common.error'),
+        description: t('validation.allFieldsRequired'),
         variant: 'destructive',
       });
       return;
@@ -220,8 +220,8 @@ export function UserAccessManagement() {
 
     if (!selectedUser && !formData.password) {
       toast({
-        title: 'Error',
-        description: 'Password is required for new users',
+        title: t('common.error'),
+        description: t('validation.passwordRequired'),
         variant: 'destructive',
       });
       return;
@@ -239,8 +239,8 @@ export function UserAccessManagement() {
       }
 
       toast({
-        title: 'Success',
-        description: selectedUser ? 'User updated successfully' : 'User created successfully',
+        title: t('common.success'),
+        description: selectedUser ? t('users.userUpdated') : t('users.userCreated'),
       });
 
       setIsDialogOpen(false);
@@ -252,8 +252,8 @@ export function UserAccessManagement() {
     } catch (error: any) {
       console.error('Error saving user:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to save user',
+        title: t('common.error'),
+        description: error.message || t('users.userSaveFailed'),
         variant: 'destructive',
       });
     } finally {
@@ -356,15 +356,15 @@ export function UserAccessManagement() {
       // Note: This requires admin privileges - you may need to call a Supabase Edge Function
       // For now, we'll skip password updates for existing users
       toast({
-        title: 'Note',
-        description: 'Password updates for existing users require additional setup',
+        title: t('common.note'),
+        description: t('users.passwordUpdateNote'),
         variant: 'default',
       });
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    if (!confirm(t('users.confirmDeleteUser'))) {
       return;
     }
 
@@ -386,16 +386,16 @@ export function UserAccessManagement() {
       if (profileError) throw profileError;
 
       toast({
-        title: 'Success',
-        description: 'User deleted successfully',
+        title: t('common.success'),
+        description: t('users.userDeleted'),
       });
 
       fetchData();
     } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete user',
+        title: t('common.error'),
+        description: error.message || t('users.userDeleteFailed'),
         variant: 'destructive',
       });
     }
@@ -420,15 +420,15 @@ export function UserAccessManagement() {
   };
 
   const getAccessSummary = (user: UserWithAccess) => {
-    if (!user.user_access) return 'No access configured';
+    if (!user.user_access) return t('users.noAccessConfigured');
 
     const companyText = user.user_access.has_all_companies_access
-      ? 'All Companies'
-      : `${user.user_access.company_ids?.length || 0} companies`;
+      ? t('users.allCompanies')
+      : t('users.companiesCount', { count: user.user_access.company_ids?.length || 0 });
 
     const individualText = user.user_access.has_all_individuals_access
-      ? 'All Individuals'
-      : `${user.user_access.individual_ids?.length || 0} individuals`;
+      ? t('users.allIndividuals')
+      : t('users.individualsCount', { count: user.user_access.individual_ids?.length || 0 });
 
     return `${companyText}, ${individualText}`;
   };
@@ -446,12 +446,12 @@ export function UserAccessManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">User Management</h1>
-          <p className="text-muted-foreground">Create and manage employee accounts</p>
+          <h1 className="text-3xl font-bold text-foreground">{t('users.userManagement')}</h1>
+          <p className="text-muted-foreground">{t('users.createAndManageAccounts')}</p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="mr-2 h-4 w-4" />
-          Add New User
+          {t('users.addNewUser')}
         </Button>
       </div>
 
@@ -460,26 +460,26 @@ export function UserAccessManagement() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Users className="mr-2 h-5 w-5" />
-            Employee Accounts
+            {t('users.employeeAccounts')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Username</TableHead>
-                <TableHead>Access Summary</TableHead>
-                <TableHead>Permissions</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t('common.name')}</TableHead>
+                <TableHead>{t('common.email')}</TableHead>
+                <TableHead>{t('users.username')}</TableHead>
+                <TableHead>{t('users.accessSummary')}</TableHead>
+                <TableHead>{t('users.permissions')}</TableHead>
+                <TableHead>{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    No users found. Click "Add New User" to create one.
+                    {t('users.noUsersFound')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -494,16 +494,16 @@ export function UserAccessManagement() {
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
                         {user.user_access?.can_view_payslips && (
-                          <Badge variant="secondary" className="text-xs">View</Badge>
+                          <Badge variant="secondary" className="text-xs">{t('permissions.view')}</Badge>
                         )}
                         {user.user_access?.can_edit_payslips && (
-                          <Badge variant="default" className="text-xs">Edit</Badge>
+                          <Badge variant="default" className="text-xs">{t('permissions.edit')}</Badge>
                         )}
                         {user.user_access?.can_delete_payslips && (
-                          <Badge variant="destructive" className="text-xs">Delete</Badge>
+                          <Badge variant="destructive" className="text-xs">{t('permissions.delete')}</Badge>
                         )}
                         {user.user_access?.can_view_analytics && (
-                          <Badge variant="outline" className="text-xs">Analytics</Badge>
+                          <Badge variant="outline" className="text-xs">{t('permissions.analytics')}</Badge>
                         )}
                       </div>
                     </TableCell>
@@ -538,10 +538,10 @@ export function UserAccessManagement() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedUser ? 'Edit User Access' : 'Add New User'}
+              {selectedUser ? t('users.editUserAccess') : t('users.addNewUser')}
             </DialogTitle>
             <DialogDescription>
-              Configure user details and access permissions
+              {t('users.configureUserDetails')}
             </DialogDescription>
           </DialogHeader>
 
@@ -549,7 +549,7 @@ export function UserAccessManagement() {
             {/* User Details */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="firstName">{t('users.firstName')} *</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
@@ -560,7 +560,7 @@ export function UserAccessManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
+                <Label htmlFor="lastName">{t('users.lastName')} *</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
@@ -571,7 +571,7 @@ export function UserAccessManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="username">Username *</Label>
+                <Label htmlFor="username">{t('users.username')} *</Label>
                 <Input
                   id="username"
                   value={formData.username}
@@ -582,7 +582,7 @@ export function UserAccessManagement() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">{t('common.email')} *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -598,7 +598,7 @@ export function UserAccessManagement() {
             {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">
-                Password {selectedUser ? '(leave blank to keep current)' : '*'}
+                {t('users.password')} {selectedUser ? `(${t('users.leaveBlankToKeepCurrent')})` : '*'}
               </Label>
               <div className="relative">
                 <Input
@@ -606,7 +606,7 @@ export function UserAccessManagement() {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={selectedUser ? 'Enter new password' : 'Enter password'}
+                  placeholder={selectedUser ? t('users.enterNewPassword') : t('users.enterPassword')}
                   disabled={saving}
                 />
                 <Button
@@ -625,7 +625,7 @@ export function UserAccessManagement() {
             {/* Permissions */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Permissions</Label>
+                <Label className="text-base font-semibold">{t('users.permissions')}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -650,7 +650,7 @@ export function UserAccessManagement() {
                   disabled={saving}
                 >
                   <Shield className="mr-1 h-3 w-3" />
-                  Grant Full Access
+                  {t('users.grantFullAccess')}
                 </Button>
               </div>
               <div className="space-y-2">
@@ -664,7 +664,7 @@ export function UserAccessManagement() {
                     disabled={saving}
                   />
                   <Label htmlFor="canViewPayslips" className="font-normal">
-                    Can View Payslips
+                    {t('permissions.canViewPayslips')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -677,7 +677,7 @@ export function UserAccessManagement() {
                     disabled={saving}
                   />
                   <Label htmlFor="canEditPayslips" className="font-normal">
-                    Can Edit Payslips
+                    {t('permissions.canEditPayslips')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -690,7 +690,7 @@ export function UserAccessManagement() {
                     disabled={saving}
                   />
                   <Label htmlFor="canDeletePayslips" className="font-normal">
-                    Can Delete Payslips
+                    {t('permissions.canDeletePayslips')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -703,7 +703,7 @@ export function UserAccessManagement() {
                     disabled={saving}
                   />
                   <Label htmlFor="canViewAnalytics" className="font-normal">
-                    Can View Analytics
+                    {t('permissions.canViewAnalytics')}
                   </Label>
                 </div>
               </div>
@@ -711,7 +711,7 @@ export function UserAccessManagement() {
 
             {/* Company Access */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Company Access</Label>
+              <Label className="text-base font-semibold">{t('users.companyAccess')}</Label>
 
               {/* All Companies Toggle */}
               <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -728,7 +728,7 @@ export function UserAccessManagement() {
                   disabled={saving}
                 />
                 <Label htmlFor="allCompanies" className="font-semibold text-blue-700 dark:text-blue-300">
-                  All Companies (Current & Future)
+                  {t('access.allCompaniesCurrentFuture')}
                 </Label>
               </div>
 
@@ -744,7 +744,7 @@ export function UserAccessManagement() {
                     disabled={saving}
                   />
                   <Label htmlFor="canCreateCompanies" className="font-medium text-green-700 dark:text-green-300">
-                    Can Create New Companies
+                    {t('access.canCreateNewCompanies')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2 p-2 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
@@ -757,7 +757,7 @@ export function UserAccessManagement() {
                     disabled={saving}
                   />
                   <Label htmlFor="canCreateEmployees" className="font-medium text-green-700 dark:text-green-300">
-                    Can Create Employees Inside Companies
+                    {t('access.canCreateEmployeesInsideCompanies')}
                   </Label>
                 </div>
               </div>
@@ -765,9 +765,9 @@ export function UserAccessManagement() {
               {/* Individual Company Selection */}
               {!accessData.hasAllCompaniesAccess && (
                 <div className="border rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
-                  <p className="text-sm text-muted-foreground mb-2">Select specific companies:</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('access.selectSpecificCompanies')}</p>
                   {companies.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No companies available</p>
+                    <p className="text-sm text-muted-foreground">{t('companies.noCompaniesAvailable')}</p>
                   ) : (
                     companies.map((company) => (
                       <div key={company.id} className="flex items-center space-x-2">
@@ -789,7 +789,7 @@ export function UserAccessManagement() {
 
             {/* Individual Access */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Individual Access</Label>
+              <Label className="text-base font-semibold">{t('users.individualAccess')}</Label>
 
               {/* All Individuals Toggle */}
               <div className="flex items-center space-x-2 p-3 bg-purple-50 dark:bg-purple-950 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -806,7 +806,7 @@ export function UserAccessManagement() {
                   disabled={saving}
                 />
                 <Label htmlFor="allIndividuals" className="font-semibold text-purple-700 dark:text-purple-300">
-                  All Individuals (Current & Future)
+                  {t('access.allIndividualsCurrentFuture')}
                 </Label>
               </div>
 
@@ -821,7 +821,7 @@ export function UserAccessManagement() {
                   disabled={saving}
                 />
                 <Label htmlFor="canCreateIndividuals" className="font-medium text-green-700 dark:text-green-300">
-                  Can Create New Individuals
+                  {t('access.canCreateNewIndividuals')}
                 </Label>
               </div>
 
@@ -829,10 +829,10 @@ export function UserAccessManagement() {
               {!accessData.hasAllIndividualsAccess && (
                 <div className="border rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
                   {individuals.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No individuals available</p>
+                    <p className="text-sm text-muted-foreground">{t('individuals.noIndividualsAvailable')}</p>
                   ) : (
                     <>
-                      <p className="text-sm text-muted-foreground mb-2">Select specific individuals:</p>
+                      <p className="text-sm text-muted-foreground mb-2">{t('access.selectSpecificIndividuals')}</p>
                       {individuals.map((individual) => (
                         <div key={individual.id} className="flex items-center space-x-2">
                           <Checkbox
@@ -858,11 +858,11 @@ export function UserAccessManagement() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {selectedUser ? 'Update' : 'Create'} User
+              {selectedUser ? t('users.updateUser') : t('users.createUser')}
             </Button>
           </DialogFooter>
         </DialogContent>
