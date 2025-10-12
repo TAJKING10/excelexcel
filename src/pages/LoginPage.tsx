@@ -191,28 +191,6 @@ export default function LoginPage() {
                 {isLoading ? t('auth.loggingIn') : t('auth.loginButton')}
               </Button>
             </form>
-
-            <div className="mt-6 p-4 bg-muted dark:bg-gray-700 rounded-lg">
-              <p className="text-sm text-muted-foreground dark:text-gray-300 text-center mb-2 font-medium">
-                Super Admin Account:
-              </p>
-              <div className="space-y-2 text-xs text-muted-foreground dark:text-gray-400">
-                <div className="flex flex-col gap-1 p-2 bg-background dark:bg-gray-600 rounded">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium dark:text-gray-200">Username:</span>
-                    <span className="text-xs">Admin</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium dark:text-gray-200">Password:</span>
-                    <span className="text-xs">Advensys2025</span>
-                  </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="font-medium dark:text-gray-200">Role:</span>
-                    <span className="text-xs opacity-70">SUPER_ADMIN</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
