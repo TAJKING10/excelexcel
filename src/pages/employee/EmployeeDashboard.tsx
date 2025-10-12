@@ -369,18 +369,6 @@ export function EmployeeDashboard() {
                             <FileText className="h-4 w-4 mr-2" />
                             {t('payslips.annualTitle')}
                           </Button>
-                          <Button
-                            className="w-full"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
-                              navigate(`${basePath}/individuals/${individual.id}`);
-                            }}
-                          >
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                            {t('dashboard.viewDetails')}
-                          </Button>
                         </div>
                       </CardContent>
                     </Card>
