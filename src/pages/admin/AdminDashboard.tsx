@@ -216,7 +216,7 @@ export function AdminDashboard() {
           icon={UserCircle}
           title={t('nav.individuals')}
           value={totalIndividuals}
-          subtitle={t('dashboard.totalIndividualsManaged', 'Total individuals managed')}
+          subtitle={t('dashboard.totalIndividualsManaged')}
           onClick={() => navigate('/admin/individuals')}
         />
         <StatCard
@@ -264,7 +264,7 @@ export function AdminDashboard() {
         {/* Individuals Growth */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('dashboard.individualsGrowth', 'Croissance des Individus')}</CardTitle>
+            <CardTitle>{t('dashboard.individualsGrowth')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -277,7 +277,7 @@ export function AdminDashboard() {
                 <Bar
                   dataKey="count"
                   fill="#8b5cf6"
-                  name={t('nav.individuals', 'Individus')}
+                  name={t('nav.individuals')}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -336,7 +336,7 @@ export function AdminDashboard() {
                         onClick={() => navigate(`/admin/individuals/${individual.id}/annual-payslip`)}
                       >
                         <FileText className="h-4 w-4 mr-2" />
-                        {t('payslips.annualTitle', 'Fiche de paie annuelle')}
+                        {t('payslips.annualTitle')}
                       </Button>
                     </TableCell>
                   </TableRow>

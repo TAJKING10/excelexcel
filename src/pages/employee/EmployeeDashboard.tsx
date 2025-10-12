@@ -194,7 +194,7 @@ export function EmployeeDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{accessibleIndividuals.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {t('dashboard.totalIndividuals', 'Total individuals managed')}
+              {t('dashboard.totalIndividuals')}
             </p>
           </CardContent>
         </Card>
@@ -367,7 +367,7 @@ export function EmployeeDashboard() {
                             }}
                           >
                             <FileText className="h-4 w-4 mr-2" />
-                            {t('payslips.annualTitle', 'Fiche de Paie Annuelle')}
+                            {t('payslips.annualTitle')}
                           </Button>
                           <Button
                             className="w-full"
@@ -379,7 +379,7 @@ export function EmployeeDashboard() {
                             }}
                           >
                             <ArrowRight className="ml-2 h-4 w-4" />
-                            {t('dashboard.viewDetails', 'View Details')}
+                            {t('dashboard.viewDetails')}
                           </Button>
                         </div>
                       </CardContent>

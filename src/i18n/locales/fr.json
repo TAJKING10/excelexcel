@@ -84,7 +84,10 @@
     "currentMonth": "mois en cours",
     "payslipsPerMonth": "Fiches de paie par mois",
     "createdAt": "Créé le",
-    "companiesAnalytics": "Analytique des entreprises"
+    "companiesAnalytics": "Analytique des entreprises",
+    "individualsGrowth": "Croissance des Individus",
+    "totalIndividualsManaged": "Total des individus gérés",
+    "totalIndividuals": "Total des individus"
   },
   "common": {
     "total": "total",

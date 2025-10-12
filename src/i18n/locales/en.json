@@ -84,7 +84,10 @@
     "currentMonth": "current month",
     "payslipsPerMonth": "Payslips per month",
     "createdAt": "Created at",
-    "companiesAnalytics": "Companies Analytics"
+    "companiesAnalytics": "Companies Analytics",
+    "individualsGrowth": "Individuals Growth",
+    "totalIndividualsManaged": "Total individuals managed",
+    "totalIndividuals": "Total individuals"
   },
   "common": {
     "total": "total",
