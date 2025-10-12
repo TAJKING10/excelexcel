@@ -1,5 +1,7 @@
-# Redirect www to non-www (HTTPS)
+# Enable Rewrite Engine
 RewriteEngine On
+
+# Redirect www to non-www (HTTPS)
 RewriteCond %{HTTP_HOST} ^www\.payslip\.advensys-conseil\.lu$ [NC]
 RewriteRule ^(.*)$ https://payslip.advensys-conseil.lu/$1 [R=301,L]
 
@@ -7,11 +9,12 @@ RewriteRule ^(.*)$ https://payslip.advensys-conseil.lu/$1 [R=301,L]
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# React Router - Handle all routes
+# React Router - Handle all routes (FIXED FOR /payslip/ FOLDER)
+RewriteBase /
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-l
-RewriteRule . /index.html [L]
+RewriteRule ^(.*)$ /index.html [QSA,L]
 
 # Security headers
 <IfModule mod_headers.c>
@@ -19,11 +22,6 @@ RewriteRule . /index.html [L]
   Header set X-Frame-Options "SAMEORIGIN"
   Header set X-XSS-Protection "1; mode=block"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
-
-  # Allow Supabase API calls
-  Header set Access-Control-Allow-Origin "https://ozkgkgqahgwuwmohslsr.supabase.co"
-  Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-  Header set Access-Control-Allow-Headers "Content-Type, Authorization"
 </IfModule>
 
 # Enable compression
