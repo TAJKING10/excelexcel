@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useDataStore } from '@/stores/data';
 import { formatCurrency } from '@/lib/luxembourgPayroll';
 import { useTranslation } from 'react-i18next';
-import { Users, TrendingUp, DollarSign, FileText } from 'lucide-react';
+import { Users, TrendingUp, DollarSign, FileText, FileSpreadsheet } from 'lucide-react';
 import type { CompanyAnnualAnalysis } from '@/types';
 
 interface CompanyAnnualAnalyticsProps {
@@ -237,7 +237,8 @@ export function CompanyAnnualAnalytics({ companyId, defaultYear }: CompanyAnnual
                             window.location.href = `/employee/${payslip.employeeId}/payslip/${selectedYear}`;
                           }}
                         >
-                          Voir
+                          <FileSpreadsheet className="mr-2 h-4 w-4" />
+                          Fiche de Paie Annuelle
                         </Button>
                       </TableCell>
                     </TableRow>
