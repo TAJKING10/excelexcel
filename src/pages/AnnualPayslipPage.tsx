@@ -10,6 +10,9 @@ import { Download, ArrowLeft, Edit, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AnnualPayslip } from '@/types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { formatCurrency } from '@/lib/luxembourgPayroll';
 
 export default function AnnualPayslipPage() {
   const { employeeId, individualId } = useParams<{ employeeId?: string; individualId?: string }>();
@@ -67,13 +70,142 @@ export default function AnnualPayslipPage() {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   const handleExportPDF = () => {
-    // TODO: Implement PDF export
-    alert('PDF export coming soon!');
-  };
+    if (!annualPayslip) return;
 
-  const handleExportExcel = () => {
-    // TODO: Implement Excel export
-    alert('Excel export coming soon!');
+    const doc = new jsPDF('landscape');
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Title
+    doc.setFontSize(18);
+    doc.text(`FICHE DE PAIE ANNUELLE ${annualPayslip.year}`, pageWidth / 2, 15, { align: 'center' });
+
+    // Employee Info
+    doc.setFontSize(10);
+    doc.text(`Employé: ${annualPayslip.employee.lastName} ${annualPayslip.employee.firstName}`, 14, 25);
+    doc.text(`Matricule: ${annualPayslip.employee.matricule || '-'}`, 14, 30);
+    doc.text(`Classe: ${annualPayslip.employee.class}`, 14, 35);
+    doc.text(`Date d'embauche: ${new Date(annualPayslip.employee.hireDate).toLocaleDateString('fr-LU')}`, 14, 40);
+
+    doc.text(`Entreprise: ${annualPayslip.company.name}`, pageWidth - 14, 25, { align: 'right' });
+    doc.text(`${annualPayslip.company.address}`, pageWidth - 14, 30, { align: 'right' });
+    doc.text(`${annualPayslip.company.city}`, pageWidth - 14, 35, { align: 'right' });
+
+    // Monthly Breakdown Table
+    const monthlyHeaders = [
+      ['Mois', 'Jours', 'Stat.', 'Classe', 'Rém. Base', 'Brut Mens.', 'Cotisable', 'Maladie', 'Pension', 'Déd.', 'Imposable', 'Impôts', 'CI-CO2', 'CIS', 'CISSM', 'Net']
+    ];
+
+    const monthlyBody = annualPayslip.monthlyData.map(month => [
+      `${month.monthName.substring(0, 3)} ${month.days}`,
+      month.daysImposable,
+      month.status.substring(0, 4),
+      month.taxClass,
+      formatCurrency(month.earnings.remunerationBase),
+      formatCurrency(month.earnings.grossMonthly),
+      formatCurrency(month.earnings.cotisable),
+      formatCurrency(month.employeeContrib.maladie),
+      formatCurrency(month.employeeContrib.pension),
+      formatCurrency(month.employeeContrib.deductions),
+      formatCurrency(month.earnings.imposable),
+      formatCurrency(month.employeeContrib.incomeTax),
+      formatCurrency(month.employeeContrib.ciCo2),
+      formatCurrency(month.employeeContrib.cis),
+      formatCurrency(month.employeeContrib.cissm),
+      formatCurrency(month.netPay)
+    ]);
+
+    const totals = annualPayslip.annualTotals;
+    monthlyBody.push([
+      'TOTAL', '', '', '',
+      formatCurrency(totals.earnings.remunerationBase),
+      formatCurrency(totals.earnings.grossMonthly),
+      formatCurrency(totals.earnings.cotisable),
+      formatCurrency(totals.employeeContrib.maladie),
+      formatCurrency(totals.employeeContrib.pension),
+      formatCurrency(totals.employeeContrib.deductions),
+      formatCurrency(totals.earnings.imposable),
+      formatCurrency(totals.employeeContrib.incomeTax),
+      formatCurrency(totals.employeeContrib.ciCo2),
+      formatCurrency(totals.employeeContrib.cis),
+      formatCurrency(totals.employeeContrib.cissm),
+      formatCurrency(totals.netPay)
+    ]);
+
+    autoTable(doc, {
+      head: monthlyHeaders,
+      body: monthlyBody,
+      startY: 45,
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 1 },
+      headStyles: { fillColor: [66, 139, 202], fontStyle: 'bold' },
+      footStyles: { fillColor: [240, 240, 240], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 18 },
+        1: { cellWidth: 12 },
+        2: { cellWidth: 12 },
+        3: { cellWidth: 12 },
+      },
+    });
+
+    // Add new page for employer contributions
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.text('Cotisations Patronales', 14, 15);
+
+    const employerHeaders = [['Mois', 'Maladie', 'Pension', 'Santé', 'Accident', 'Total Sécurité Sociale']];
+    const employerBody = annualPayslip.monthlyData.map(month => {
+      const employerMaladie = month.employeeContrib.maladie;
+      const employerPension = month.employeeContrib.pension;
+      const employerSante = month.earnings.cotisable * 0.0011;
+      const employerAccident = month.earnings.cotisable * 0.0075;
+      const total = employerMaladie + employerPension + employerSante + employerAccident;
+
+      return [
+        month.monthName,
+        formatCurrency(employerMaladie),
+        formatCurrency(employerPension),
+        formatCurrency(employerSante),
+        formatCurrency(employerAccident),
+        formatCurrency(total)
+      ];
+    });
+
+    employerBody.push([
+      'TOTAL ANNUEL',
+      formatCurrency(totals.employerContrib.maladie),
+      formatCurrency(totals.employerContrib.pension),
+      formatCurrency(totals.employerContrib.sante),
+      formatCurrency(totals.employerContrib.accident),
+      formatCurrency(totals.employerContrib.socialSecurityTotal)
+    ]);
+
+    autoTable(doc, {
+      head: employerHeaders,
+      body: employerBody,
+      startY: 25,
+      theme: 'grid',
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [66, 139, 202], fontStyle: 'bold' },
+      footStyles: { fillColor: [240, 240, 240], fontStyle: 'bold' },
+    });
+
+    // Summary section
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.text('Récapitulatif Annuel', 14, finalY);
+
+    doc.setFontSize(10);
+    let yPos = finalY + 10;
+    doc.text(`Brut Total: ${formatCurrency(annualPayslip.recapitulation.totalGrossSalary)}`, 14, yPos);
+    doc.text(`Net Total: ${formatCurrency(annualPayslip.recapitulation.totalNetSalary)}`, 14, yPos + 6);
+    doc.text(`Cotisations Employé: ${formatCurrency(annualPayslip.recapitulation.totalEmployeeContributions)}`, 14, yPos + 12);
+    doc.text(`Cotisations Employeur: ${formatCurrency(annualPayslip.recapitulation.totalEmployerContributions)}`, 14, yPos + 18);
+    doc.text(`Impôts: ${formatCurrency(annualPayslip.recapitulation.totalTaxes)}`, 14, yPos + 24);
+    doc.text(`Heures Travaillées: ${annualPayslip.recapitulation.totalHoursWorked}h`, 14, yPos + 30);
+
+    // Download
+    const filename = `Fiche_Paie_Annuelle_${annualPayslip.employee.lastName}_${annualPayslip.year}.pdf`;
+    doc.save(filename);
   };
 
   // Early return with visible content for debugging
@@ -234,11 +366,6 @@ export default function AnnualPayslipPage() {
               {t('common.edit', 'Modifier')}
             </Button>
           )}
-
-          <Button variant="outline" onClick={handleExportExcel}>
-            <Download className="mr-2 h-4 w-4" />
-            {t('common.excel', 'Excel')}
-          </Button>
 
           <Button onClick={handleExportPDF}>
             <Download className="mr-2 h-4 w-4" />
