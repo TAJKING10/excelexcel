@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDataStore } from '@/stores/data';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/luxembourgPayroll';
 import { useTranslation } from 'react-i18next';
 import { Users, TrendingUp, DollarSign, FileText, FileSpreadsheet } from 'lucide-react';
@@ -17,6 +19,8 @@ interface CompanyAnnualAnalyticsProps {
 
 export function CompanyAnnualAnalytics({ companyId, defaultYear }: CompanyAnnualAnalyticsProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(defaultYear || currentYear);
   const getCompanyAnnualAnalysis = useDataStore((state) => state.getCompanyAnnualAnalysis);
@@ -233,8 +237,9 @@ export function CompanyAnnualAnalytics({ companyId, defaultYear }: CompanyAnnual
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            // Navigate to individual payslip view
-                            window.location.href = `/employee/${payslip.employeeId}/payslip/${selectedYear}`;
+                            // Determine the correct path based on user role
+                            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                            navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
                           }}
                         >
                           <FileSpreadsheet className="mr-2 h-4 w-4" />
