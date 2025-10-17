@@ -34,6 +34,7 @@ import { Profile } from './pages/employee/Profile';
 
 // Annual Payslips
 import AnnualPayslipPage from './pages/AnnualPayslipPage';
+import MonthlyPayslipPage from './pages/MonthlyPayslipPage';
 
 // Auth
 import LoginPage from './pages/LoginPage';
@@ -96,8 +97,10 @@ function AppRoutes() {
         <Route path="individuals/:individualId/payslip" element={<IndividualPayslip />} />
         <Route path="individuals/:individualId/payslip/:payslipId" element={<IndividualPayslip />} />
         <Route path="individuals/:individualId/annual-payslip" element={<AnnualPayslipPage />} />
+        <Route path="individuals/:individualId/monthly-payslip" element={<MonthlyPayslipPage />} />
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/:employeeId/annual-payslip" element={<AnnualPayslipPage />} />
+        <Route path="employees/:employeeId/monthly-payslip" element={<MonthlyPayslipPage />} />
         <Route path="payslips" element={<PayslipList />} />
         <Route path="payslips/annual" element={<AnnualPayslipList />} />
         <Route path="payslips/create" element={<CreatePayslip />} />
@@ -123,7 +126,9 @@ function AppRoutes() {
         <Route path="companies/:companyId" element={<CompanyDetail />} />
         <Route path="individuals/:individualId" element={<IndividualDetail />} />
         <Route path="individuals/:individualId/annual-payslip" element={<AnnualPayslipPage />} />
+        <Route path="individuals/:individualId/monthly-payslip" element={<MonthlyPayslipPage />} />
         <Route path="employees/:employeeId/annual-payslip" element={<AnnualPayslipPage />} />
+        <Route path="employees/:employeeId/monthly-payslip" element={<MonthlyPayslipPage />} />
         <Route path="payslips" element={<Payslips />} />
         <Route path="profile" element={<Profile />} />
         <Route path="payslips/create" element={<CreatePayslip />} />

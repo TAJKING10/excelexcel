@@ -16,7 +16,7 @@ import { PayslipList } from '@/components/payslips/PayslipList';
 import { CompanyAnalytics } from '@/components/analytics/CompanyAnalytics';
 import { CompanyAnnualAnalytics } from '@/components/analytics/CompanyAnnualAnalytics';
 import { LuxembourgPayslipDetail } from '@/components/payslips/LuxembourgPayslipDetail';
-import { ArrowLeft, Plus, Users, Building2, CreditCard, TrendingUp, MoreHorizontal, Edit, Trash2, RotateCcw, Download, FileSpreadsheet, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Building2, CreditCard, TrendingUp, MoreHorizontal, Edit, Trash2, RotateCcw, Download, FileSpreadsheet, Eye, Calendar } from 'lucide-react';
 import { formatCurrency } from '@/lib/luxembourgPayroll';
 import { generatePayslipPDF } from '@/lib/pdf';
 import { Badge } from '@/components/ui/badge';
@@ -540,6 +540,13 @@ function EmployeeListFiltered({ companyId }: { companyId: string }) {
                           <FileSpreadsheet size={16} className="mr-2" />
                           {t('payslips.annualTitle', 'Fiche de Paie Annuelle')}
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                          navigate(`${basePath}/employees/${employee.id}/monthly-payslip`);
+                        }}>
+                          <Calendar size={16} className="mr-2" />
+                          Bulletin de Salaire Mensuel
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEdit(employee)}>
                           <Edit size={16} className="mr-2" />
                           {t('employees.edit')}
@@ -726,33 +733,45 @@ function PayslipListFiltered({ companyId }: { companyId: string }) {
                     <TableCell>{formatCurrency(payslip.recapitulation?.totalGrossSalary || 0)}</TableCell>
                     <TableCell>{formatCurrency(payslip.recapitulation?.totalNetSalary || 0)}</TableCell>
                     <TableCell>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => {
-                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
-                          navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
-                        }}>
-                          <Eye size={16} className="mr-2" />
-                          {t('common.view', 'Voir')}
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => {
-                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
-                          navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
-                        }}>
-                          <FileSpreadsheet size={16} className="mr-2" />
-                          {t('payslips.annualTitle', 'Fiche de Paie Annuelle')}
-                        </Button>
-                        {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteClick(payslip.id, payslip.employeeId, payslip.year)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 size={16} className="mr-2" />
-                            {t('common.delete', 'Supprimer')}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal size={16} />
                           </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => {
+                            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                            navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
+                          }}>
+                            <Eye size={16} className="mr-2" />
+                            {t('common.view', 'Voir')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                            navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
+                          }}>
+                            <FileSpreadsheet size={16} className="mr-2" />
+                            {t('payslips.annualTitle', 'Fiche de Paie Annuelle')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                            navigate(`${basePath}/employees/${payslip.employeeId}/monthly-payslip`);
+                          }}>
+                            <Calendar size={16} className="mr-2" />
+                            Bulletin de Salaire Mensuel
+                          </DropdownMenuItem>
+                          {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleDeleteClick(payslip.id, payslip.employeeId, payslip.year)}
+                            >
+                              <Trash2 size={16} className="mr-2" />
+                              {t('common.delete', 'Supprimer')}
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

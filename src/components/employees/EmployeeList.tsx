@@ -35,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Edit, Trash2, RotateCcw, Filter, FileText } from 'lucide-react';
+import { Plus, MoreHorizontal, Edit, Trash2, RotateCcw, Filter, FileText, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Employee } from '@/types';
 import { useNavigate } from 'react-router-dom';
@@ -439,6 +439,13 @@ export function EmployeeList() {
                           >
                             <FileText size={16} className="mr-2" />
                             Fiche de Paie Annuelle
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-foreground hover:bg-muted"
+                            onClick={() => navigate(`/admin/employees/${employee.id}/monthly-payslip`)}
+                          >
+                            <Calendar size={16} className="mr-2" />
+                            Bulletin de Salaire Mensuel
                           </DropdownMenuItem>
                           {user?.role === 'SUPER_ADMIN' && (
                             <>

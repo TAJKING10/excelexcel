@@ -8,10 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileSpreadsheet, Eye, Filter, RefreshCw } from 'lucide-react';
+import { FileSpreadsheet, Eye, Filter, RefreshCw, MoreHorizontal, Calendar, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/luxembourgPayroll';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function AnnualPayslipList() {
   const navigate = useNavigate();
@@ -271,17 +277,36 @@ export function AnnualPayslipList() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
-                          navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
-                        }}
-                      >
-                        <Eye size={16} className="mr-2" />
-                        Voir
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreHorizontal size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                              navigate(`${basePath}/employees/${payslip.employeeId}/annual-payslip`);
+                            }}
+                          >
+                            <FileText size={16} className="mr-2" />
+                            Fiche de Paie Annuelle
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '';
+                              navigate(`${basePath}/employees/${payslip.employeeId}/monthly-payslip`);
+                            }}
+                          >
+                            <Calendar size={16} className="mr-2" />
+                            Bulletin de Salaire Mensuel
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
