@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/stores/data';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Download, Calendar, Calculator, Edit2, Save } from 'lucide-react';
+import { ArrowLeft, Download, Calendar, Calculator, Edit2, Save, Check, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -81,6 +82,7 @@ export default function MonthlyPayslipPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -88,6 +90,9 @@ export default function MonthlyPayslipPage() {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [autoCalculate, setAutoCalculate] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const employees = useDataStore((state) => state.employees);
   const individuals = useDataStore((state) => state.individuals);
@@ -196,58 +201,122 @@ export default function MonthlyPayslipPage() {
   const calculated = calculatePayslip();
 
   const handleInputChange = (field: keyof PayslipData, value: any) => {
+    if (!isEditMode) return; // Only allow changes in edit mode
     setPayslipData(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
   };
 
-  const handleSave = () => {
-    // Here you can add logic to save the payslip data to your backend/database
-    // For now, we'll just show a success message
-    alert('Fiche de paie sauvegardée avec succès!');
-    console.log('Saving payslip data:', payslipData);
-    // You can add: updateMonthlyPayslip(personId, selectedYear, selectedMonth, payslipData);
+  const handleEditToggle = () => {
+    if (isEditMode && hasUnsavedChanges) {
+      // Ask for confirmation before canceling
+      const confirmed = window.confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment annuler ?');
+      if (!confirmed) return;
+      setHasUnsavedChanges(false);
+    }
+    setIsEditMode(!isEditMode);
   };
+
+  const handleSave = async () => {
+    if (!personId) return;
+
+    setIsSaving(true);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Here you can add logic to save the payslip data to your backend/database
+      console.log('Saving payslip data:', {
+        personId,
+        year: selectedYear,
+        month: selectedMonth,
+        data: payslipData
+      });
+
+      // You can add: await updateMonthlyPayslip(personId, selectedYear, selectedMonth, payslipData);
+
+      setHasUnsavedChanges(false);
+      toast({
+        title: "✓ Sauvegarde réussie",
+        description: `Fiche de paie de ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear} sauvegardée.`,
+        duration: 3000,
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur de sauvegarde",
+        description: "Une erreur s'est produite lors de la sauvegarde. Veuillez réessayer.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Keyboard shortcut for save (Ctrl+S / Cmd+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges && !isSaving) {
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hasUnsavedChanges, isSaving, payslipData]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Component for editable calculated value - shows as input in manual mode
   const EditableValue = ({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
-    // In auto-calculate mode, show as read-only text
-    if (autoCalculate) {
+    // If not in edit mode or in auto-calculate mode, show as read-only text
+    if (!isEditMode || autoCalculate) {
       return <span className={className}>{value.toFixed(2)} €</span>;
     }
 
-    // In manual mode, always show as editable input field
+    // In edit mode with manual calculation, show as editable input field
     return (
       <Input
         type="number"
         step="0.01"
         value={payslipData[manualField] !== undefined ? payslipData[manualField] as number : value}
         onChange={(e) => handleInputChange(manualField, parseFloat(e.target.value) || 0)}
-        className={`h-6 w-24 text-right text-xs font-medium ${className}`}
+        className={`h-7 w-28 text-right text-xs font-medium border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30 ${className}`}
       />
     );
   };
 
   // Component for editable input fields (hours, rates)
   const EditableInput = ({ field, value, type = "number", step = "1", className = "h-6 w-16 text-right text-xs" }: { field: keyof PayslipData; value: number | string; type?: string; step?: string; className?: string }) => {
-    if (autoCalculate) {
-      return (
-        <Input
-          type={type}
-          step={step}
-          value={value}
-          onChange={(e) => handleInputChange(field, type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value)}
-          className={className}
-        />
-      );
+    // If not in edit mode, show as read-only text
+    if (!isEditMode) {
+      return <span className={`${className} inline-block text-right`}>{value}</span>;
     }
 
-    // In manual mode, all inputs are editable
+    const baseInputClass = autoCalculate
+      ? "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+      : "border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30";
+
     return (
       <Input
         type={type}
         step={step}
         value={value}
         onChange={(e) => handleInputChange(field, type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value)}
-        className={className}
+        className={`${className} ${baseInputClass} transition-colors`}
       />
     );
   };
@@ -300,71 +369,163 @@ export default function MonthlyPayslipPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />Retour
-          </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-              <Calendar className="h-6 w-6 md:h-8 md:w-8" />
-              DÉCOMPTE SALAIRE
-            </h1>
-            <p className="text-sm text-muted-foreground">{person.firstName} {person.lastName}</p>
+      {/* Enhanced Header */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-start gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mt-1">
+              <ArrowLeft className="mr-2 h-4 w-4" />Retour
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+                <Calendar className="h-7 w-7 md:h-8 md:w-8 text-blue-600" />
+                DÉCOMPTE SALAIRE
+              </h1>
+              <p className="text-base md:text-lg font-semibold text-foreground mt-1">
+                {person.firstName} {person.lastName}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {company?.name || 'Groupe Advensys Luxembourg S.A'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 items-center flex-wrap">
+            {isEditMode && (
+              <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border border-blue-200 dark:border-blue-800 px-3 py-2 rounded-lg shadow-sm">
+                <Calculator className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-xs font-semibold text-blue-900 dark:text-blue-100">Auto Calcul</span>
+                <Switch
+                  checked={autoCalculate}
+                  onCheckedChange={setAutoCalculate}
+                  className="data-[state=checked]:bg-blue-600"
+                />
+              </div>
+            )}
+            <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+              <SelectTrigger className="w-36 h-10"><SelectValue /></SelectTrigger>
+              <SelectContent>{MONTHS.map((month) => (
+                <SelectItem key={month.value} value={month.value.toString()}>{month.label}</SelectItem>
+              ))}</SelectContent>
+            </Select>
+            <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+              <SelectTrigger className="w-28 h-10"><SelectValue /></SelectTrigger>
+              <SelectContent>{years.map((year) => (
+                <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+              ))}</SelectContent>
+            </Select>
+
+            {!isEditMode ? (
+              <Button
+                onClick={handleEditToggle}
+                size="default"
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md transition-all"
+              >
+                <Edit2 className="mr-2 h-4 w-4" />
+                Modifier
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={handleSave}
+                  size="default"
+                  disabled={!hasUnsavedChanges || isSaving}
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Enregistrement...
+                    </>
+                  ) : hasUnsavedChanges ? (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Sauvegarder
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Sauvegardé
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleEditToggle}
+                  size="default"
+                  variant="outline"
+                  className="shadow-sm border-2"
+                >
+                  Annuler
+                </Button>
+              </>
+            )}
+
+            <Button onClick={handleExportPDF} size="default" variant="outline" className="shadow-sm">
+              <Download className="mr-2 h-4 w-4" />PDF
+            </Button>
           </div>
         </div>
 
-        <div className="flex gap-2 items-center flex-wrap">
-          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-md">
-            <Calculator className="h-4 w-4" />
-            <span className="text-xs font-medium">Auto Calcul:</span>
-            <Switch
-              checked={autoCalculate}
-              onCheckedChange={setAutoCalculate}
-            />
+        {hasUnsavedChanges && (
+          <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-md border border-amber-200 dark:border-amber-800">
+            <span className="h-2 w-2 bg-amber-600 dark:bg-amber-400 rounded-full animate-pulse"></span>
+            Modifications non sauvegardées • Appuyez sur Ctrl+S pour sauvegarder rapidement
           </div>
-          <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>{MONTHS.map((month) => (
-              <SelectItem key={month.value} value={month.value.toString()}>{month.label}</SelectItem>
-            ))}</SelectContent>
-          </Select>
-          <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-            <SelectContent>{years.map((year) => (
-              <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-            ))}</SelectContent>
-          </Select>
-          <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-            <Save className="mr-2 h-4 w-4" />Sauvegarder
-          </Button>
-          <Button onClick={handleExportPDF} size="sm" variant="outline">
-            <Download className="mr-2 h-4 w-4" />PDF
-          </Button>
-        </div>
+        )}
       </div>
 
-      {!autoCalculate && (
-        <Card className="bg-orange-500/10 dark:bg-orange-500/20 border-orange-500/30">
-          <CardContent className="py-3">
-            <p className="text-center text-xs md:text-sm font-semibold text-orange-800 dark:text-orange-200 flex items-center justify-center gap-2">
-              <Edit2 className="h-4 w-4" />
-              MODE MODIFICATION ACTIVÉ - Toutes les valeurs calculées sont modifiables directement
+      {isEditMode && !autoCalculate && (
+        <Card className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 dark:from-orange-500/20 dark:to-amber-500/20 border-orange-400/40 shadow-sm">
+          <CardContent className="py-4">
+            <p className="text-center text-sm md:text-base font-semibold text-orange-900 dark:text-orange-100 flex items-center justify-center gap-3">
+              <Edit2 className="h-5 w-5 animate-pulse" />
+              MODE MODIFICATION MANUELLE ACTIVÉ
+              <span className="text-xs font-normal bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded">
+                Toutes les valeurs sont modifiables
+              </span>
             </p>
           </CardContent>
         </Card>
       )}
 
-      <div className="text-xs md:text-sm text-muted-foreground bg-muted/30 p-2 rounded">
-        Période: {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear} • Montants en Euros
+      {isEditMode && autoCalculate && (
+        <Card className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-indigo-500/20 border-blue-400/40 shadow-sm">
+          <CardContent className="py-4">
+            <p className="text-center text-sm md:text-base font-semibold text-blue-900 dark:text-blue-100 flex items-center justify-center gap-3">
+              <Calculator className="h-5 w-5" />
+              MODE ÉDITION AVEC CALCUL AUTO
+              <span className="text-xs font-normal bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
+                Les valeurs sont calculées automatiquement
+              </span>
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex items-center justify-between text-sm bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <span className="font-semibold text-blue-900 dark:text-blue-100">
+            Période: {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
+          </span>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          Montants en Euros (€)
+        </span>
       </div>
 
       {/* Employee and Company Info */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base md:text-lg">Informations Employé</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
+        <Card className="shadow-sm border-l-4 border-l-blue-500">
+          <CardHeader className="pb-3 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-950/30">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">👤</span>
+              </div>
+              Informations Employé
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-4">
             {[
               ['N° Salarié', 'employeeNumber', 'text'],
               ['Indice', 'indice', 'text'],
@@ -373,17 +534,24 @@ export default function MonthlyPayslipPage() {
               ['Matricule assuré', 'matriculeAssure', 'text'],
               ['Matricule employeur', 'matriculeEmployeur', 'text'],
             ].map(([label, field, type]) => (
-              <div key={field} className="grid grid-cols-2 gap-2 items-center">
-                <Label className="text-xs">{label}:</Label>
-                <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as string} type={type as string} className="h-7 text-xs" />
+              <div key={field} className="grid grid-cols-2 gap-3 items-center">
+                <Label className="text-xs font-semibold text-muted-foreground">{label}:</Label>
+                <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as string} type={type as string} className="h-8 text-xs" />
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base md:text-lg">Informations Entreprise</CardTitle></CardHeader>
-          <CardContent className="space-y-1">
+        <Card className="shadow-sm border-l-4 border-l-green-500">
+          <CardHeader className="pb-3 bg-gradient-to-r from-green-50/50 to-transparent dark:from-green-950/30">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">🏢</span>
+              </div>
+              Informations Entreprise
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-4">
             {[
               ['Entreprise', company?.name || 'Groupe Advensys Luxembourg S.A'],
               ['Adresse', company?.address || 'Duarrefstrooss 49'],
@@ -392,9 +560,9 @@ export default function MonthlyPayslipPage() {
               ['Pays', company?.country || 'Luxembourg'],
               ['Nom complet', `${person.firstName} ${person.lastName}`],
             ].map(([label, value]) => (
-              <div key={label} className="flex justify-between py-1">
-                <span className="text-xs text-muted-foreground">{label}:</span>
-                <span className="text-xs font-medium">{value}</span>
+              <div key={label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
+                <span className="text-xs font-semibold text-muted-foreground">{label}:</span>
+                <span className="text-xs font-medium text-foreground">{value}</span>
               </div>
             ))}
           </CardContent>
@@ -402,9 +570,12 @@ export default function MonthlyPayslipPage() {
       </div>
 
       {/* Main Payslip Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base md:text-lg">
+      <Card className="shadow-md">
+        <CardHeader className="pb-3 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950 dark:to-blue-950 border-b">
+          <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+              <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">💰</span>
+            </div>
             Bulletin de Salaire - {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
           </CardTitle>
         </CardHeader>
@@ -645,29 +816,45 @@ export default function MonthlyPayslipPage() {
 
       {/* Additional Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Congés (H)</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
+        <Card className="shadow-sm border-l-4 border-l-purple-500">
+          <CardHeader className="pb-3 bg-gradient-to-r from-purple-50/50 to-transparent dark:from-purple-950/30">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <span className="text-sm font-bold text-purple-600 dark:text-purple-400">🏖️</span>
+              </div>
+              Congés (H)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-4">
             {[
               ['Légaux', 'legalLeave'],
               ['Report', 'leaveReport'],
               ['Pris', 'leaveTaken'],
             ].map(([label, field]) => (
-              <div key={field} className="grid grid-cols-2 gap-2">
-                <Label className="text-xs">{label}:</Label>
-                <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} className="h-7 text-xs" />
+              <div key={field} className="grid grid-cols-2 gap-3 items-center">
+                <Label className="text-xs font-semibold text-muted-foreground">{label}:</Label>
+                <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} className="h-8 text-xs" />
               </div>
             ))}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
-              <Label className="text-xs font-bold">Solde:</Label>
-              <div className="text-right font-bold text-sm">{calculated.leaveSolde}</div>
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t-2 border-purple-200 dark:border-purple-800 mt-3">
+              <Label className="text-sm font-bold text-purple-900 dark:text-purple-100">Solde:</Label>
+              <div className="text-right font-bold text-base text-purple-600 dark:text-purple-400">
+                {calculated.leaveSolde} H
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Rémunération & Fiche d'impôts</CardTitle></CardHeader>
-          <CardContent className="space-y-1">
+        <Card className="shadow-sm border-l-4 border-l-indigo-500">
+          <CardHeader className="pb-3 bg-gradient-to-r from-indigo-50/50 to-transparent dark:from-indigo-950/30">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">📊</span>
+              </div>
+              Rémunération & Fiche d'impôts
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-4">
             {[
               ['Salaire mensuel', `${calculated.totalBrut.toFixed(2)} €`],
               ['Heures', payslipData.hoursWorked.toString()],
@@ -676,9 +863,9 @@ export default function MonthlyPayslipPage() {
               ['Classe', '1'],
               ['Taux', '-'],
             ].map(([label, value]) => (
-              <div key={label} className="flex justify-between py-1">
-                <span className="text-xs text-muted-foreground">{label}:</span>
-                <span className="text-xs font-medium">{value}</span>
+              <div key={label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
+                <span className="text-xs font-semibold text-muted-foreground">{label}:</span>
+                <span className="text-xs font-medium text-foreground">{value}</span>
               </div>
             ))}
           </CardContent>
@@ -686,10 +873,12 @@ export default function MonthlyPayslipPage() {
       </div>
 
       {/* Footer note */}
-      <Card className="bg-yellow-500/10 dark:bg-yellow-500/20 border-yellow-500/30">
-        <CardContent className="py-4">
-          <p className="text-center text-xs md:text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+      <Card className="bg-gradient-to-r from-yellow-500/10 to-amber-500/10 dark:from-yellow-500/20 dark:to-amber-500/20 border-yellow-500/40 shadow-sm">
+        <CardContent className="py-5">
+          <p className="text-center text-sm md:text-base font-bold text-yellow-900 dark:text-yellow-100 flex items-center justify-center gap-3">
+            <span className="text-2xl">⚠️</span>
             CONSERVEZ CE BULLETIN DE PAIE SANS LIMITATION DE DURÉE
+            <span className="text-2xl">⚠️</span>
           </p>
         </CardContent>
       </Card>
