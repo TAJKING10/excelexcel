@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,41 +30,32 @@ const MONTHS = [
 
 // Social contributions rates (Luxembourg)
 const RATES = {
-  assuranceMaladie: 0.028, // 2.8%
-  majoration: 0.0025, // 0.25%
-  assurancePension: 0.08, // 8%
-  assuranceDependance: 0.014, // 1.4%
-  dependanceThreshold: 642.73, // Threshold for dependance calculation
+  assuranceMaladie: 0.028,
+  majoration: 0.0025,
+  assurancePension: 0.08,
+  assuranceDependance: 0.014,
+  dependanceThreshold: 642.73,
 };
 
 interface PayslipData {
-  // Employee info
   employeeNumber: string;
   indice: string;
   emploi: string;
   dateEntree: string;
   matriculeAssure: string;
   matriculeEmployeur: string;
-
-  // Working hours
   hoursWorked: number;
   hourlyRate: number;
   holidayHours: number;
   sickLeaveHours: number;
   publicHolidayHours: number;
-
-  // Deductions (manual inputs)
   fd: number;
   ac: number;
   ffo: number;
   fds: number;
-  impot: number; // Tax (manual)
-
-  // Other
+  impot: number;
   chequeRepas: number;
   avanceSalaire: number;
-
-  // Leave tracking
   legalLeave: number;
   leaveReport: number;
   leaveTaken: number;
@@ -88,12 +79,9 @@ export default function MonthlyPayslipPage() {
   const companies = useDataStore((state) => state.companies);
 
   const personId = employeeId || individualId;
-  const isIndividual = !!individualId;
-
   const employee = employees.find((e) => e.id === personId);
   const individual = individuals.find((i) => i.id === personId);
   const person = employee || individual;
-
   const company = person ? companies.find((c) => c.id === person.companyId) : null;
 
   const [payslipData, setPayslipData] = useState<PayslipData>({
@@ -120,148 +108,67 @@ export default function MonthlyPayslipPage() {
     leaveTaken: 16,
   });
 
-  // Calculate all values based on formulas
   const calculatePayslip = () => {
-    const { hoursWorked, hourlyRate, holidayHours, sickLeaveHours, publicHolidayHours } = payslipData;
-
-    // Appointement (Base salary)
+    const { hoursWorked, hourlyRate, publicHolidayHours } = payslipData;
     const appointement = hoursWorked * hourlyRate;
-
-    // Jours fériés
     const joursFeries = publicHolidayHours * hourlyRate;
-
-    // Congés
-    const conges = holidayHours * 0; // Usually 0 as per Excel
-
-    // Absences Maladie
-    const absencesMaladie = sickLeaveHours * 0;
-
-    // Total Brut (D20)
     const totalBrut = appointement + joursFeries;
 
-    // Cotisations
     const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
     const majorationEspece = totalBrut * RATES.majoration;
     const assurancePension = totalBrut * RATES.assurancePension;
-    const assuranceDependance = (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance;
+    const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
     const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-    // Total Imposable (D35)
     const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
                           payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
-    // CISSM - Complex formula from Excel
-    const cissm = totalBrut < 1800 ? 0 :
-                  totalBrut <= 3000 ? 81 :
-                  totalBrut >= 3600 ? 0 :
-                  81 / 600 * (3600 - totalBrut);
+    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+    const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
+    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
 
-    // CIS-CIP-CIM - Complex formula from Excel
-    const cisCipCim = totalBrut < 78 ? 0 :
-                      totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) :
-                      totalBrut < 3333.33 ? 50 :
-                      totalBrut > 6666.5 ? 0 :
-                      ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-
-    // CI-CO2 - Complex formula from Excel
-    const ciCo2 = totalBrut < 78 ? 0 :
-                  totalBrut < 3333.33 ? 16 :
-                  totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) :
-                  0;
-
-    // NET (D42)
     const net = totalBrut - totalCotisation - payslipData.impot + cissm + cisCipCim + ciCo2;
-
-    // NET A PAYER (G44)
     const netAPayer = net - payslipData.chequeRepas - payslipData.avanceSalaire;
-
-    // Leave calculations
     const leaveSolde = (payslipData.legalLeave + payslipData.leaveReport) - payslipData.leaveTaken;
 
     return {
-      appointement,
-      joursFeries,
-      conges,
-      absencesMaladie,
-      totalBrut,
-      assuranceMaladie,
-      majorationEspece,
-      assurancePension,
-      assuranceDependance,
-      totalCotisation,
-      totalImposable,
-      cissm,
-      cisCipCim,
-      ciCo2,
-      net,
-      netAPayer,
-      leaveSolde,
+      appointement, joursFeries, totalBrut,
+      assuranceMaladie, majorationEspece, assurancePension, assuranceDependance, totalCotisation,
+      totalImposable, cissm, cisCipCim, ciCo2, net, netAPayer, leaveSolde
     };
   };
 
   const calculated = calculatePayslip();
 
   const handleInputChange = (field: keyof PayslipData, value: any) => {
-    setPayslipData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setPayslipData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Title
     doc.setFontSize(16);
     doc.text('DÉCOMPTE SALAIRE/TRAITEMENT', pageWidth / 2, 15, { align: 'center' });
 
-    // Company and Employee Info
     doc.setFontSize(9);
     doc.text(`N° Salarié: ${payslipData.employeeNumber}`, 14, 30);
     doc.text(`${company?.name || 'Groupe Advensys Luxembourg S.A'}`, pageWidth - 14, 30, { align: 'right' });
-    doc.text(`Indice: ${payslipData.indice}`, 14, 35);
-    doc.text(`${company?.address || 'Duarrefstrooss 49'}`, pageWidth - 14, 35, { align: 'right' });
-    doc.text(`Emploi: ${payslipData.emploi}`, 14, 40);
-    doc.text(`${company?.postalCode || 'L-9964'} ${company?.city || 'Huldange'}`, pageWidth - 14, 40, { align: 'right' });
-    doc.text(`Matricule assuré: ${payslipData.matriculeAssure}`, 14, 45);
-    doc.text(`${person?.firstName} ${person?.lastName}`, pageWidth - 14, 45, { align: 'right' });
-    doc.text(`Période: ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, 14, 50);
+    doc.text(`Emploi: ${payslipData.emploi}`, 14, 35);
+    doc.text(`${person?.firstName} ${person?.lastName}`, pageWidth - 14, 35, { align: 'right' });
+    doc.text(`Période: ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, 14, 40);
 
-    // Table
     autoTable(doc, {
-      startY: 60,
-      head: [['Désignation', 'Quantité (heures)', 'Valeur', 'Total']],
+      startY: 50,
+      head: [['Désignation', 'Quantité', 'Valeur', 'Total']],
       body: [
         ['Appointement', payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(2), calculated.appointement.toFixed(2)],
-        ['Jours fériée', payslipData.publicHolidayHours.toFixed(0), '0', calculated.joursFeries.toFixed(2)],
-        ['Congés (H)', payslipData.holidayHours.toFixed(0), '0', calculated.conges.toFixed(2)],
-        ['Absences Maladie (H)', payslipData.sickLeaveHours.toFixed(0), '0', calculated.absencesMaladie.toFixed(2)],
         ['Total brut', '', '', calculated.totalBrut.toFixed(2)],
-        ['', '', '', ''],
-        ['Cotisation', '', '', ''],
         ['Assurance Maladie', RATES.assuranceMaladie.toString(), '', calculated.assuranceMaladie.toFixed(2)],
-        ['A-M Majoration espèce', RATES.majoration.toString(), '', calculated.majorationEspece.toFixed(2)],
-        ['Assurance Pension', RATES.assurancePension.toString(), '', calculated.assurancePension.toFixed(2)],
-        ['Assurance dépendance', RATES.assuranceDependance.toString(), '', calculated.assuranceDependance.toFixed(2)],
         ['Total Cotisation', '', '', calculated.totalCotisation.toFixed(2)],
-        ['', '', '', ''],
-        ['Deduction', '', '', ''],
-        ['FD', '', '', payslipData.fd.toFixed(2)],
-        ['AC', '', '', payslipData.ac.toFixed(2)],
-        ['FFO', '', '', payslipData.ffo.toFixed(2)],
-        ['FDS', '', '', payslipData.fds.toFixed(2)],
-        ['', '', '', ''],
         ['Total Imposable', '', '', calculated.totalImposable.toFixed(2)],
-        ['', '', '', ''],
         ['IMPÔT', '', '', payslipData.impot.toFixed(2)],
-        ['CISSM', '', '', calculated.cissm.toFixed(2)],
-        ['CIS-CIP-CIM', '', '', calculated.cisCipCim.toFixed(2)],
-        ['CI-CO2', '', '', calculated.ciCo2.toFixed(2)],
-        ['', '', '', ''],
         ['NET', '', '', calculated.net.toFixed(2)],
-        ['Chèque repas', '', '', payslipData.chequeRepas.toFixed(2)],
-        ['Avance sur salaire', '', '', payslipData.avanceSalaire.toFixed(2)],
         ['NET A PAYER', '', '', calculated.netAPayer.toFixed(2)],
       ],
       theme: 'striped',
@@ -271,487 +178,335 @@ export default function MonthlyPayslipPage() {
     doc.save(`Bulletin_Salaire_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
   };
 
-  // Generate year options (last 5 years)
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   if (!personId || !person) {
     return (
       <div className="container mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Erreur</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">Employé non trouvé.</p>
-            <Button onClick={() => navigate(-1)}>Retour</Button>
-          </CardContent>
-        </Card>
+        <Card><CardHeader><CardTitle>Erreur</CardTitle></CardHeader>
+          <CardContent><p className="text-muted-foreground mb-4">Employé non trouvé.</p>
+            <Button onClick={() => navigate(-1)}>Retour</Button></CardContent></Card>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />Retour
           </Button>
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Calendar className="h-8 w-8" />
-              DÉCOMPTE SALAIRE/TRAITEMENT
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+              <Calendar className="h-6 w-6 md:h-8 md:w-8" />
+              DÉCOMPTE SALAIRE
             </h1>
-            <p className="text-muted-foreground">
-              {person.firstName} {person.lastName}
-            </p>
+            <p className="text-sm text-muted-foreground">{person.firstName} {person.lastName}</p>
           </div>
         </div>
 
         <div className="flex gap-2 items-center flex-wrap">
-          <div className="flex items-center gap-2 bg-muted p-2 rounded">
+          <div className="flex items-center gap-2 bg-muted/50 p-2 rounded-lg border">
             <Calculator className="h-4 w-4" />
-            <Label htmlFor="auto-calc" className="text-sm cursor-pointer">
-              Auto-calcul
-            </Label>
-            <Switch
-              id="auto-calc"
-              checked={autoCalculate}
-              onCheckedChange={setAutoCalculate}
-            />
+            <Label htmlFor="auto-calc" className="text-xs cursor-pointer">Auto</Label>
+            <Switch id="auto-calc" checked={autoCalculate} onCheckedChange={setAutoCalculate} />
           </div>
-
           <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((month) => (
-                <SelectItem key={month.value} value={month.value.toString()}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>{MONTHS.map((month) => (
+              <SelectItem key={month.value} value={month.value.toString()}>{month.label}</SelectItem>
+            ))}</SelectContent>
           </Select>
-
           <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
+            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+            <SelectContent>{years.map((year) => (
+              <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+            ))}</SelectContent>
           </Select>
-
-          <Button onClick={handleExportPDF}>
-            <Download className="mr-2 h-4 w-4" />
-            PDF
+          <Button onClick={handleExportPDF} size="sm">
+            <Download className="mr-2 h-4 w-4" />PDF
           </Button>
         </div>
       </div>
 
-      <div className="text-sm text-muted-foreground">
-        Période: {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear} • Les montants sont exprimés en Euros.
+      <div className="text-xs md:text-sm text-muted-foreground bg-muted/30 p-2 rounded">
+        Période: {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear} • Montants en Euros
       </div>
 
-      {/* Employee and Company Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Employee and Company Info */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Informations Employé</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">N° Salarié:</Label>
-              <Input
-                type="text"
-                value={payslipData.employeeNumber}
-                onChange={(e) => handleInputChange('employeeNumber', e.target.value)}
-                className="h-8"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">Indice:</Label>
-              <Input
-                type="text"
-                value={payslipData.indice}
-                onChange={(e) => handleInputChange('indice', e.target.value)}
-                className="h-8"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">Emploi:</Label>
-              <Input
-                type="text"
-                value={payslipData.emploi}
-                onChange={(e) => handleInputChange('emploi', e.target.value)}
-                className="h-8"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">Date d'entrée:</Label>
-              <Input
-                type="date"
-                value={payslipData.dateEntree}
-                onChange={(e) => handleInputChange('dateEntree', e.target.value)}
-                className="h-8"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">Matricule assuré:</Label>
-              <Input
-                type="text"
-                value={payslipData.matriculeAssure}
-                onChange={(e) => handleInputChange('matriculeAssure', e.target.value)}
-                className="h-8"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">Matricule employeur:</Label>
-              <Input
-                type="text"
-                value={payslipData.matriculeEmployeur}
-                onChange={(e) => handleInputChange('matriculeEmployeur', e.target.value)}
-                className="h-8"
-              />
-            </div>
+          <CardHeader className="pb-3"><CardTitle className="text-base md:text-lg">Informations Employé</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              ['N° Salarié', 'employeeNumber', 'text'],
+              ['Indice', 'indice', 'text'],
+              ['Emploi', 'emploi', 'text'],
+              ['Date d\'entrée', 'dateEntree', 'date'],
+              ['Matricule assuré', 'matriculeAssure', 'text'],
+              ['Matricule employeur', 'matriculeEmployeur', 'text'],
+            ].map(([label, field, type]) => (
+              <div key={field} className="grid grid-cols-2 gap-2 items-center">
+                <Label className="text-xs">{label}:</Label>
+                <Input type={type as string} value={payslipData[field as keyof PayslipData] as string}
+                  onChange={(e) => handleInputChange(field as keyof PayslipData, e.target.value)}
+                  className="h-7 text-xs" />
+              </div>
+            ))}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Informations Entreprise</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Entreprise:</span>
-              <span className="text-sm font-medium">{company?.name || 'Groupe Advensys Luxembourg S.A'}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Adresse:</span>
-              <span className="text-sm font-medium">{company?.address || 'Duarrefstrooss 49'}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Code Postal:</span>
-              <span className="text-sm font-medium">{company?.postalCode || 'L-9964'}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Ville:</span>
-              <span className="text-sm font-medium">{company?.city || 'Huldange'}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Pays:</span>
-              <span className="text-sm font-medium">{company?.country || 'Luxembourg'}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Nom complet:</span>
-              <span className="text-sm font-medium">{person.firstName} {person.lastName}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Adresse:</span>
-              <span className="text-sm font-medium">93, Duarrefstrooss</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Localité:</span>
-              <span className="text-sm font-medium">{company?.postalCode || 'L-9964'} {company?.city || 'Huldange'}</span>
-            </div>
+          <CardHeader className="pb-3"><CardTitle className="text-base md:text-lg">Informations Entreprise</CardTitle></CardHeader>
+          <CardContent className="space-y-1">
+            {[
+              ['Entreprise', company?.name || 'Groupe Advensys Luxembourg S.A'],
+              ['Adresse', company?.address || 'Duarrefstrooss 49'],
+              ['Code Postal', company?.postalCode || 'L-9964'],
+              ['Ville', company?.city || 'Huldange'],
+              ['Pays', company?.country || 'Luxembourg'],
+              ['Nom complet', `${person.firstName} ${person.lastName}`],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between py-1">
+                <span className="text-xs text-muted-foreground">{label}:</span>
+                <span className="text-xs font-medium">{value}</span>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
 
       {/* Main Payslip Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Bulletin de Salaire - {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg">
+            Bulletin de Salaire - {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 md:p-6">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse text-xs md:text-sm">
               <thead>
-                <tr className="border-b-2 border-gray-300">
-                  <th className="text-left py-2 px-2 font-semibold text-sm">Désignation</th>
-                  <th className="text-right py-2 px-2 font-semibold text-sm">Quantité (heures)</th>
-                  <th className="text-right py-2 px-2 font-semibold text-sm">Valeur</th>
-                  <th className="text-right py-2 px-2 font-semibold text-sm bg-blue-50">Total</th>
-                  <th className="text-right py-2 px-2 font-semibold text-sm">Cumuls M-1</th>
-                  <th className="text-right py-2 px-2 font-semibold text-sm bg-green-50">Total</th>
+                <tr className="border-b-2 border-border bg-muted/70">
+                  <th className="text-left py-2 px-2 font-semibold text-foreground">Désignation</th>
+                  <th className="text-right py-2 px-2 font-semibold text-foreground whitespace-nowrap">Quantité</th>
+                  <th className="text-right py-2 px-2 font-semibold text-foreground">Valeur</th>
+                  <th className="text-right py-2 px-2 font-semibold text-foreground bg-blue-500/15 dark:bg-blue-500/25">Total</th>
+                  <th className="text-right py-2 px-2 font-semibold text-foreground whitespace-nowrap">M-1</th>
+                  <th className="text-right py-2 px-2 font-semibold text-foreground bg-green-500/15 dark:bg-green-500/25">Total</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
+              <tbody>
                 {/* Appointement */}
-                <tr className="border-b">
+                <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2">Appointement</td>
                   <td className="text-right py-2 px-2">
-                    <Input
-                      type="number"
-                      value={payslipData.hoursWorked}
+                    <Input type="number" value={payslipData.hoursWorked}
                       onChange={(e) => handleInputChange('hoursWorked', parseFloat(e.target.value) || 0)}
-                      className="h-7 w-20 text-right"
-                    />
+                      className="h-6 w-16 text-right text-xs" />
                   </td>
                   <td className="text-right py-2 px-2">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={payslipData.hourlyRate.toFixed(6)}
+                    <Input type="number" step="0.01" value={payslipData.hourlyRate.toFixed(2)}
                       onChange={(e) => handleInputChange('hourlyRate', parseFloat(e.target.value) || 0)}
-                      className="h-7 w-32 text-right"
-                    />
+                      className="h-6 w-20 text-right text-xs" />
                   </td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.appointement.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-green-50">-</td>
+                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
+                    {calculated.appointement.toFixed(2)} €
+                  </td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2 bg-green-500/10 dark:bg-green-500/20 text-muted-foreground">-</td>
                 </tr>
 
                 {/* Jours fériés */}
-                <tr className="border-b">
+                <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2">Jours fériés</td>
                   <td className="text-right py-2 px-2">
-                    <Input
-                      type="number"
-                      value={payslipData.publicHolidayHours}
+                    <Input type="number" value={payslipData.publicHolidayHours}
                       onChange={(e) => handleInputChange('publicHolidayHours', parseFloat(e.target.value) || 0)}
-                      className="h-7 w-20 text-right"
-                    />
+                      className="h-6 w-16 text-right text-xs" />
                   </td>
-                  <td className="text-right py-2 px-2">0</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.joursFeries.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-green-50">-</td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">0</td>
+                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
+                    {calculated.joursFeries.toFixed(2)} €
+                  </td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2 bg-green-500/10 dark:bg-green-500/20 text-muted-foreground">-</td>
                 </tr>
 
-                {/* Congés */}
-                <tr className="border-b">
+                {/* Congés & Absences */}
+                <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2">Congés (H)</td>
                   <td className="text-right py-2 px-2">
-                    <Input
-                      type="number"
-                      value={payslipData.holidayHours}
+                    <Input type="number" value={payslipData.holidayHours}
                       onChange={(e) => handleInputChange('holidayHours', parseFloat(e.target.value) || 0)}
-                      className="h-7 w-20 text-right"
-                    />
+                      className="h-6 w-16 text-right text-xs" />
                   </td>
-                  <td className="text-right py-2 px-2">0</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.conges.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-green-50">-</td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">0</td>
+                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-muted-foreground">-</td>
                 </tr>
 
-                {/* Absences Maladie */}
-                <tr className="border-b">
+                <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2">Absences Maladie (H)</td>
                   <td className="text-right py-2 px-2">
-                    <Input
-                      type="number"
-                      value={payslipData.sickLeaveHours}
+                    <Input type="number" value={payslipData.sickLeaveHours}
                       onChange={(e) => handleInputChange('sickLeaveHours', parseFloat(e.target.value) || 0)}
-                      className="h-7 w-20 text-right"
-                    />
+                      className="h-6 w-16 text-right text-xs" />
                   </td>
-                  <td className="text-right py-2 px-2">0</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.absencesMaladie.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-green-50">-</td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">0</td>
+                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-muted-foreground">-</td>
                 </tr>
 
                 {/* Total Brut */}
-                <tr className="border-b-2 border-gray-400 bg-blue-100 font-bold">
-                  <td className="py-2 px-2">Total brut</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-200">{calculated.totalBrut.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-100">{calculated.totalBrut.toFixed(2)} €</td>
+                <tr className="border-b-2 border-border bg-blue-500/20 dark:bg-blue-500/30 font-bold">
+                  <td className="py-2 px-2 text-foreground">Total brut</td>
+                  <td className="text-right py-2 px-2 text-foreground">-</td>
+                  <td className="text-right py-2 px-2 text-foreground">-</td>
+                  <td className="text-right py-2 px-2 bg-blue-500/35 dark:bg-blue-500/45 text-foreground">{calculated.totalBrut.toFixed(2)} €</td>
+                  <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2 bg-green-500/35 dark:bg-green-500/45 text-foreground">{calculated.totalBrut.toFixed(2)} €</td>
                 </tr>
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
                 {/* Cotisations */}
-                <tr className="bg-gray-100 font-semibold">
-                  <td className="py-2 px-2" colSpan={6}>Cotisation</td>
-                </tr>
+                <tr className="bg-muted/70 font-semibold"><td className="py-2 px-2 text-foreground" colSpan={6}>Cotisation</td></tr>
 
-                <tr className="border-b">
-                  <td className="py-2 px-2">Assurance Maladie</td>
-                  <td className="text-right py-2 px-2">{(RATES.assuranceMaladie * 100).toFixed(2)}%</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.assuranceMaladie.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-50">{calculated.assuranceMaladie.toFixed(2)} €</td>
-                </tr>
+                {[
+                  ['Assurance Maladie', RATES.assuranceMaladie, calculated.assuranceMaladie],
+                  ['A-M Majoration espèce', RATES.majoration, calculated.majorationEspece],
+                  ['Assurance Pension', RATES.assurancePension, calculated.assurancePension],
+                  ['Assurance dépendance', RATES.assuranceDependance, calculated.assuranceDependance],
+                ].map(([label, rate, value]) => (
+                  <tr key={label as string} className="border-b border-border hover:bg-muted/30">
+                    <td className="py-2 px-2">{label}</td>
+                    <td className="text-right py-2 px-2 text-muted-foreground">{((rate as number) * 100).toFixed(2)}%</td>
+                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
+                      {(value as number).toFixed(2)} €
+                    </td>
+                    <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                    <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">{(value as number).toFixed(2)} €</td>
+                  </tr>
+                ))}
 
-                <tr className="border-b">
-                  <td className="py-2 px-2">A-M Majoration espèce</td>
-                  <td className="text-right py-2 px-2">{(RATES.majoration * 100).toFixed(2)}%</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.majorationEspece.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-50">{calculated.majorationEspece.toFixed(2)} €</td>
-                </tr>
-
-                <tr className="border-b">
-                  <td className="py-2 px-2">Assurance Pension</td>
-                  <td className="text-right py-2 px-2">{(RATES.assurancePension * 100).toFixed(2)}%</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.assurancePension.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-50">{calculated.assurancePension.toFixed(2)} €</td>
-                </tr>
-
-                <tr className="border-b">
-                  <td className="py-2 px-2">Assurance dépendance</td>
-                  <td className="text-right py-2 px-2">{(RATES.assuranceDependance * 100).toFixed(2)}%</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.assuranceDependance.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-50">{calculated.assuranceDependance.toFixed(2)} €</td>
-                </tr>
-
-                <tr className="border-b-2 border-gray-400 bg-orange-100 font-bold">
-                  <td className="py-2 px-2">Total Cotisation</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-orange-200">{calculated.totalCotisation.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-orange-200">{calculated.totalCotisation.toFixed(2)} €</td>
+                <tr className="border-b-2 border-border bg-orange-500/20 dark:bg-orange-500/30 font-bold">
+                  <td className="py-2 px-2 text-foreground">Total Cotisation</td>
+                  <td className="text-right py-2 px-2 text-foreground">-</td>
+                  <td className="text-right py-2 px-2 text-foreground">-</td>
+                  <td className="text-right py-2 px-2 bg-orange-500/35 dark:bg-orange-500/45 text-foreground">{calculated.totalCotisation.toFixed(2)} €</td>
+                  <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2 bg-orange-500/35 dark:bg-orange-500/45 text-foreground">{calculated.totalCotisation.toFixed(2)} €</td>
                 </tr>
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
                 {/* Deductions */}
-                <tr className="bg-gray-100 font-semibold">
-                  <td className="py-2 px-2" colSpan={6}>Deduction</td>
-                </tr>
+                <tr className="bg-muted/70 font-semibold"><td className="py-2 px-2 text-foreground" colSpan={6}>Deduction</td></tr>
 
                 {['fd', 'ac', 'ffo', 'fds'].map((field) => (
-                  <tr key={field} className="border-b">
+                  <tr key={field} className="border-b border-border hover:bg-muted/30">
                     <td className="py-2 px-2">{field.toUpperCase()}</td>
-                    <td className="text-right py-2 px-2">-</td>
-                    <td className="text-right py-2 px-2">-</td>
-                    <td className="text-right py-2 px-2 bg-blue-50">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={payslipData[field as keyof PayslipData] as number}
+                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
+                      <Input type="number" step="0.01" value={payslipData[field as keyof PayslipData] as number}
                         onChange={(e) => handleInputChange(field as keyof PayslipData, parseFloat(e.target.value) || 0)}
-                        className="h-7 w-24 text-right"
-                      />
+                        className="h-6 w-20 text-right text-xs" />
                     </td>
-                    <td className="text-right py-2 px-2">0.00 €</td>
-                    <td className="text-right py-2 px-2 bg-green-50">{(payslipData[field as keyof PayslipData] as number).toFixed(2)} €</td>
+                    <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                    <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">
+                      {(payslipData[field as keyof PayslipData] as number).toFixed(2)} €
+                    </td>
                   </tr>
                 ))}
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
                 {/* Total Imposable */}
-                <tr className="border-b-2 border-gray-400 bg-purple-100 font-bold">
-                  <td className="py-2 px-2">Total Imposable</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-purple-200">{calculated.totalImposable.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-purple-200">{calculated.totalImposable.toFixed(2)} €</td>
+                <tr className="border-b-2 border-border bg-purple-500/20 dark:bg-purple-500/30 font-bold">
+                  <td className="py-2 px-2 text-foreground">Total Imposable</td>
+                  <td className="text-right py-2 px-2 text-foreground">-</td>
+                  <td className="text-right py-2 px-2 text-foreground">-</td>
+                  <td className="text-right py-2 px-2 bg-purple-500/35 dark:bg-purple-500/45 text-foreground">{calculated.totalImposable.toFixed(2)} €</td>
+                  <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2 bg-purple-500/35 dark:bg-purple-500/45 text-foreground">{calculated.totalImposable.toFixed(2)} €</td>
                 </tr>
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
                 {/* Impôts and Credits */}
-                <tr className="border-b">
+                <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2 font-semibold">IMPÔT</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={payslipData.impot}
+                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
+                    <Input type="number" step="0.01" value={payslipData.impot}
                       onChange={(e) => handleInputChange('impot', parseFloat(e.target.value) || 0)}
-                      className="h-7 w-24 text-right"
-                    />
+                      className="h-6 w-20 text-right text-xs" />
                   </td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-50">{payslipData.impot.toFixed(2)} €</td>
+                  <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">{payslipData.impot.toFixed(2)} €</td>
                 </tr>
 
-                <tr className="border-b">
-                  <td className="py-2 px-2">CISSM</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.cissm.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-50">{calculated.cissm.toFixed(2)} €</td>
-                </tr>
-
-                <tr className="border-b">
-                  <td className="py-2 px-2">CIS-CIP-CIM</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.cisCipCim.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-50">{calculated.cisCipCim.toFixed(2)} €</td>
-                </tr>
-
-                <tr className="border-b">
-                  <td className="py-2 px-2">CI-CO2</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50 font-medium">{calculated.ciCo2.toFixed(2)} €</td>
-                  <td className="text-right py-2 px-2">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-50">{calculated.ciCo2.toFixed(2)} €</td>
-                </tr>
+                {[
+                  ['CISSM', calculated.cissm],
+                  ['CIS-CIP-CIM', calculated.cisCipCim],
+                  ['CI-CO2', calculated.ciCo2],
+                ].map(([label, value]) => (
+                  <tr key={label} className="border-b border-border hover:bg-muted/30">
+                    <td className="py-2 px-2">{label}</td>
+                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">{(value as number).toFixed(2)} €</td>
+                    <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                    <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">{(value as number).toFixed(2)} €</td>
+                  </tr>
+                ))}
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
                 {/* NET */}
-                <tr className="border-b-2 border-gray-400 bg-green-200 font-bold text-lg">
-                  <td className="py-3 px-2">NET</td>
-                  <td className="text-right py-3 px-2">-</td>
-                  <td className="text-right py-3 px-2">-</td>
-                  <td className="text-right py-3 px-2 bg-green-300">{calculated.net.toFixed(2)} €</td>
-                  <td className="text-right py-3 px-2">0.00 €</td>
-                  <td className="text-right py-3 px-2 bg-green-300">{calculated.net.toFixed(2)} €</td>
+                <tr className="border-b-2 border-border bg-green-500/20 dark:bg-green-500/30 font-bold">
+                  <td className="py-3 px-2 text-base text-foreground">NET</td>
+                  <td className="text-right py-3 px-2 text-foreground">-</td>
+                  <td className="text-right py-3 px-2 text-foreground">-</td>
+                  <td className="text-right py-3 px-2 bg-green-500/35 dark:bg-green-500/45 text-base text-foreground">{calculated.net.toFixed(2)} €</td>
+                  <td className="text-right py-3 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-3 px-2 bg-green-500/40 dark:bg-green-500/50 text-base text-foreground">{calculated.net.toFixed(2)} €</td>
                 </tr>
 
                 {/* Deductions from NET */}
-                <tr className="border-b">
-                  <td className="py-2 px-2">Chèque repas</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={payslipData.chequeRepas}
-                      onChange={(e) => handleInputChange('chequeRepas', parseFloat(e.target.value) || 0)}
-                      className="h-7 w-24 text-right"
-                    />
-                  </td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-green-50">-</td>
-                </tr>
+                {[
+                  ['Chèque repas', 'chequeRepas'],
+                  ['Avance sur salaire', 'avanceSalaire'],
+                ].map(([label, field]) => (
+                  <tr key={field} className="border-b border-border hover:bg-muted/30">
+                    <td className="py-2 px-2">{label}</td>
+                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
+                      <Input type="number" step="0.01" value={payslipData[field as keyof PayslipData] as number}
+                        onChange={(e) => handleInputChange(field as keyof PayslipData, parseFloat(e.target.value) || 0)}
+                        className="h-6 w-20 text-right text-xs" />
+                    </td>
+                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-muted-foreground">-</td>
+                  </tr>
+                ))}
 
-                <tr className="border-b">
-                  <td className="py-2 px-2">Avance sur salaire</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2">-</td>
-                  <td className="text-right py-2 px-2 bg-blue-50">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={payslipData.avanceSalaire}
-                      onChange={(e) => handleInputChange('avanceSalaire', parseFloat(e.target.value) || 0)}
-                      className="h-7 w-24 text-right"
-                    />
+                {/* NET A PAYER */}
+                <tr className="border-t-2 border-border bg-green-600/30 dark:bg-green-600/40">
+                  <td colSpan={4}></td>
+                  <td className="text-right py-3 px-2 font-bold text-base text-foreground">NET À PAYER</td>
+                  <td className="text-right py-3 px-2 bg-green-600/50 dark:bg-green-600/60 font-bold text-base text-foreground">
+                    {calculated.netAPayer.toFixed(2)} €
                   </td>
-                  <td className="text-right py-2 px-2 font-bold">NET A PAYER</td>
-                  <td className="text-right py-2 px-2 bg-green-300 font-bold text-lg">{calculated.netAPayer.toFixed(2)} €</td>
                 </tr>
               </tbody>
             </table>
@@ -760,85 +515,53 @@ export default function MonthlyPayslipPage() {
       </Card>
 
       {/* Additional Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Congés (H)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">Légaux:</Label>
-              <Input
-                type="number"
-                value={payslipData.legalLeave}
-                onChange={(e) => handleInputChange('legalLeave', parseFloat(e.target.value) || 0)}
-                className="h-8"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">Report:</Label>
-              <Input
-                type="number"
-                value={payslipData.leaveReport}
-                onChange={(e) => handleInputChange('leaveReport', parseFloat(e.target.value) || 0)}
-                className="h-8"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label className="text-sm">Pris:</Label>
-              <Input
-                type="number"
-                value={payslipData.leaveTaken}
-                onChange={(e) => handleInputChange('leaveTaken', parseFloat(e.target.value) || 0)}
-                className="h-8"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-              <Label className="text-sm font-bold">Solde:</Label>
-              <div className="text-right font-bold">{calculated.leaveSolde}</div>
+          <CardHeader className="pb-3"><CardTitle className="text-base">Congés (H)</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              ['Légaux', 'legalLeave'],
+              ['Report', 'leaveReport'],
+              ['Pris', 'leaveTaken'],
+            ].map(([label, field]) => (
+              <div key={field} className="grid grid-cols-2 gap-2">
+                <Label className="text-xs">{label}:</Label>
+                <Input type="number" value={payslipData[field as keyof PayslipData] as number}
+                  onChange={(e) => handleInputChange(field as keyof PayslipData, parseFloat(e.target.value) || 0)}
+                  className="h-7 text-xs" />
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
+              <Label className="text-xs font-bold">Solde:</Label>
+              <div className="text-right font-bold text-sm">{calculated.leaveSolde}</div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Rémunération & Fiche d'impôts</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Salaire mensuel:</span>
-              <span className="text-sm font-medium">{calculated.totalBrut.toFixed(2)} €</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Heures:</span>
-              <span className="text-sm font-medium">{payslipData.hoursWorked}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-sm text-muted-foreground">Salaire horaire:</span>
-              <span className="text-sm font-medium">{payslipData.hourlyRate.toFixed(6)} €</span>
-            </div>
-            <div className="border-t mt-3 pt-3">
-              <div className="flex justify-between py-1">
-                <span className="text-sm text-muted-foreground">N° de carte:</span>
-                <span className="text-sm font-medium">D608388-2022</span>
+          <CardHeader className="pb-3"><CardTitle className="text-base">Rémunération & Fiche d'impôts</CardTitle></CardHeader>
+          <CardContent className="space-y-1">
+            {[
+              ['Salaire mensuel', `${calculated.totalBrut.toFixed(2)} €`],
+              ['Heures', payslipData.hoursWorked.toString()],
+              ['Salaire horaire', `${payslipData.hourlyRate.toFixed(4)} €`],
+              ['N° de carte', 'D608388-2022'],
+              ['Classe', '1'],
+              ['Taux', '-'],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between py-1">
+                <span className="text-xs text-muted-foreground">{label}:</span>
+                <span className="text-xs font-medium">{value}</span>
               </div>
-              <div className="flex justify-between py-1">
-                <span className="text-sm text-muted-foreground">Classe:</span>
-                <span className="text-sm font-medium">1</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-sm text-muted-foreground">Taux:</span>
-                <span className="text-sm font-medium">-</span>
-              </div>
-            </div>
+            ))}
           </CardContent>
         </Card>
       </div>
 
       {/* Footer note */}
-      <Card className="bg-yellow-50 border-yellow-200">
-        <CardContent className="pt-6">
-          <p className="text-center text-sm font-semibold text-yellow-800">
+      <Card className="bg-yellow-500/10 dark:bg-yellow-500/20 border-yellow-500/30">
+        <CardContent className="py-4">
+          <p className="text-center text-xs md:text-sm font-semibold text-yellow-800 dark:text-yellow-200">
             CONSERVEZ CE BULLETIN DE PAIE SANS LIMITATION DE DURÉE
           </p>
         </CardContent>
