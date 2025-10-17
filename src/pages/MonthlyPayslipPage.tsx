@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/stores/data';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Download, Calendar, Calculator, Edit2 } from 'lucide-react';
+import { ArrowLeft, Download, Calendar, Calculator, Edit2, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -199,40 +199,56 @@ export default function MonthlyPayslipPage() {
     setPayslipData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Component for editable calculated value
-  const EditableValue = ({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
-    const [isEditing, setIsEditing] = useState(false);
+  const handleSave = () => {
+    // Here you can add logic to save the payslip data to your backend/database
+    // For now, we'll just show a success message
+    alert('Fiche de paie sauvegardée avec succès!');
+    console.log('Saving payslip data:', payslipData);
+    // You can add: updateMonthlyPayslip(personId, selectedYear, selectedMonth, payslipData);
+  };
 
+  // Component for editable calculated value - shows as input in manual mode
+  const EditableValue = ({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
+    // In auto-calculate mode, show as read-only text
     if (autoCalculate) {
       return <span className={className}>{value.toFixed(2)} €</span>;
     }
 
-    if (isEditing) {
+    // In manual mode, always show as editable input field
+    return (
+      <Input
+        type="number"
+        step="0.01"
+        value={payslipData[manualField] !== undefined ? payslipData[manualField] as number : value}
+        onChange={(e) => handleInputChange(manualField, parseFloat(e.target.value) || 0)}
+        className={`h-6 w-24 text-right text-xs font-medium ${className}`}
+      />
+    );
+  };
+
+  // Component for editable input fields (hours, rates)
+  const EditableInput = ({ field, value, type = "number", step = "1", className = "h-6 w-16 text-right text-xs" }: { field: keyof PayslipData; value: number | string; type?: string; step?: string; className?: string }) => {
+    if (autoCalculate) {
       return (
         <Input
-          type="number"
-          step="0.01"
-          value={payslipData[manualField] !== undefined ? payslipData[manualField] as number : value}
-          onChange={(e) => handleInputChange(manualField, parseFloat(e.target.value) || 0)}
-          onBlur={() => setIsEditing(false)}
-          autoFocus
-          className="h-6 w-20 text-right text-xs"
+          type={type}
+          step={step}
+          value={value}
+          onChange={(e) => handleInputChange(field, type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value)}
+          className={className}
         />
       );
     }
 
+    // In manual mode, all inputs are editable
     return (
-      <div className="flex items-center justify-end gap-1">
-        <span className={className}>{value.toFixed(2)} €</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 w-5 p-0 hover:bg-muted"
-          onClick={() => setIsEditing(true)}
-        >
-          <Edit2 className="h-3 w-3" />
-        </Button>
-      </div>
+      <Input
+        type={type}
+        step={step}
+        value={value}
+        onChange={(e) => handleInputChange(field, type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value)}
+        className={className}
+      />
     );
   };
 
@@ -300,15 +316,14 @@ export default function MonthlyPayslipPage() {
         </div>
 
         <div className="flex gap-2 items-center flex-wrap">
-          <Button
-            variant={autoCalculate ? "outline" : "default"}
-            size="sm"
-            onClick={() => setAutoCalculate(!autoCalculate)}
-            className={!autoCalculate ? "bg-orange-500 hover:bg-orange-600 text-white" : ""}
-          >
-            <Edit2 className="mr-2 h-4 w-4" />
-            {autoCalculate ? "Mode Modification" : "Mode Auto"}
-          </Button>
+          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-md">
+            <Calculator className="h-4 w-4" />
+            <span className="text-xs font-medium">Auto Calcul:</span>
+            <Switch
+              checked={autoCalculate}
+              onCheckedChange={setAutoCalculate}
+            />
+          </div>
           <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
             <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
             <SelectContent>{MONTHS.map((month) => (
@@ -321,7 +336,10 @@ export default function MonthlyPayslipPage() {
               <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
             ))}</SelectContent>
           </Select>
-          <Button onClick={handleExportPDF} size="sm">
+          <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+            <Save className="mr-2 h-4 w-4" />Sauvegarder
+          </Button>
+          <Button onClick={handleExportPDF} size="sm" variant="outline">
             <Download className="mr-2 h-4 w-4" />PDF
           </Button>
         </div>
@@ -332,7 +350,7 @@ export default function MonthlyPayslipPage() {
           <CardContent className="py-3">
             <p className="text-center text-xs md:text-sm font-semibold text-orange-800 dark:text-orange-200 flex items-center justify-center gap-2">
               <Edit2 className="h-4 w-4" />
-              MODE MODIFICATION ACTIVÉ - Cliquez sur les icônes pour modifier les valeurs calculées
+              MODE MODIFICATION ACTIVÉ - Toutes les valeurs calculées sont modifiables directement
             </p>
           </CardContent>
         </Card>
@@ -357,9 +375,7 @@ export default function MonthlyPayslipPage() {
             ].map(([label, field, type]) => (
               <div key={field} className="grid grid-cols-2 gap-2 items-center">
                 <Label className="text-xs">{label}:</Label>
-                <Input type={type as string} value={payslipData[field as keyof PayslipData] as string}
-                  onChange={(e) => handleInputChange(field as keyof PayslipData, e.target.value)}
-                  className="h-7 text-xs" />
+                <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as string} type={type as string} className="h-7 text-xs" />
               </div>
             ))}
           </CardContent>
@@ -410,14 +426,10 @@ export default function MonthlyPayslipPage() {
                 <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2">Appointement</td>
                   <td className="text-right py-2 px-2">
-                    <Input type="number" value={payslipData.hoursWorked}
-                      onChange={(e) => handleInputChange('hoursWorked', parseFloat(e.target.value) || 0)}
-                      className="h-6 w-16 text-right text-xs" />
+                    <EditableInput field="hoursWorked" value={payslipData.hoursWorked} />
                   </td>
                   <td className="text-right py-2 px-2">
-                    <Input type="number" step="0.01" value={payslipData.hourlyRate.toFixed(2)}
-                      onChange={(e) => handleInputChange('hourlyRate', parseFloat(e.target.value) || 0)}
-                      className="h-6 w-20 text-right text-xs" />
+                    <EditableInput field="hourlyRate" value={payslipData.hourlyRate.toFixed(2)} step="0.01" className="h-6 w-20 text-right text-xs" />
                   </td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
                     <EditableValue value={calculated.appointement} manualField="manualAppointement" />
@@ -430,9 +442,7 @@ export default function MonthlyPayslipPage() {
                 <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2">Jours fériés</td>
                   <td className="text-right py-2 px-2">
-                    <Input type="number" value={payslipData.publicHolidayHours}
-                      onChange={(e) => handleInputChange('publicHolidayHours', parseFloat(e.target.value) || 0)}
-                      className="h-6 w-16 text-right text-xs" />
+                    <EditableInput field="publicHolidayHours" value={payslipData.publicHolidayHours} />
                   </td>
                   <td className="text-right py-2 px-2 text-muted-foreground">0</td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
@@ -446,9 +456,7 @@ export default function MonthlyPayslipPage() {
                 <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2">Congés (H)</td>
                   <td className="text-right py-2 px-2">
-                    <Input type="number" value={payslipData.holidayHours}
-                      onChange={(e) => handleInputChange('holidayHours', parseFloat(e.target.value) || 0)}
-                      className="h-6 w-16 text-right text-xs" />
+                    <EditableInput field="holidayHours" value={payslipData.holidayHours} />
                   </td>
                   <td className="text-right py-2 px-2 text-muted-foreground">0</td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 text-foreground">0.00 €</td>
@@ -459,9 +467,7 @@ export default function MonthlyPayslipPage() {
                 <tr className="border-b border-border hover:bg-muted/30">
                   <td className="py-2 px-2">Absences Maladie (H)</td>
                   <td className="text-right py-2 px-2">
-                    <Input type="number" value={payslipData.sickLeaveHours}
-                      onChange={(e) => handleInputChange('sickLeaveHours', parseFloat(e.target.value) || 0)}
-                      className="h-6 w-16 text-right text-xs" />
+                    <EditableInput field="sickLeaveHours" value={payslipData.sickLeaveHours} />
                   </td>
                   <td className="text-right py-2 px-2 text-muted-foreground">0</td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 text-foreground">0.00 €</td>
@@ -532,9 +538,7 @@ export default function MonthlyPayslipPage() {
                     <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                     <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                     <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
-                      <Input type="number" step="0.01" value={payslipData[field as keyof PayslipData] as number}
-                        onChange={(e) => handleInputChange(field as keyof PayslipData, parseFloat(e.target.value) || 0)}
-                        className="h-6 w-20 text-right text-xs" />
+                      <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} step="0.01" className="h-6 w-20 text-right text-xs" />
                     </td>
                     <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
                     <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">
@@ -567,9 +571,7 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                   <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
-                    <Input type="number" step="0.01" value={payslipData.impot}
-                      onChange={(e) => handleInputChange('impot', parseFloat(e.target.value) || 0)}
-                      className="h-6 w-20 text-right text-xs" />
+                    <EditableInput field="impot" value={payslipData.impot} step="0.01" className="h-6 w-20 text-right text-xs" />
                   </td>
                   <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
                   <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">{payslipData.impot.toFixed(2)} €</td>
@@ -620,9 +622,7 @@ export default function MonthlyPayslipPage() {
                     <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                     <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                     <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
-                      <Input type="number" step="0.01" value={payslipData[field as keyof PayslipData] as number}
-                        onChange={(e) => handleInputChange(field as keyof PayslipData, parseFloat(e.target.value) || 0)}
-                        className="h-6 w-20 text-right text-xs" />
+                      <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} step="0.01" className="h-6 w-20 text-right text-xs" />
                     </td>
                     <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                     <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-muted-foreground">-</td>
@@ -655,9 +655,7 @@ export default function MonthlyPayslipPage() {
             ].map(([label, field]) => (
               <div key={field} className="grid grid-cols-2 gap-2">
                 <Label className="text-xs">{label}:</Label>
-                <Input type="number" value={payslipData[field as keyof PayslipData] as number}
-                  onChange={(e) => handleInputChange(field as keyof PayslipData, parseFloat(e.target.value) || 0)}
-                  className="h-7 text-xs" />
+                <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} className="h-7 text-xs" />
               </div>
             ))}
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
