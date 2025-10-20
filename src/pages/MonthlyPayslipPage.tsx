@@ -202,7 +202,36 @@ export default function MonthlyPayslipPage() {
 
   const handleInputChange = (field: keyof PayslipData, value: any) => {
     if (!isEditMode) return; // Only allow changes in edit mode
-    setPayslipData(prev => ({ ...prev, [field]: value }));
+
+    setPayslipData(prev => {
+      const newData = { ...prev, [field]: value };
+
+      // If auto-calculate is ON and we're changing a base input field (not a manual override),
+      // clear all manual override fields so they recalculate automatically
+      if (autoCalculate && !field.startsWith('manual')) {
+        return {
+          ...newData,
+          // Clear all manual overrides to trigger recalculation
+          manualAppointement: undefined,
+          manualJoursFeries: undefined,
+          manualTotalBrut: undefined,
+          manualAssuranceMaladie: undefined,
+          manualMajoration: undefined,
+          manualAssurancePension: undefined,
+          manualAssuranceDependance: undefined,
+          manualTotalCotisation: undefined,
+          manualTotalImposable: undefined,
+          manualCissm: undefined,
+          manualCisCipCim: undefined,
+          manualCiCo2: undefined,
+          manualNet: undefined,
+          manualNetAPayer: undefined,
+        };
+      }
+
+      return newData;
+    });
+
     setHasUnsavedChanges(true);
   };
 
@@ -280,21 +309,55 @@ export default function MonthlyPayslipPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // Component for editable calculated value - shows as input in manual mode
+  // Clear manual overrides when auto-calculate is turned ON
+  useEffect(() => {
+    if (autoCalculate && isEditMode) {
+      setPayslipData(prev => ({
+        ...prev,
+        manualAppointement: undefined,
+        manualJoursFeries: undefined,
+        manualTotalBrut: undefined,
+        manualAssuranceMaladie: undefined,
+        manualMajoration: undefined,
+        manualAssurancePension: undefined,
+        manualAssuranceDependance: undefined,
+        manualTotalCotisation: undefined,
+        manualTotalImposable: undefined,
+        manualCissm: undefined,
+        manualCisCipCim: undefined,
+        manualCiCo2: undefined,
+        manualNet: undefined,
+        manualNetAPayer: undefined,
+      }));
+    }
+  }, [autoCalculate, isEditMode]);
+
+  // Component for editable calculated value - always editable in edit mode
   const EditableValue = ({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
-    // If not in edit mode or in auto-calculate mode, show as read-only text
-    if (!isEditMode || autoCalculate) {
+    // If not in edit mode, show as read-only text
+    if (!isEditMode) {
       return <span className={className}>{value.toFixed(2)} €</span>;
     }
 
-    // In edit mode with manual calculation, show as editable input field
+    // In edit mode, determine which value to show:
+    // - If Auto Calculate is ON: always show the calculated value (ignore manual overrides)
+    // - If Auto Calculate is OFF: show manual override if exists, otherwise calculated value
+    const displayValue = autoCalculate
+      ? value
+      : (payslipData[manualField] !== undefined ? payslipData[manualField] as number : value);
+
+    const borderColorClass = autoCalculate
+      ? "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+      : "border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30";
+
     return (
       <Input
         type="number"
         step="0.01"
-        value={payslipData[manualField] !== undefined ? payslipData[manualField] as number : value}
+        value={displayValue}
         onChange={(e) => handleInputChange(manualField, parseFloat(e.target.value) || 0)}
-        className={`h-7 w-28 text-right text-xs font-medium border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30 ${className}`}
+        className={`h-7 w-28 text-right text-xs font-medium ${borderColorClass} ${className}`}
+        disabled={autoCalculate}
       />
     );
   };
@@ -479,9 +542,9 @@ export default function MonthlyPayslipPage() {
           <CardContent className="py-4">
             <p className="text-center text-sm md:text-base font-semibold text-orange-900 dark:text-orange-100 flex items-center justify-center gap-3">
               <Edit2 className="h-5 w-5 animate-pulse" />
-              MODE MODIFICATION MANUELLE ACTIVÉ
+              MODE MANUEL ACTIVÉ
               <span className="text-xs font-normal bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded">
-                Toutes les valeurs sont modifiables
+                Modifiez tout manuellement - Aucun calcul automatique
               </span>
             </p>
           </CardContent>
@@ -493,9 +556,9 @@ export default function MonthlyPayslipPage() {
           <CardContent className="py-4">
             <p className="text-center text-sm md:text-base font-semibold text-blue-900 dark:text-blue-100 flex items-center justify-center gap-3">
               <Calculator className="h-5 w-5" />
-              MODE ÉDITION AVEC CALCUL AUTO
+              MODE AUTO ACTIVÉ
               <span className="text-xs font-normal bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
-                Les valeurs sont calculées automatiquement
+                Modifiez les champs - Les calculs se mettent à jour automatiquement
               </span>
             </p>
           </CardContent>

@@ -28,7 +28,22 @@
       "Bash(cat:*)",
       "mcp__supabase__get_logs",
       "mcp__supabase__get_advisors",
-      "Bash(curl -s -o nul -w \"%{http_code}\" http://localhost:3041)"
+      "Bash(curl -s -o nul -w \"%{http_code}\" http://localhost:3041)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(if exist node_modules rmdir /s /q node_modules)",
+      "Bash(if exist package-lock.json del package-lock.json)",
+      "Bash(cmd /c \"if exist node_modules rmdir /s /q node_modules\")",
+      "Bash(cmd /c \"if exist package-lock.json del package-lock.json\")",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(ping 127.0.0.1 -n 5)",
+      "Bash(ping 127.0.0.1 -n 3)",
+      "Bash(dir \"C:\\Users\\Toufi\\AndroidStudioProjects\\excelexcelexcel\\node_modules\\recharts\")",
+      "Bash(dir \"C:\\Users\\Toufi\\AndroidStudioProjects\\excelexcelexcel\\node_modules\\recharts\\es6\" /b)",
+      "Bash(npm uninstall recharts)",
+      "Bash(ping 127.0.0.1 -n 6)",
+      "Bash(curl -s -o nul -w \"%{http_code}\" http://localhost:3042)",
+      "Bash(curl http://localhost:3042)",
+      "Bash(curl -s -o nul -w \"%{http_code}\" http://localhost:3043)"
     ],
     "deny": [],
     "ask": []
