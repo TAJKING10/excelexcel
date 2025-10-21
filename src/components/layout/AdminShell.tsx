@@ -16,7 +16,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Shield
+  Shield,
+  Calculator
 } from 'lucide-react'
 
 export function AdminShell() {
@@ -32,6 +33,7 @@ export function AdminShell() {
     { path: '/admin/individuals', icon: UserCheck, label: t('individuals.title') },
 //     { path: '/admin/payslips', icon: FileText, label: t('payslips.title') },
     { path: '/admin/users', icon: Shield, label: t('users.accessSummary') },
+    { path: '/admin/tax-management', icon: Calculator, label: 'Tax Management' },
   ]
 
   return (

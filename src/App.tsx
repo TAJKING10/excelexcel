@@ -19,6 +19,7 @@ import CreateAnnualPayslip from './pages/admin/CreateAnnualPayslip';
 import { Individuals as AdminIndividuals } from './pages/admin/Individuals';
 import { IndividualPayslip } from './pages/admin/IndividualPayslip';
 import { Settings as AdminSettings } from './pages/admin/Settings';
+import TaxManagement from './pages/admin/TaxManagement';
 import { CompanyList } from './components/companies/CompanyList';
 import { CompanyDetail } from './pages/CompanyDetail';
 import { IndividualDetail } from './pages/IndividualDetail';
@@ -109,6 +110,7 @@ function AppRoutes() {
         <Route path="payslips/explorer" element={<Explorer />} />
         <Route path="users" element={<UserAccessManagement />} />
         <Route path="activity-log" element={<ActivityLogViewer />} />
+        <Route path="tax-management" element={<TaxManagement />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
 
