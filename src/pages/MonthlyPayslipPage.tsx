@@ -281,8 +281,8 @@ export default function MonthlyPayslipPage() {
         console.error('Error details:', JSON.stringify(error, null, 2));
 
         toast({
-          title: "Erreur de chargement",
-          description: error instanceof Error ? error.message : "Impossible de charger les données de la fiche de paie.",
+          title: t('payslips.loadError'),
+          description: error instanceof Error ? error.message : t('payslips.unableToLoad'),
           variant: "destructive",
         });
       } finally {
@@ -563,7 +563,7 @@ export default function MonthlyPayslipPage() {
   const handleEditToggle = () => {
     if (isEditMode && hasUnsavedChanges) {
       // Ask for confirmation before canceling
-      const confirmed = window.confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment annuler ?');
+      const confirmed = window.confirm(t('payslips.unsavedChangesConfirm'));
       if (!confirmed) return;
       setHasUnsavedChanges(false);
     }
@@ -672,9 +672,14 @@ export default function MonthlyPayslipPage() {
       }
 
       setHasUnsavedChanges(false);
+      const monthLabel = MONTHS.find(m => m.value === selectedMonth)?.label || selectedMonth;
       toast({
-        title: "✓ Sauvegarde réussie",
-        description: `Fiche de paie de ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear} sauvegardée dans Supabase (ID: ${savedPayslip.id?.substring(0, 8)}...).`,
+        title: t('payslips.saveSuccessTitle'),
+        description: t('payslips.saveSuccessDesc', {
+          month: monthLabel,
+          year: selectedYear,
+          id: savedPayslip.id?.substring(0, 8) + '...'
+        }),
         duration: 3000,
       });
     } catch (error: any) {
@@ -687,8 +692,8 @@ export default function MonthlyPayslipPage() {
       });
 
       toast({
-        title: "Erreur de sauvegarde",
-        description: error.message || "Une erreur s'est produite lors de la sauvegarde. Veuillez réessayer.",
+        title: t('payslips.saveError'),
+        description: error.message || t('payslips.saveErrorDesc'),
         variant: "destructive",
         duration: 5000,
       });
@@ -818,7 +823,7 @@ export default function MonthlyPayslipPage() {
     const pageWidth = doc.internal.pageSize.getWidth();
 
     doc.setFontSize(16);
-    doc.text('DÉCOMPTE SALAIRE/TRAITEMENT', pageWidth / 2, 15, { align: 'center' });
+    doc.text(t('payslips.monthlyPayslip.title'), pageWidth / 2, 15, { align: 'center' });
 
     doc.setFontSize(9);
     doc.text(`N° Salarié: ${payslipData.employeeNumber}`, 14, 30);
@@ -829,16 +834,16 @@ export default function MonthlyPayslipPage() {
 
     autoTable(doc, {
       startY: 50,
-      head: [['Désignation', 'Quantité', 'Valeur', 'Total']],
+      head: [[t('payslips.monthlyPayslip.designation'), t('payslips.monthlyPayslip.quantity'), t('payslips.monthlyPayslip.value'), t('payslips.monthlyPayslip.total')]],
       body: [
-        ['Appointement', payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(2), calculated.appointement.toFixed(2)],
-        ['Total brut', '', '', calculated.totalBrut.toFixed(2)],
-        ['Assurance Maladie', RATES.assuranceMaladie.toString(), '', calculated.assuranceMaladie.toFixed(2)],
-        ['Total Cotisation', '', '', calculated.totalCotisation.toFixed(2)],
-        ['Total Imposable', '', '', calculated.totalImposable.toFixed(2)],
-        ['IMPÔT', '', '', payslipData.impot.toFixed(2)],
-        ['NET', '', '', calculated.net.toFixed(2)],
-        ['NET A PAYER', '', '', calculated.netAPayer.toFixed(2)],
+        [t('payslips.monthlyPayslip.salary'), payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(2), calculated.appointement.toFixed(2)],
+        [t('payslips.monthlyPayslip.grossTotal'), '', '', calculated.totalBrut.toFixed(2)],
+        [t('payslips.monthlyPayslip.healthInsurance'), RATES.assuranceMaladie.toString(), '', calculated.assuranceMaladie.toFixed(2)],
+        [t('payslips.monthlyPayslip.totalContributions'), '', '', calculated.totalCotisation.toFixed(2)],
+        [t('payslips.monthlyPayslip.taxableTotal'), '', '', calculated.totalImposable.toFixed(2)],
+        [t('payslips.monthlyPayslip.tax'), '', '', payslipData.impot.toFixed(2)],
+        [t('payslips.monthlyPayslip.net'), '', '', calculated.net.toFixed(2)],
+        [t('payslips.monthlyPayslip.netToPay'), '', '', calculated.netAPayer.toFixed(2)],
       ],
       theme: 'striped',
       styles: { fontSize: 8 },
@@ -852,9 +857,9 @@ export default function MonthlyPayslipPage() {
   if (!personId || !person) {
     return (
       <div className="container mx-auto p-6">
-        <Card><CardHeader><CardTitle>Erreur</CardTitle></CardHeader>
-          <CardContent><p className="text-muted-foreground mb-4">Employé non trouvé.</p>
-            <Button onClick={() => navigate(-1)}>Retour</Button></CardContent></Card>
+        <Card><CardHeader><CardTitle>{t('payslips.errorTitle')}</CardTitle></CardHeader>
+          <CardContent><p className="text-muted-foreground mb-4">{t('payslips.employeeNotFound')}</p>
+            <Button onClick={() => navigate(-1)}>{t('common.back')}</Button></CardContent></Card>
       </div>
     );
   }
@@ -867,7 +872,7 @@ export default function MonthlyPayslipPage() {
           <Card className="p-6">
             <div className="flex items-center gap-3">
               <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-              <p className="text-lg font-semibold">Chargement des données...</p>
+              <p className="text-lg font-semibold">{t('payslips.loadingData')}</p>
             </div>
           </Card>
         </div>
@@ -877,12 +882,12 @@ export default function MonthlyPayslipPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-start gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mt-1">
-              <ArrowLeft className="mr-2 h-4 w-4" />Retour
+              <ArrowLeft className="mr-2 h-4 w-4" />{t('common.back')}
             </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
                 <Calendar className="h-7 w-7 md:h-8 md:w-8 text-blue-600" />
-                DÉCOMPTE SALAIRE
+                {t('payslips.monthlyPayslip.title')}
               </h1>
               <p className="text-base md:text-lg font-semibold text-foreground mt-1">
                 {person.firstName} {person.lastName}
@@ -925,7 +930,7 @@ export default function MonthlyPayslipPage() {
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md transition-all"
               >
                 <Edit2 className="mr-2 h-4 w-4" />
-                Modifier
+                {t('common.edit')}
               </Button>
             ) : (
               <>
@@ -938,17 +943,17 @@ export default function MonthlyPayslipPage() {
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enregistrement...
+                      {t('payslips.saving')}
                     </>
                   ) : hasUnsavedChanges ? (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      Sauvegarder
+                      {t('common.save')}
                     </>
                   ) : (
                     <>
                       <Check className="mr-2 h-4 w-4" />
-                      Sauvegardé
+                      {t('payslips.saved')}
                     </>
                   )}
                 </Button>
@@ -958,7 +963,7 @@ export default function MonthlyPayslipPage() {
                   variant="outline"
                   className="shadow-sm border-2"
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </Button>
               </>
             )}
@@ -972,7 +977,7 @@ export default function MonthlyPayslipPage() {
         {hasUnsavedChanges && (
           <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-md border border-amber-200 dark:border-amber-800">
             <span className="h-2 w-2 bg-amber-600 dark:bg-amber-400 rounded-full animate-pulse"></span>
-            Modifications non sauvegardées • Appuyez sur Ctrl+S pour sauvegarder rapidement
+            {t('payslips.unsavedChangesWarning')}
           </div>
         )}
       </div>
@@ -996,9 +1001,9 @@ export default function MonthlyPayslipPage() {
           <CardContent className="py-4">
             <p className="text-center text-sm md:text-base font-semibold text-blue-900 dark:text-blue-100 flex items-center justify-center gap-3">
               <Calculator className="h-5 w-5" />
-              MODE CALCUL BIDIRECTIONNEL ACTIVÉ
+              {t('payslips.bidirectionalModeEnabled')}
               <span className="text-xs font-normal bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
-                Modifiez n'importe quelle valeur, les autres s'ajusteront automatiquement
+                {t('payslips.bidirectionalModeDesc')}
               </span>
             </p>
           </CardContent>
@@ -1025,17 +1030,17 @@ export default function MonthlyPayslipPage() {
               <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                 <span className="text-sm font-bold text-blue-600 dark:text-blue-400">👤</span>
               </div>
-              Informations Employé
+              {t('payslips.monthlyPayslip.employeeInfo')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
             {[
-              ['N° Salarié', 'employeeNumber', 'text'],
-              ['Indice', 'indice', 'text'],
-              ['Emploi', 'emploi', 'text'],
-              ['Date d\'entrée', 'dateEntree', 'date'],
-              ['Matricule assuré', 'matriculeAssure', 'text'],
-              ['Matricule employeur', 'matriculeEmployeur', 'text'],
+              [t('payslips.monthlyPayslip.employeeNumber'), 'employeeNumber', 'text'],
+              [t('payslips.monthlyPayslip.index'), 'indice', 'text'],
+              [t('payslips.monthlyPayslip.position'), 'emploi', 'text'],
+              [t('payslips.monthlyPayslip.hireDate'), 'dateEntree', 'date'],
+              [t('payslips.monthlyPayslip.insuredNumber'), 'matriculeAssure', 'text'],
+              [t('payslips.monthlyPayslip.employerNumber'), 'matriculeEmployeur', 'text'],
             ].map(([label, field, type]) => (
               <div key={field} className="grid grid-cols-2 gap-3 items-center">
                 <Label className="text-xs font-semibold text-muted-foreground">{label}:</Label>
@@ -1051,17 +1056,17 @@ export default function MonthlyPayslipPage() {
               <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                 <span className="text-sm font-bold text-green-600 dark:text-green-400">🏢</span>
               </div>
-              Informations Entreprise
+              {t('payslips.monthlyPayslip.companyInfo')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-4">
             {[
-              ['Entreprise', company?.name || 'Groupe Advensys Luxembourg S.A'],
-              ['Adresse', company?.address || 'Duarrefstrooss 49'],
-              ['Code Postal', company?.postalCode || 'L-9964'],
-              ['Ville', company?.city || 'Huldange'],
-              ['Pays', company?.country || 'Luxembourg'],
-              ['Nom complet', `${person.firstName} ${person.lastName}`],
+              [t('payslips.monthlyPayslip.company'), company?.name || 'Groupe Advensys Luxembourg S.A'],
+              [t('payslips.monthlyPayslip.address'), company?.address || 'Duarrefstrooss 49'],
+              [t('payslips.monthlyPayslip.postalCode'), company?.postalCode || 'L-9964'],
+              [t('payslips.monthlyPayslip.city'), company?.city || 'Huldange'],
+              [t('payslips.monthlyPayslip.country'), company?.country || 'Luxembourg'],
+              [t('payslips.monthlyPayslip.fullName'), `${person.firstName} ${person.lastName}`],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
                 <span className="text-xs font-semibold text-muted-foreground">{label}:</span>
@@ -1079,7 +1084,10 @@ export default function MonthlyPayslipPage() {
             <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
               <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">💰</span>
             </div>
-            Bulletin de Salaire - {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
+            {t('payslips.monthlyPayslip.payslipFor', {
+              month: MONTHS.find(m => m.value === selectedMonth)?.label,
+              year: selectedYear
+            })}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 md:p-6">
@@ -1087,18 +1095,18 @@ export default function MonthlyPayslipPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-left">Désignation</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">Quantité</TableHead>
-                  <TableHead className="text-right">Valeur</TableHead>
-                  <TableHead className="text-right bg-blue-50/50 dark:bg-blue-950/30">Total</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">M-1</TableHead>
-                  <TableHead className="text-right bg-green-50/50 dark:bg-green-950/30">Total</TableHead>
+                  <TableHead className="text-left">{t('payslips.monthlyPayslip.designation')}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">{t('payslips.monthlyPayslip.quantity')}</TableHead>
+                  <TableHead className="text-right">{t('payslips.monthlyPayslip.value')}</TableHead>
+                  <TableHead className="text-right bg-blue-50/50 dark:bg-blue-950/30">{t('payslips.monthlyPayslip.total')}</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">{t('payslips.monthlyPayslip.m1')}</TableHead>
+                  <TableHead className="text-right bg-green-50/50 dark:bg-green-950/30">{t('payslips.monthlyPayslip.total')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Appointement */}
+                {/* Salary */}
                 <TableRow>
-                  <TableCell>Appointement</TableCell>
+                  <TableCell>{t('payslips.monthlyPayslip.salary')}</TableCell>
                   <TableCell className="text-right">
                     <EditableInput field="hoursWorked" value={payslipData.hoursWorked} />
                   </TableCell>
@@ -1116,9 +1124,9 @@ export default function MonthlyPayslipPage() {
                   </TableCell>
                 </TableRow>
 
-                {/* Jours fériés */}
+                {/* Public Holidays */}
                 <TableRow>
-                  <TableCell>Jours fériés</TableCell>
+                  <TableCell>{t('payslips.monthlyPayslip.publicHolidays')}</TableCell>
                   <TableCell className="text-right">
                     <EditableInput field="publicHolidayHours" value={payslipData.publicHolidayHours} />
                   </TableCell>
@@ -1136,9 +1144,9 @@ export default function MonthlyPayslipPage() {
                   </TableCell>
                 </TableRow>
 
-                {/* Congés & Absences */}
+                {/* Holidays & Absences */}
                 <TableRow>
-                  <TableCell>Congés (H)</TableCell>
+                  <TableCell>{t('payslips.monthlyPayslip.holidays')}</TableCell>
                   <TableCell className="text-right">
                     <EditableInput field="holidayHours" value={payslipData.holidayHours} />
                   </TableCell>
@@ -1187,7 +1195,7 @@ export default function MonthlyPayslipPage() {
                 </TableRow>
 
                 <TableRow>
-                  <TableCell>Absences Maladie (H)</TableCell>
+                  <TableCell>{t('payslips.monthlyPayslip.sickLeave')}</TableCell>
                   <TableCell className="text-right">
                     <EditableInput field="sickLeaveHours" value={payslipData.sickLeaveHours} />
                   </TableCell>
@@ -1235,9 +1243,9 @@ export default function MonthlyPayslipPage() {
                   </TableCell>
                 </TableRow>
 
-                {/* Total Brut */}
+                {/* Gross Total */}
                 <TableRow className="bg-blue-50 dark:bg-blue-950 font-bold">
-                  <TableCell className="font-bold">Total brut</TableCell>
+                  <TableCell className="font-bold">{t('payslips.monthlyPayslip.grossTotal')}</TableCell>
                   <TableCell className="text-right">-</TableCell>
                   <TableCell className="text-right">-</TableCell>
                   <TableCell className="text-right bg-blue-100 dark:bg-blue-900">
@@ -1253,14 +1261,14 @@ export default function MonthlyPayslipPage() {
 
                 <TableRow><TableCell colSpan={6} className="py-1"></TableCell></TableRow>
 
-                {/* Cotisations */}
-                <TableRow className="bg-muted/70 font-semibold"><TableCell className="font-semibold" colSpan={6}>Cotisation</TableCell></TableRow>
+                {/* Contributions */}
+                <TableRow className="bg-muted/70 font-semibold"><TableCell className="font-semibold" colSpan={6}>{t('payslips.monthlyPayslip.contributions')}</TableCell></TableRow>
 
                 {[
-                  ['Assurance Maladie', RATES.assuranceMaladie, calculated.assuranceMaladie, 'manualAssuranceMaladie', 'm1AssuranceMaladie'],
-                  ['A-M Majoration espèce', RATES.majoration, calculated.majorationEspece, 'manualMajoration', 'm1Majoration'],
-                  ['Assurance Pension', RATES.assurancePension, calculated.assurancePension, 'manualAssurancePension', 'm1AssurancePension'],
-                  ['Assurance dépendance', RATES.assuranceDependance, calculated.assuranceDependance, 'manualAssuranceDependance', 'm1AssuranceDependance'],
+                  [t('payslips.monthlyPayslip.healthInsurance'), RATES.assuranceMaladie, calculated.assuranceMaladie, 'manualAssuranceMaladie', 'm1AssuranceMaladie'],
+                  [t('payslips.monthlyPayslip.cashAllowance'), RATES.majoration, calculated.majorationEspece, 'manualMajoration', 'm1Majoration'],
+                  [t('payslips.monthlyPayslip.pensionInsurance'), RATES.assurancePension, calculated.assurancePension, 'manualAssurancePension', 'm1AssurancePension'],
+                  [t('payslips.monthlyPayslip.dependencyInsurance'), RATES.assuranceDependance, calculated.assuranceDependance, 'manualAssuranceDependance', 'm1AssuranceDependance'],
                 ].map(([label, rate, value, manualField, m1Field]) => (
                   <TableRow key={label as string}>
                     <TableCell>{label}</TableCell>
@@ -1279,7 +1287,7 @@ export default function MonthlyPayslipPage() {
                 ))}
 
                 <TableRow className="bg-orange-50 dark:bg-orange-950 font-bold">
-                  <TableCell className="font-bold">Total Cotisation</TableCell>
+                  <TableCell className="font-bold">{t('payslips.monthlyPayslip.totalContributions')}</TableCell>
                   <TableCell className="text-right">-</TableCell>
                   <TableCell className="text-right">-</TableCell>
                   <TableCell className="text-right bg-orange-100 dark:bg-orange-900">
@@ -1326,9 +1334,9 @@ export default function MonthlyPayslipPage() {
 
                 <TableRow><TableCell colSpan={6} className="py-1"></TableCell></TableRow>
 
-                {/* Total Imposable */}
+                {/* Taxable Total */}
                 <TableRow className="bg-purple-50 dark:bg-purple-950 font-bold">
-                  <TableCell className="font-bold">Total Imposable</TableCell>
+                  <TableCell className="font-bold">{t('payslips.monthlyPayslip.taxableTotal')}</TableCell>
                   <TableCell className="text-right">-</TableCell>
                   <TableCell className="text-right">-</TableCell>
                   <TableCell className="text-right bg-purple-100 dark:bg-purple-900">
@@ -1346,7 +1354,7 @@ export default function MonthlyPayslipPage() {
 
                 {/* Impôts and Credits */}
                 <TableRow>
-                  <TableCell className="font-semibold">IMPÔT</TableCell>
+                  <TableCell className="font-semibold">{t('payslips.monthlyPayslip.tax')}</TableCell>
                   <TableCell className="text-right text-muted-foreground">-</TableCell>
                   <TableCell className="text-right text-muted-foreground">-</TableCell>
                   <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
@@ -1365,9 +1373,9 @@ export default function MonthlyPayslipPage() {
                 </TableRow>
 
                 {[
-                  ['CISSM', calculated.cissm, 'manualCissm', 'm1Cissm'],
-                  ['CIS-CIP-CIM', calculated.cisCipCim, 'manualCisCipCim', 'm1CisCipCim'],
-                  ['CI-CO2', calculated.ciCo2, 'manualCiCo2', 'm1CiCo2'],
+                  [t('payslips.monthlyPayslip.taxCredit'), calculated.cissm, 'manualCissm', 'm1Cissm'],
+                  [t('payslips.monthlyPayslip.taxCreditCIS'), calculated.cisCipCim, 'manualCisCipCim', 'm1CisCipCim'],
+                  [t('payslips.monthlyPayslip.energyCredit'), calculated.ciCo2, 'manualCiCo2', 'm1CiCo2'],
                 ].map(([label, value, manualField, m1Field]) => (
                   <TableRow key={label}>
                     <TableCell>{label}</TableCell>
@@ -1389,7 +1397,7 @@ export default function MonthlyPayslipPage() {
 
                 {/* NET */}
                 <TableRow className="bg-green-50 dark:bg-green-950 font-bold">
-                  <TableCell className="py-3 text-base font-bold">NET</TableCell>
+                  <TableCell className="py-3 text-base font-bold">{t('payslips.monthlyPayslip.net')}</TableCell>
                   <TableCell className="text-right py-3">-</TableCell>
                   <TableCell className="text-right py-3">-</TableCell>
                   <TableCell className="text-right py-3 bg-green-100 dark:bg-green-900 text-base">
@@ -1405,8 +1413,8 @@ export default function MonthlyPayslipPage() {
 
                 {/* Deductions from NET */}
                 {[
-                  ['Chèque repas', 'chequeRepas'],
-                  ['Avance sur salaire', 'avanceSalaire'],
+                  [t('payslips.monthlyPayslip.mealVouchers'), 'chequeRepas'],
+                  [t('payslips.monthlyPayslip.advance'), 'avanceSalaire'],
                 ].map(([label, field]) => (
                   <TableRow key={field} className="border-b border-border hover:bg-muted/30">
                     <TableCell className="py-2 px-2">{label}</TableCell>
@@ -1444,10 +1452,10 @@ export default function MonthlyPayslipPage() {
                   </TableRow>
                 ))}
 
-                {/* NET A PAYER */}
+                {/* NET TO PAY */}
                 <TableRow className="border-t-2 border-border bg-green-600/30 dark:bg-green-600/40">
                   <TableCell colSpan={4}></TableCell>
-                  <TableCell className="text-right py-3 px-2 font-bold text-base text-foreground">NET À PAYER</TableCell>
+                  <TableCell className="text-right py-3 px-2 font-bold text-base text-foreground">{t('payslips.monthlyPayslip.netToPay')}</TableCell>
                   <TableCell className="text-right py-3 px-2 bg-green-600/50 dark:bg-green-600/60 font-bold text-base text-foreground">
                     <EditableValue value={calculated.netAPayer} manualField="manualNetAPayer" className="font-bold text-base" />
                   </TableCell>
@@ -1466,7 +1474,7 @@ export default function MonthlyPayslipPage() {
               <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
                 <span className="text-sm font-bold text-purple-600 dark:text-purple-400">🏖️</span>
               </div>
-              Congés (H)
+              {t('payslips.monthlyPayslip.holidays')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
