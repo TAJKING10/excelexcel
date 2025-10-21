@@ -75,6 +75,25 @@ interface PayslipData {
   manualCiCo2?: number;
   manualNet?: number;
   manualNetAPayer?: number;
+  // M-1 (previous month) values
+  m1Appointement?: number;
+  m1JoursFeries?: number;
+  m1TotalBrut?: number;
+  m1AssuranceMaladie?: number;
+  m1Majoration?: number;
+  m1AssurancePension?: number;
+  m1AssuranceDependance?: number;
+  m1TotalCotisation?: number;
+  m1FD?: number;
+  m1AC?: number;
+  m1FFO?: number;
+  m1FDS?: number;
+  m1TotalImposable?: number;
+  m1Impot?: number;
+  m1Cissm?: number;
+  m1CisCipCim?: number;
+  m1CiCo2?: number;
+  m1Net?: number;
 }
 
 export default function MonthlyPayslipPage() {
@@ -280,21 +299,26 @@ export default function MonthlyPayslipPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // Component for editable calculated value - shows as input in manual mode
+  // Component for editable calculated value - always shows as input in edit mode
   const EditableValue = ({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
-    // If not in edit mode or in auto-calculate mode, show as read-only text
-    if (!isEditMode || autoCalculate) {
+    // If not in edit mode, show as read-only text
+    if (!isEditMode) {
       return <span className={className}>{value.toFixed(2)} €</span>;
     }
 
-    // In edit mode with manual calculation, show as editable input field
+    // In edit mode, always show as editable input field
+    const inputValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : value;
+    const baseInputClass = autoCalculate
+      ? "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+      : "border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30";
+
     return (
       <Input
         type="number"
         step="0.01"
-        value={payslipData[manualField] !== undefined ? payslipData[manualField] as number : value}
+        value={inputValue}
         onChange={(e) => handleInputChange(manualField, parseFloat(e.target.value) || 0)}
-        className={`h-7 w-28 text-right text-xs font-medium border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30 ${className}`}
+        className={`h-7 w-28 text-right text-xs font-medium ${baseInputClass} transition-colors ${className}`}
       />
     );
   };
@@ -317,6 +341,31 @@ export default function MonthlyPayslipPage() {
         value={value}
         onChange={(e) => handleInputChange(field, type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value)}
         className={`${className} ${baseInputClass} transition-colors`}
+      />
+    );
+  };
+
+  // Component for editable M-1 (previous month) values
+  const EditableM1Value = ({ manualField, defaultValue = 0, className = "" }: { manualField: keyof PayslipData; defaultValue?: number; className?: string }) => {
+    // If not in edit mode, show as read-only text
+    if (!isEditMode) {
+      const displayValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
+      return <span className={className}>{displayValue.toFixed(2)} €</span>;
+    }
+
+    // In edit mode, show as editable input field
+    const inputValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
+    const baseInputClass = autoCalculate
+      ? "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+      : "border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30";
+
+    return (
+      <Input
+        type="number"
+        step="0.01"
+        value={inputValue}
+        onChange={(e) => handleInputChange(manualField, parseFloat(e.target.value) || 0)}
+        className={`h-7 w-28 text-right text-xs font-medium ${baseInputClass} transition-colors ${className}`}
       />
     );
   };
@@ -605,8 +654,12 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
                     <EditableValue value={calculated.appointement} manualField="manualAppointement" />
                   </td>
-                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
-                  <td className="text-right py-2 px-2 bg-green-500/10 dark:bg-green-500/20 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableM1Value manualField="m1Appointement" defaultValue={0} />
+                  </td>
+                  <td className="text-right py-2 px-2 bg-green-500/10 dark:bg-green-500/20">
+                    <EditableValue value={calculated.appointement} manualField="manualAppointement" />
+                  </td>
                 </tr>
 
                 {/* Jours fériés */}
@@ -615,12 +668,18 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2">
                     <EditableInput field="publicHolidayHours" value={payslipData.publicHolidayHours} />
                   </td>
-                  <td className="text-right py-2 px-2 text-muted-foreground">0</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableInput field="hourlyRate" value={payslipData.hourlyRate.toFixed(2)} step="0.01" className="h-6 w-20 text-right text-xs" />
+                  </td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
                     <EditableValue value={calculated.joursFeries} manualField="manualJoursFeries" />
                   </td>
-                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
-                  <td className="text-right py-2 px-2 bg-green-500/10 dark:bg-green-500/20 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableM1Value manualField="m1JoursFeries" defaultValue={0} />
+                  </td>
+                  <td className="text-right py-2 px-2 bg-green-500/10 dark:bg-green-500/20">
+                    <EditableValue value={calculated.joursFeries} manualField="manualJoursFeries" />
+                  </td>
                 </tr>
 
                 {/* Congés & Absences */}
@@ -629,10 +688,48 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2">
                     <EditableInput field="holidayHours" value={payslipData.holidayHours} />
                   </td>
-                  <td className="text-right py-2 px-2 text-muted-foreground">0</td>
-                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 text-foreground">0.00 €</td>
-                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
-                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableInput field="hourlyRate" value={payslipData.hourlyRate.toFixed(2)} step="0.01" className="h-6 w-20 text-right text-xs" />
+                  </td>
+                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 text-foreground">
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={0}
+                        onChange={() => {}}
+                        className="h-7 w-28 text-right text-xs font-medium border-blue-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      />
+                    ) : (
+                      <span>0.00 €</span>
+                    )}
+                  </td>
+                  <td className="text-right py-2 px-2">
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={0}
+                        onChange={() => {}}
+                        className="h-7 w-28 text-right text-xs font-medium border-blue-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      />
+                    ) : (
+                      <span>0.00 €</span>
+                    )}
+                  </td>
+                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25">
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={0}
+                        onChange={() => {}}
+                        className="h-7 w-28 text-right text-xs font-medium border-blue-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      />
+                    ) : (
+                      <span>0.00 €</span>
+                    )}
+                  </td>
                 </tr>
 
                 <tr className="border-b border-border hover:bg-muted/30">
@@ -640,10 +737,48 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2">
                     <EditableInput field="sickLeaveHours" value={payslipData.sickLeaveHours} />
                   </td>
-                  <td className="text-right py-2 px-2 text-muted-foreground">0</td>
-                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 text-foreground">0.00 €</td>
-                  <td className="text-right py-2 px-2 text-muted-foreground">-</td>
-                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-muted-foreground">-</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableInput field="hourlyRate" value={payslipData.hourlyRate.toFixed(2)} step="0.01" className="h-6 w-20 text-right text-xs" />
+                  </td>
+                  <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 text-foreground">
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={0}
+                        onChange={() => {}}
+                        className="h-7 w-28 text-right text-xs font-medium border-blue-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      />
+                    ) : (
+                      <span>0.00 €</span>
+                    )}
+                  </td>
+                  <td className="text-right py-2 px-2">
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={0}
+                        onChange={() => {}}
+                        className="h-7 w-28 text-right text-xs font-medium border-blue-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      />
+                    ) : (
+                      <span>0.00 €</span>
+                    )}
+                  </td>
+                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25">
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={0}
+                        onChange={() => {}}
+                        className="h-7 w-28 text-right text-xs font-medium border-blue-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      />
+                    ) : (
+                      <span>0.00 €</span>
+                    )}
+                  </td>
                 </tr>
 
                 {/* Total Brut */}
@@ -654,7 +789,9 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2 bg-blue-500/35 dark:bg-blue-500/45 text-foreground">
                     <EditableValue value={calculated.totalBrut} manualField="manualTotalBrut" className="font-bold" />
                   </td>
-                  <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableM1Value manualField="m1TotalBrut" defaultValue={0} className="font-bold" />
+                  </td>
                   <td className="text-right py-2 px-2 bg-green-500/35 dark:bg-green-500/45 text-foreground">
                     <EditableValue value={calculated.totalBrut} manualField="manualTotalBrut" className="font-bold" />
                   </td>
@@ -666,11 +803,11 @@ export default function MonthlyPayslipPage() {
                 <tr className="bg-muted/70 font-semibold"><td className="py-2 px-2 text-foreground" colSpan={6}>Cotisation</td></tr>
 
                 {[
-                  ['Assurance Maladie', RATES.assuranceMaladie, calculated.assuranceMaladie, 'manualAssuranceMaladie'],
-                  ['A-M Majoration espèce', RATES.majoration, calculated.majorationEspece, 'manualMajoration'],
-                  ['Assurance Pension', RATES.assurancePension, calculated.assurancePension, 'manualAssurancePension'],
-                  ['Assurance dépendance', RATES.assuranceDependance, calculated.assuranceDependance, 'manualAssuranceDependance'],
-                ].map(([label, rate, value, manualField]) => (
+                  ['Assurance Maladie', RATES.assuranceMaladie, calculated.assuranceMaladie, 'manualAssuranceMaladie', 'm1AssuranceMaladie'],
+                  ['A-M Majoration espèce', RATES.majoration, calculated.majorationEspece, 'manualMajoration', 'm1Majoration'],
+                  ['Assurance Pension', RATES.assurancePension, calculated.assurancePension, 'manualAssurancePension', 'm1AssurancePension'],
+                  ['Assurance dépendance', RATES.assuranceDependance, calculated.assuranceDependance, 'manualAssuranceDependance', 'm1AssuranceDependance'],
+                ].map(([label, rate, value, manualField, m1Field]) => (
                   <tr key={label as string} className="border-b border-border hover:bg-muted/30">
                     <td className="py-2 px-2">{label}</td>
                     <td className="text-right py-2 px-2 text-muted-foreground">{((rate as number) * 100).toFixed(2)}%</td>
@@ -678,7 +815,9 @@ export default function MonthlyPayslipPage() {
                     <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
                       <EditableValue value={value as number} manualField={manualField as keyof PayslipData} />
                     </td>
-                    <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                    <td className="text-right py-2 px-2">
+                      <EditableM1Value manualField={m1Field as keyof PayslipData} defaultValue={0} />
+                    </td>
                     <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">
                       <EditableValue value={value as number} manualField={manualField as keyof PayslipData} />
                     </td>
@@ -692,7 +831,9 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2 bg-orange-500/35 dark:bg-orange-500/45 text-foreground">
                     <EditableValue value={calculated.totalCotisation} manualField="manualTotalCotisation" className="font-bold" />
                   </td>
-                  <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableM1Value manualField="m1TotalCotisation" defaultValue={0} className="font-bold" />
+                  </td>
                   <td className="text-right py-2 px-2 bg-orange-500/35 dark:bg-orange-500/45 text-foreground">
                     <EditableValue value={calculated.totalCotisation} manualField="manualTotalCotisation" className="font-bold" />
                   </td>
@@ -703,7 +844,12 @@ export default function MonthlyPayslipPage() {
                 {/* Deductions */}
                 <tr className="bg-muted/70 font-semibold"><td className="py-2 px-2 text-foreground" colSpan={6}>Deduction</td></tr>
 
-                {['fd', 'ac', 'ffo', 'fds'].map((field) => (
+                {[
+                  ['fd', 'm1FD'],
+                  ['ac', 'm1AC'],
+                  ['ffo', 'm1FFO'],
+                  ['fds', 'm1FDS']
+                ].map(([field, m1Field]) => (
                   <tr key={field} className="border-b border-border hover:bg-muted/30">
                     <td className="py-2 px-2">{field.toUpperCase()}</td>
                     <td className="text-right py-2 px-2 text-muted-foreground">-</td>
@@ -711,9 +857,15 @@ export default function MonthlyPayslipPage() {
                     <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
                       <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} step="0.01" className="h-6 w-20 text-right text-xs" />
                     </td>
-                    <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
-                    <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">
-                      {(payslipData[field as keyof PayslipData] as number).toFixed(2)} €
+                    <td className="text-right py-2 px-2">
+                      <EditableM1Value manualField={m1Field as keyof PayslipData} defaultValue={0} />
+                    </td>
+                    <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25">
+                      {isEditMode ? (
+                        <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} step="0.01" className="h-6 w-20 text-right text-xs" />
+                      ) : (
+                        <span>{(payslipData[field as keyof PayslipData] as number).toFixed(2)} €</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -728,7 +880,9 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2 bg-purple-500/35 dark:bg-purple-500/45 text-foreground">
                     <EditableValue value={calculated.totalImposable} manualField="manualTotalImposable" className="font-bold" />
                   </td>
-                  <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableM1Value manualField="m1TotalImposable" defaultValue={0} className="font-bold" />
+                  </td>
                   <td className="text-right py-2 px-2 bg-purple-500/35 dark:bg-purple-500/45 text-foreground">
                     <EditableValue value={calculated.totalImposable} manualField="manualTotalImposable" className="font-bold" />
                   </td>
@@ -744,15 +898,23 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
                     <EditableInput field="impot" value={payslipData.impot} step="0.01" className="h-6 w-20 text-right text-xs" />
                   </td>
-                  <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">{payslipData.impot.toFixed(2)} €</td>
+                  <td className="text-right py-2 px-2">
+                    <EditableM1Value manualField="m1Impot" defaultValue={0} />
+                  </td>
+                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25">
+                    {isEditMode ? (
+                      <EditableInput field="impot" value={payslipData.impot} step="0.01" className="h-6 w-20 text-right text-xs" />
+                    ) : (
+                      <span>{payslipData.impot.toFixed(2)} €</span>
+                    )}
+                  </td>
                 </tr>
 
                 {[
-                  ['CISSM', calculated.cissm, 'manualCissm'],
-                  ['CIS-CIP-CIM', calculated.cisCipCim, 'manualCisCipCim'],
-                  ['CI-CO2', calculated.ciCo2, 'manualCiCo2'],
-                ].map(([label, value, manualField]) => (
+                  ['CISSM', calculated.cissm, 'manualCissm', 'm1Cissm'],
+                  ['CIS-CIP-CIM', calculated.cisCipCim, 'manualCisCipCim', 'm1CisCipCim'],
+                  ['CI-CO2', calculated.ciCo2, 'manualCiCo2', 'm1CiCo2'],
+                ].map(([label, value, manualField, m1Field]) => (
                   <tr key={label} className="border-b border-border hover:bg-muted/30">
                     <td className="py-2 px-2">{label}</td>
                     <td className="text-right py-2 px-2 text-muted-foreground">-</td>
@@ -760,7 +922,9 @@ export default function MonthlyPayslipPage() {
                     <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
                       <EditableValue value={value as number} manualField={manualField as keyof PayslipData} />
                     </td>
-                    <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
+                    <td className="text-right py-2 px-2">
+                      <EditableM1Value manualField={m1Field as keyof PayslipData} defaultValue={0} />
+                    </td>
                     <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">
                       <EditableValue value={value as number} manualField={manualField as keyof PayslipData} />
                     </td>
@@ -777,7 +941,9 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-3 px-2 bg-green-500/35 dark:bg-green-500/45 text-base text-foreground">
                     <EditableValue value={calculated.net} manualField="manualNet" className="font-bold text-base" />
                   </td>
-                  <td className="text-right py-3 px-2 text-foreground">0.00 €</td>
+                  <td className="text-right py-3 px-2">
+                    <EditableM1Value manualField="m1Net" defaultValue={0} className="font-bold text-base" />
+                  </td>
                   <td className="text-right py-3 px-2 bg-green-500/40 dark:bg-green-500/50 text-base text-foreground">
                     <EditableValue value={calculated.net} manualField="manualNet" className="font-bold text-base" />
                   </td>
@@ -795,8 +961,32 @@ export default function MonthlyPayslipPage() {
                     <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
                       <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} step="0.01" className="h-6 w-20 text-right text-xs" />
                     </td>
-                    <td className="text-right py-2 px-2 text-muted-foreground">-</td>
-                    <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-muted-foreground">-</td>
+                    <td className="text-right py-2 px-2">
+                      {isEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={0}
+                          onChange={() => {}}
+                          className="h-7 w-28 text-right text-xs font-medium border-blue-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                        />
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </td>
+                    <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25">
+                      {isEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={0}
+                          onChange={() => {}}
+                          className="h-7 w-28 text-right text-xs font-medium border-blue-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                        />
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
 
