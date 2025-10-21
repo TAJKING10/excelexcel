@@ -147,64 +147,122 @@ export default function MonthlyPayslipPage() {
     leaveTaken: 16,
   });
 
+  // Auto-recalculate when inputs change and auto-calculate is enabled
+  useEffect(() => {
+    if (!autoCalculate) return; // Don't auto-calculate if manual mode
+
+    const { hoursWorked, hourlyRate, publicHolidayHours } = payslipData;
+
+    const appointement = hoursWorked * hourlyRate;
+    const joursFeries = publicHolidayHours * hourlyRate;
+    const totalBrut = appointement + joursFeries;
+
+    const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+    const majorationEspece = totalBrut * RATES.majoration;
+    const assurancePension = totalBrut * RATES.assurancePension;
+    const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+    const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
+
+    const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
+      payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
+
+    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+    const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
+    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+
+    const net = totalBrut - totalCotisation - payslipData.impot + cissm + cisCipCim + ciCo2;
+    const netAPayer = net - payslipData.chequeRepas - payslipData.avanceSalaire;
+
+    // Update manual fields with calculated values
+    setPayslipData(prev => ({
+      ...prev,
+      manualAppointement: appointement,
+      manualJoursFeries: joursFeries,
+      manualTotalBrut: totalBrut,
+      manualAssuranceMaladie: assuranceMaladie,
+      manualMajoration: majorationEspece,
+      manualAssurancePension: assurancePension,
+      manualAssuranceDependance: assuranceDependance,
+      manualTotalCotisation: totalCotisation,
+      manualTotalImposable: totalImposable,
+      manualCissm: cissm,
+      manualCisCipCim: cisCipCim,
+      manualCiCo2: ciCo2,
+      manualNet: net,
+      manualNetAPayer: netAPayer,
+    }));
+  }, [
+    autoCalculate,
+    payslipData.hoursWorked,
+    payslipData.hourlyRate,
+    payslipData.publicHolidayHours,
+    payslipData.fd,
+    payslipData.ac,
+    payslipData.ffo,
+    payslipData.fds,
+    payslipData.impot,
+    payslipData.chequeRepas,
+    payslipData.avanceSalaire,
+  ]);
+
   const calculatePayslip = () => {
     const { hoursWorked, hourlyRate, publicHolidayHours } = payslipData;
 
-    // Use manual values if auto-calculate is off, otherwise calculate
-    const appointement = !autoCalculate && payslipData.manualAppointement !== undefined
+    // Use manual values if set, otherwise calculate
+    const appointement = payslipData.manualAppointement !== undefined
       ? payslipData.manualAppointement
       : hoursWorked * hourlyRate;
 
-    const joursFeries = !autoCalculate && payslipData.manualJoursFeries !== undefined
+    const joursFeries = payslipData.manualJoursFeries !== undefined
       ? payslipData.manualJoursFeries
       : publicHolidayHours * hourlyRate;
 
-    const totalBrut = !autoCalculate && payslipData.manualTotalBrut !== undefined
+    const totalBrut = payslipData.manualTotalBrut !== undefined
       ? payslipData.manualTotalBrut
       : appointement + joursFeries;
 
-    const assuranceMaladie = !autoCalculate && payslipData.manualAssuranceMaladie !== undefined
+    const assuranceMaladie = payslipData.manualAssuranceMaladie !== undefined
       ? payslipData.manualAssuranceMaladie
       : totalBrut * RATES.assuranceMaladie;
 
-    const majorationEspece = !autoCalculate && payslipData.manualMajoration !== undefined
+    const majorationEspece = payslipData.manualMajoration !== undefined
       ? payslipData.manualMajoration
       : totalBrut * RATES.majoration;
 
-    const assurancePension = !autoCalculate && payslipData.manualAssurancePension !== undefined
+    const assurancePension = payslipData.manualAssurancePension !== undefined
       ? payslipData.manualAssurancePension
       : totalBrut * RATES.assurancePension;
 
-    const assuranceDependance = !autoCalculate && payslipData.manualAssuranceDependance !== undefined
+    const assuranceDependance = payslipData.manualAssuranceDependance !== undefined
       ? payslipData.manualAssuranceDependance
       : Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
 
-    const totalCotisation = !autoCalculate && payslipData.manualTotalCotisation !== undefined
+    const totalCotisation = payslipData.manualTotalCotisation !== undefined
       ? payslipData.manualTotalCotisation
       : assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-    const totalImposable = !autoCalculate && payslipData.manualTotalImposable !== undefined
+    const totalImposable = payslipData.manualTotalImposable !== undefined
       ? payslipData.manualTotalImposable
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
-    const cissm = !autoCalculate && payslipData.manualCissm !== undefined
+    const cissm = payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
       : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
 
-    const cisCipCim = !autoCalculate && payslipData.manualCisCipCim !== undefined
+    const cisCipCim = payslipData.manualCisCipCim !== undefined
       ? payslipData.manualCisCipCim
       : totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
 
-    const ciCo2 = !autoCalculate && payslipData.manualCiCo2 !== undefined
+    const ciCo2 = payslipData.manualCiCo2 !== undefined
       ? payslipData.manualCiCo2
       : totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
 
-    const net = !autoCalculate && payslipData.manualNet !== undefined
+    const net = payslipData.manualNet !== undefined
       ? payslipData.manualNet
       : totalBrut - totalCotisation - payslipData.impot + cissm + cisCipCim + ciCo2;
 
-    const netAPayer = !autoCalculate && payslipData.manualNetAPayer !== undefined
+    const netAPayer = payslipData.manualNetAPayer !== undefined
       ? payslipData.manualNetAPayer
       : net - payslipData.chequeRepas - payslipData.avanceSalaire;
 
@@ -301,23 +359,45 @@ export default function MonthlyPayslipPage() {
 
   // Component for editable calculated value - always shows as input in edit mode
   const EditableValue = ({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
+    const [localValue, setLocalValue] = useState<string>('');
+    const [isFocused, setIsFocused] = useState(false);
+
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
       return <span className={className}>{value.toFixed(2)} €</span>;
     }
 
     // In edit mode, always show as editable input field
-    const inputValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : value;
+    const storedValue = payslipData[manualField] !== undefined ? (payslipData[manualField] as number) : value;
+    const displayValue = isFocused ? localValue : storedValue.toString();
+
     const baseInputClass = autoCalculate
       ? "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
       : "border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30";
 
     return (
       <Input
-        type="number"
-        step="0.01"
-        value={inputValue}
-        onChange={(e) => handleInputChange(manualField, parseFloat(e.target.value) || 0)}
+        type="text"
+        inputMode="decimal"
+        value={displayValue}
+        onFocus={(e) => {
+          setIsFocused(true);
+          setLocalValue(storedValue.toString());
+          e.target.select();
+        }}
+        onBlur={() => {
+          setIsFocused(false);
+          const numValue = parseFloat(localValue) || 0;
+          handleInputChange(manualField, numValue);
+        }}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          }
+        }}
         className={`h-7 w-28 text-right text-xs font-medium ${baseInputClass} transition-colors ${className}`}
       />
     );
@@ -325,21 +405,46 @@ export default function MonthlyPayslipPage() {
 
   // Component for editable input fields (hours, rates)
   const EditableInput = ({ field, value, type = "number", step = "1", className = "h-6 w-16 text-right text-xs" }: { field: keyof PayslipData; value: number | string; type?: string; step?: string; className?: string }) => {
+    const [localValue, setLocalValue] = useState<string>('');
+    const [isFocused, setIsFocused] = useState(false);
+
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
       return <span className={`${className} inline-block text-right`}>{value}</span>;
     }
 
+    const displayValue = isFocused ? localValue : value.toString();
     const baseInputClass = autoCalculate
       ? "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
       : "border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30";
 
     return (
       <Input
-        type={type}
-        step={step}
-        value={value}
-        onChange={(e) => handleInputChange(field, type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value)}
+        type="text"
+        inputMode={type === "number" ? "decimal" : "text"}
+        value={displayValue}
+        onFocus={(e) => {
+          setIsFocused(true);
+          setLocalValue(value.toString());
+          e.target.select();
+        }}
+        onBlur={() => {
+          setIsFocused(false);
+          if (type === "number") {
+            const numValue = parseFloat(localValue) || 0;
+            handleInputChange(field, numValue);
+          } else {
+            handleInputChange(field, localValue);
+          }
+        }}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          }
+        }}
         className={`${className} ${baseInputClass} transition-colors`}
       />
     );
@@ -347,6 +452,9 @@ export default function MonthlyPayslipPage() {
 
   // Component for editable M-1 (previous month) values
   const EditableM1Value = ({ manualField, defaultValue = 0, className = "" }: { manualField: keyof PayslipData; defaultValue?: number; className?: string }) => {
+    const [localValue, setLocalValue] = useState<string>('');
+    const [isFocused, setIsFocused] = useState(false);
+
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
       const displayValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
@@ -354,17 +462,36 @@ export default function MonthlyPayslipPage() {
     }
 
     // In edit mode, show as editable input field
-    const inputValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
+    const storedValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
+    const displayValue = isFocused ? localValue : storedValue.toString();
+
     const baseInputClass = autoCalculate
       ? "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
       : "border-orange-300 focus:border-orange-500 focus:ring-orange-500 bg-orange-50/30";
 
     return (
       <Input
-        type="number"
-        step="0.01"
-        value={inputValue}
-        onChange={(e) => handleInputChange(manualField, parseFloat(e.target.value) || 0)}
+        type="text"
+        inputMode="decimal"
+        value={displayValue}
+        onFocus={(e) => {
+          setIsFocused(true);
+          setLocalValue(storedValue.toString());
+          e.target.select();
+        }}
+        onBlur={() => {
+          setIsFocused(false);
+          const numValue = parseFloat(localValue) || 0;
+          handleInputChange(manualField, numValue);
+        }}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          }
+        }}
         className={`h-7 w-28 text-right text-xs font-medium ${baseInputClass} transition-colors ${className}`}
       />
     );
