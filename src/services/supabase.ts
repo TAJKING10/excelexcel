@@ -1488,8 +1488,356 @@ export const individualAnnualPayslipService = {
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error} = await supabase
       .from('individual_payslips')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+};
+
+// ============================================
+// MONTHLY PAYSLIP SERVICES
+// ============================================
+
+export interface MonthlyPayslipData {
+  id?: string;
+  employeeId?: string;
+  individualId?: string;
+  companyId?: string;
+  periodYear: number;
+  periodMonth: number;
+  employeeNumber?: string;
+  indice?: string;
+  emploi?: string;
+  dateEntree?: string;
+  matriculeAssure?: string;
+  matriculeEmployeur?: string;
+  hoursWorked?: number;
+  hourlyRate?: number;
+  holidayHours?: number;
+  sickLeaveHours?: number;
+  publicHolidayHours?: number;
+  fd?: number;
+  ac?: number;
+  ffo?: number;
+  fds?: number;
+  impot?: number;
+  chequeRepas?: number;
+  avanceSalaire?: number;
+  legalLeave?: number;
+  leaveReport?: number;
+  leaveTaken?: number;
+  manualAppointement?: number;
+  manualJoursFeries?: number;
+  manualTotalBrut?: number;
+  manualAssuranceMaladie?: number;
+  manualMajoration?: number;
+  manualAssurancePension?: number;
+  manualAssuranceDependance?: number;
+  manualTotalCotisation?: number;
+  manualTotalImposable?: number;
+  manualCissm?: number;
+  manualCisCipCim?: number;
+  manualCiCo2?: number;
+  manualNet?: number;
+  manualNetAPayer?: number;
+  m1Appointement?: number;
+  m1JoursFeries?: number;
+  m1TotalBrut?: number;
+  m1AssuranceMaladie?: number;
+  m1Majoration?: number;
+  m1AssurancePension?: number;
+  m1AssuranceDependance?: number;
+  m1TotalCotisation?: number;
+  m1Fd?: number;
+  m1Ac?: number;
+  m1Ffo?: number;
+  m1Fds?: number;
+  m1TotalImposable?: number;
+  m1Impot?: number;
+  m1Cissm?: number;
+  m1CisCipCim?: number;
+  m1CiCo2?: number;
+  m1Net?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const monthlyPayslipService = {
+  async getByPeriod(
+    personId: string,
+    year: number,
+    month: number,
+    isEmployee: boolean
+  ): Promise<MonthlyPayslipData | null> {
+    console.log('🔍 Querying monthlypayslips:', { personId, year, month, isEmployee });
+
+    let query = supabase
+      .from('monthlypayslips')
+      .select('*')
+      .eq('period_year', year)
+      .eq('period_month', month);
+
+    if (isEmployee) {
+      query = query.eq('employee_id', personId);
+    } else {
+      query = query.eq('individual_id', personId);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      console.error('❌ Supabase query error:', error);
+      throw error;
+    }
+
+    if (!data) {
+      console.log('ℹ️ No payslip found in database for this period');
+      return null;
+    }
+
+    console.log('✅ Found payslip in database:', data.id);
+
+    return {
+      id: data.id,
+      employeeId: data.employee_id,
+      individualId: data.individual_id,
+      companyId: data.company_id,
+      periodYear: data.period_year,
+      periodMonth: data.period_month,
+      employeeNumber: data.employee_number,
+      indice: data.indice,
+      emploi: data.emploi,
+      dateEntree: data.date_entree,
+      matriculeAssure: data.matricule_assure,
+      matriculeEmployeur: data.matricule_employeur,
+      hoursWorked: data.hours_worked ? parseFloat(data.hours_worked) : 0,
+      hourlyRate: data.hourly_rate ? parseFloat(data.hourly_rate) : 0,
+      holidayHours: data.holiday_hours ? parseFloat(data.holiday_hours) : 0,
+      sickLeaveHours: data.sick_leave_hours ? parseFloat(data.sick_leave_hours) : 0,
+      publicHolidayHours: data.public_holiday_hours ? parseFloat(data.public_holiday_hours) : 0,
+      fd: data.fd ? parseFloat(data.fd) : 0,
+      ac: data.ac ? parseFloat(data.ac) : 0,
+      ffo: data.ffo ? parseFloat(data.ffo) : 0,
+      fds: data.fds ? parseFloat(data.fds) : 0,
+      impot: data.impot ? parseFloat(data.impot) : 0,
+      chequeRepas: data.cheque_repas ? parseFloat(data.cheque_repas) : 0,
+      avanceSalaire: data.avance_salaire ? parseFloat(data.avance_salaire) : 0,
+      legalLeave: data.legal_leave ? parseFloat(data.legal_leave) : 0,
+      leaveReport: data.leave_report ? parseFloat(data.leave_report) : 0,
+      leaveTaken: data.leave_taken ? parseFloat(data.leave_taken) : 0,
+      manualAppointement: data.manual_appointement ? parseFloat(data.manual_appointement) : undefined,
+      manualJoursFeries: data.manual_jours_feries ? parseFloat(data.manual_jours_feries) : undefined,
+      manualTotalBrut: data.manual_total_brut ? parseFloat(data.manual_total_brut) : undefined,
+      manualAssuranceMaladie: data.manual_assurance_maladie ? parseFloat(data.manual_assurance_maladie) : undefined,
+      manualMajoration: data.manual_majoration ? parseFloat(data.manual_majoration) : undefined,
+      manualAssurancePension: data.manual_assurance_pension ? parseFloat(data.manual_assurance_pension) : undefined,
+      manualAssuranceDependance: data.manual_assurance_dependance ? parseFloat(data.manual_assurance_dependance) : undefined,
+      manualTotalCotisation: data.manual_total_cotisation ? parseFloat(data.manual_total_cotisation) : undefined,
+      manualTotalImposable: data.manual_total_imposable ? parseFloat(data.manual_total_imposable) : undefined,
+      manualCissm: data.manual_cissm ? parseFloat(data.manual_cissm) : undefined,
+      manualCisCipCim: data.manual_cis_cip_cim ? parseFloat(data.manual_cis_cip_cim) : undefined,
+      manualCiCo2: data.manual_ci_co2 ? parseFloat(data.manual_ci_co2) : undefined,
+      manualNet: data.manual_net ? parseFloat(data.manual_net) : undefined,
+      manualNetAPayer: data.manual_net_a_payer ? parseFloat(data.manual_net_a_payer) : undefined,
+      m1Appointement: data.m1_appointement ? parseFloat(data.m1_appointement) : undefined,
+      m1JoursFeries: data.m1_jours_feries ? parseFloat(data.m1_jours_feries) : undefined,
+      m1TotalBrut: data.m1_total_brut ? parseFloat(data.m1_total_brut) : undefined,
+      m1AssuranceMaladie: data.m1_assurance_maladie ? parseFloat(data.m1_assurance_maladie) : undefined,
+      m1Majoration: data.m1_majoration ? parseFloat(data.m1_majoration) : undefined,
+      m1AssurancePension: data.m1_assurance_pension ? parseFloat(data.m1_assurance_pension) : undefined,
+      m1AssuranceDependance: data.m1_assurance_dependance ? parseFloat(data.m1_assurance_dependance) : undefined,
+      m1TotalCotisation: data.m1_total_cotisation ? parseFloat(data.m1_total_cotisation) : undefined,
+      m1Fd: data.m1_fd ? parseFloat(data.m1_fd) : undefined,
+      m1Ac: data.m1_ac ? parseFloat(data.m1_ac) : undefined,
+      m1Ffo: data.m1_ffo ? parseFloat(data.m1_ffo) : undefined,
+      m1Fds: data.m1_fds ? parseFloat(data.m1_fds) : undefined,
+      m1TotalImposable: data.m1_total_imposable ? parseFloat(data.m1_total_imposable) : undefined,
+      m1Impot: data.m1_impot ? parseFloat(data.m1_impot) : undefined,
+      m1Cissm: data.m1_cissm ? parseFloat(data.m1_cissm) : undefined,
+      m1CisCipCim: data.m1_cis_cip_cim ? parseFloat(data.m1_cis_cip_cim) : undefined,
+      m1CiCo2: data.m1_ci_co2 ? parseFloat(data.m1_ci_co2) : undefined,
+      m1Net: data.m1_net ? parseFloat(data.m1_net) : undefined,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async save(payslipData: MonthlyPayslipData): Promise<MonthlyPayslipData> {
+    console.log('💾 Saving payslip to database:', {
+      id: payslipData.id,
+      employeeId: payslipData.employeeId,
+      individualId: payslipData.individualId,
+      period: `${payslipData.periodYear}-${payslipData.periodMonth}`,
+      hoursWorked: payslipData.hoursWorked,
+      totalBrut: payslipData.manualTotalBrut
+    });
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const dbData: any = {
+      employee_id: payslipData.employeeId || null,
+      individual_id: payslipData.individualId || null,
+      company_id: payslipData.companyId || null,
+      period_year: payslipData.periodYear,
+      period_month: payslipData.periodMonth,
+      employee_number: payslipData.employeeNumber,
+      indice: payslipData.indice,
+      emploi: payslipData.emploi,
+      date_entree: payslipData.dateEntree,
+      matricule_assure: payslipData.matriculeAssure,
+      matricule_employeur: payslipData.matriculeEmployeur,
+      hours_worked: payslipData.hoursWorked,
+      hourly_rate: payslipData.hourlyRate,
+      holiday_hours: payslipData.holidayHours,
+      sick_leave_hours: payslipData.sickLeaveHours,
+      public_holiday_hours: payslipData.publicHolidayHours,
+      fd: payslipData.fd,
+      ac: payslipData.ac,
+      ffo: payslipData.ffo,
+      fds: payslipData.fds,
+      impot: payslipData.impot,
+      cheque_repas: payslipData.chequeRepas,
+      avance_salaire: payslipData.avanceSalaire,
+      legal_leave: payslipData.legalLeave,
+      leave_report: payslipData.leaveReport,
+      leave_taken: payslipData.leaveTaken,
+      manual_appointement: payslipData.manualAppointement,
+      manual_jours_feries: payslipData.manualJoursFeries,
+      manual_total_brut: payslipData.manualTotalBrut,
+      manual_assurance_maladie: payslipData.manualAssuranceMaladie,
+      manual_majoration: payslipData.manualMajoration,
+      manual_assurance_pension: payslipData.manualAssurancePension,
+      manual_assurance_dependance: payslipData.manualAssuranceDependance,
+      manual_total_cotisation: payslipData.manualTotalCotisation,
+      manual_total_imposable: payslipData.manualTotalImposable,
+      manual_cissm: payslipData.manualCissm,
+      manual_cis_cip_cim: payslipData.manualCisCipCim,
+      manual_ci_co2: payslipData.manualCiCo2,
+      manual_net: payslipData.manualNet,
+      manual_net_a_payer: payslipData.manualNetAPayer,
+      m1_appointement: payslipData.m1Appointement,
+      m1_jours_feries: payslipData.m1JoursFeries,
+      m1_total_brut: payslipData.m1TotalBrut,
+      m1_assurance_maladie: payslipData.m1AssuranceMaladie,
+      m1_majoration: payslipData.m1Majoration,
+      m1_assurance_pension: payslipData.m1AssurancePension,
+      m1_assurance_dependance: payslipData.m1AssuranceDependance,
+      m1_total_cotisation: payslipData.m1TotalCotisation,
+      m1_fd: payslipData.m1Fd,
+      m1_ac: payslipData.m1Ac,
+      m1_ffo: payslipData.m1Ffo,
+      m1_fds: payslipData.m1Fds,
+      m1_total_imposable: payslipData.m1TotalImposable,
+      m1_impot: payslipData.m1Impot,
+      m1_cissm: payslipData.m1Cissm,
+      m1_cis_cip_cim: payslipData.m1CisCipCim,
+      m1_ci_co2: payslipData.m1CiCo2,
+      m1_net: payslipData.m1Net,
+      created_by: user?.id,
+      updated_at: new Date().toISOString()
+    };
+
+    // If we have an ID, include it for the upsert
+    if (payslipData.id) {
+      dbData.id = payslipData.id;
+    }
+
+    // Use upsert for both insert and update - simpler and more reliable
+    const { data, error } = await supabase
+      .from('monthlypayslips')
+      .upsert(dbData, {
+        onConflict: 'id'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase upsert error:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error('No data returned from upsert');
+    }
+
+    console.log('✅ Payslip saved successfully:', {
+      id: data.id,
+      period: `${data.period_year}-${data.period_month}`
+    });
+
+    // Convert the database response back to our format
+    return {
+      id: data.id,
+      employeeId: data.employee_id,
+      individualId: data.individual_id,
+      companyId: data.company_id,
+      periodYear: data.period_year,
+      periodMonth: data.period_month,
+      employeeNumber: data.employee_number,
+      indice: data.indice,
+      emploi: data.emploi,
+      dateEntree: data.date_entree,
+      matriculeAssure: data.matricule_assure,
+      matriculeEmployeur: data.matricule_employeur,
+      hoursWorked: data.hours_worked ? parseFloat(data.hours_worked) : 0,
+      hourlyRate: data.hourly_rate ? parseFloat(data.hourly_rate) : 0,
+      holidayHours: data.holiday_hours ? parseFloat(data.holiday_hours) : 0,
+      sickLeaveHours: data.sick_leave_hours ? parseFloat(data.sick_leave_hours) : 0,
+      publicHolidayHours: data.public_holiday_hours ? parseFloat(data.public_holiday_hours) : 0,
+      fd: data.fd ? parseFloat(data.fd) : 0,
+      ac: data.ac ? parseFloat(data.ac) : 0,
+      ffo: data.ffo ? parseFloat(data.ffo) : 0,
+      fds: data.fds ? parseFloat(data.fds) : 0,
+      impot: data.impot ? parseFloat(data.impot) : 0,
+      chequeRepas: data.cheque_repas ? parseFloat(data.cheque_repas) : 0,
+      avanceSalaire: data.avance_salaire ? parseFloat(data.avance_salaire) : 0,
+      legalLeave: data.legal_leave ? parseFloat(data.legal_leave) : 0,
+      leaveReport: data.leave_report ? parseFloat(data.leave_report) : 0,
+      leaveTaken: data.leave_taken ? parseFloat(data.leave_taken) : 0,
+      manualAppointement: data.manual_appointement ? parseFloat(data.manual_appointement) : undefined,
+      manualJoursFeries: data.manual_jours_feries ? parseFloat(data.manual_jours_feries) : undefined,
+      manualTotalBrut: data.manual_total_brut ? parseFloat(data.manual_total_brut) : undefined,
+      manualAssuranceMaladie: data.manual_assurance_maladie ? parseFloat(data.manual_assurance_maladie) : undefined,
+      manualMajoration: data.manual_majoration ? parseFloat(data.manual_majoration) : undefined,
+      manualAssurancePension: data.manual_assurance_pension ? parseFloat(data.manual_assurance_pension) : undefined,
+      manualAssuranceDependance: data.manual_assurance_dependance ? parseFloat(data.manual_assurance_dependance) : undefined,
+      manualTotalCotisation: data.manual_total_cotisation ? parseFloat(data.manual_total_cotisation) : undefined,
+      manualTotalImposable: data.manual_total_imposable ? parseFloat(data.manual_total_imposable) : undefined,
+      manualCissm: data.manual_cissm ? parseFloat(data.manual_cissm) : undefined,
+      manualCisCipCim: data.manual_cis_cip_cim ? parseFloat(data.manual_cis_cip_cim) : undefined,
+      manualCiCo2: data.manual_ci_co2 ? parseFloat(data.manual_ci_co2) : undefined,
+      manualNet: data.manual_net ? parseFloat(data.manual_net) : undefined,
+      manualNetAPayer: data.manual_net_a_payer ? parseFloat(data.manual_net_a_payer) : undefined,
+      m1Appointement: data.m1_appointement ? parseFloat(data.m1_appointement) : undefined,
+      m1JoursFeries: data.m1_jours_feries ? parseFloat(data.m1_jours_feries) : undefined,
+      m1TotalBrut: data.m1_total_brut ? parseFloat(data.m1_total_brut) : undefined,
+      m1AssuranceMaladie: data.m1_assurance_maladie ? parseFloat(data.m1_assurance_maladie) : undefined,
+      m1Majoration: data.m1_majoration ? parseFloat(data.m1_majoration) : undefined,
+      m1AssurancePension: data.m1_assurance_pension ? parseFloat(data.m1_assurance_pension) : undefined,
+      m1AssuranceDependance: data.m1_assurance_dependance ? parseFloat(data.m1_assurance_dependance) : undefined,
+      m1TotalCotisation: data.m1_total_cotisation ? parseFloat(data.m1_total_cotisation) : undefined,
+      m1Fd: data.m1_fd ? parseFloat(data.m1_fd) : undefined,
+      m1Ac: data.m1_ac ? parseFloat(data.m1_ac) : undefined,
+      m1Ffo: data.m1_ffo ? parseFloat(data.m1_ffo) : undefined,
+      m1Fds: data.m1_fds ? parseFloat(data.m1_fds) : undefined,
+      m1TotalImposable: data.m1_total_imposable ? parseFloat(data.m1_total_imposable) : undefined,
+      m1Impot: data.m1_impot ? parseFloat(data.m1_impot) : undefined,
+      m1Cissm: data.m1_cissm ? parseFloat(data.m1_cissm) : undefined,
+      m1CisCipCim: data.m1_cis_cip_cim ? parseFloat(data.m1_cis_cip_cim) : undefined,
+      m1CiCo2: data.m1_ci_co2 ? parseFloat(data.m1_ci_co2) : undefined,
+      m1Net: data.m1_net ? parseFloat(data.m1_net) : undefined,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('monthlypayslips')
       .delete()
       .eq('id', id);
 

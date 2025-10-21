@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { monthlyPayslipService } from '@/services/supabase';
 
 const MONTHS = [
   { value: 1, label: 'Janvier' },
@@ -111,8 +112,10 @@ export default function MonthlyPayslipPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [autoCalculate, setAutoCalculate] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [payslipId, setPayslipId] = useState<string | undefined>(undefined);
 
   const employees = useDataStore((state) => state.employees);
   const individuals = useDataStore((state) => state.individuals);
@@ -150,6 +153,145 @@ export default function MonthlyPayslipPage() {
 
   // Track which field was last changed for smart recalculation
   const [lastChangedField, setLastChangedField] = useState<string | null>(null);
+
+  // Load payslip data from Supabase when period changes
+  useEffect(() => {
+    const loadPayslipData = async () => {
+      if (!personId) return;
+
+      setIsLoading(true);
+      setIsEditMode(false); // Exit edit mode when loading new data
+      try {
+        const isEmployee = !!employeeId;
+        console.log('📂 Loading payslip data from Supabase:', {
+          personId,
+          isEmployee,
+          period: `${selectedYear}-${selectedMonth}`,
+          employee: employee ? `${employee.firstName} ${employee.lastName}` : 'N/A',
+          individual: individual ? `${individual.firstName} ${individual.lastName}` : 'N/A'
+        });
+
+        const savedPayslip = await monthlyPayslipService.getByPeriod(
+          personId,
+          selectedYear,
+          selectedMonth,
+          isEmployee
+        );
+
+        console.log('📥 Database query result:', savedPayslip ? 'FOUND' : 'NOT FOUND');
+
+        if (savedPayslip) {
+          console.log('✅ Payslip data loaded from database:', {
+            id: savedPayslip.id,
+            hoursWorked: savedPayslip.hoursWorked,
+            hourlyRate: savedPayslip.hourlyRate,
+            totalBrut: savedPayslip.manualTotalBrut,
+            net: savedPayslip.manualNet
+          });
+
+          // Load all the saved data
+          setPayslipId(savedPayslip.id);
+          setPayslipData({
+            employeeNumber: savedPayslip.employeeNumber || '2',
+            indice: savedPayslip.indice || '21',
+            emploi: savedPayslip.emploi || person?.class || 'Comptable',
+            dateEntree: savedPayslip.dateEntree || person?.hireDate || '',
+            matriculeAssure: savedPayslip.matriculeAssure || person?.matricule || '',
+            matriculeEmployeur: savedPayslip.matriculeEmployeur || '20152206748',
+            hoursWorked: savedPayslip.hoursWorked || 173,
+            hourlyRate: savedPayslip.hourlyRate || (person?.baseSalary ? person.baseSalary / 173 : 18.2968),
+            holidayHours: savedPayslip.holidayHours || 0,
+            sickLeaveHours: savedPayslip.sickLeaveHours || 0,
+            publicHolidayHours: savedPayslip.publicHolidayHours || 0,
+            fd: savedPayslip.fd || 0,
+            ac: savedPayslip.ac || 0,
+            ffo: savedPayslip.ffo || 0,
+            fds: savedPayslip.fds || 0,
+            impot: savedPayslip.impot || 225.3,
+            chequeRepas: savedPayslip.chequeRepas || 56,
+            avanceSalaire: savedPayslip.avanceSalaire || 0,
+            legalLeave: savedPayslip.legalLeave || 208,
+            leaveReport: savedPayslip.leaveReport || -4,
+            leaveTaken: savedPayslip.leaveTaken || 0,
+            manualAppointement: savedPayslip.manualAppointement,
+            manualJoursFeries: savedPayslip.manualJoursFeries,
+            manualTotalBrut: savedPayslip.manualTotalBrut,
+            manualAssuranceMaladie: savedPayslip.manualAssuranceMaladie,
+            manualMajoration: savedPayslip.manualMajoration,
+            manualAssurancePension: savedPayslip.manualAssurancePension,
+            manualAssuranceDependance: savedPayslip.manualAssuranceDependance,
+            manualTotalCotisation: savedPayslip.manualTotalCotisation,
+            manualTotalImposable: savedPayslip.manualTotalImposable,
+            manualCissm: savedPayslip.manualCissm,
+            manualCisCipCim: savedPayslip.manualCisCipCim,
+            manualCiCo2: savedPayslip.manualCiCo2,
+            manualNet: savedPayslip.manualNet,
+            manualNetAPayer: savedPayslip.manualNetAPayer,
+            m1Appointement: savedPayslip.m1Appointement,
+            m1JoursFeries: savedPayslip.m1JoursFeries,
+            m1TotalBrut: savedPayslip.m1TotalBrut,
+            m1AssuranceMaladie: savedPayslip.m1AssuranceMaladie,
+            m1Majoration: savedPayslip.m1Majoration,
+            m1AssurancePension: savedPayslip.m1AssurancePension,
+            m1AssuranceDependance: savedPayslip.m1AssuranceDependance,
+            m1TotalCotisation: savedPayslip.m1TotalCotisation,
+            m1FD: savedPayslip.m1Fd,
+            m1AC: savedPayslip.m1Ac,
+            m1FFO: savedPayslip.m1Ffo,
+            m1FDS: savedPayslip.m1Fds,
+            m1TotalImposable: savedPayslip.m1TotalImposable,
+            m1Impot: savedPayslip.m1Impot,
+            m1Cissm: savedPayslip.m1Cissm,
+            m1CisCipCim: savedPayslip.m1CisCipCim,
+            m1CiCo2: savedPayslip.m1CiCo2,
+            m1Net: savedPayslip.m1Net,
+          });
+          setHasUnsavedChanges(false);
+        } else {
+          console.log('ℹ️ No saved payslip found, using defaults');
+          // No saved data, reset to defaults
+          setPayslipId(undefined);
+          setPayslipData({
+            employeeNumber: '2',
+            indice: '21',
+            emploi: person?.class || 'Comptable',
+            dateEntree: person?.hireDate || '',
+            matriculeAssure: person?.matricule || '',
+            matriculeEmployeur: '20152206748',
+            hoursWorked: 173,
+            hourlyRate: person?.baseSalary ? person.baseSalary / 173 : 18.2968,
+            holidayHours: 16,
+            sickLeaveHours: 0,
+            publicHolidayHours: 0,
+            fd: 0,
+            ac: 0,
+            ffo: 0,
+            fds: 0,
+            impot: 225.3,
+            chequeRepas: 56,
+            avanceSalaire: 1000,
+            legalLeave: 208,
+            leaveReport: -4,
+            leaveTaken: 16,
+          });
+          setHasUnsavedChanges(false);
+        }
+      } catch (error) {
+        console.error('❌ Error loading payslip data:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+
+        toast({
+          title: "Erreur de chargement",
+          description: error instanceof Error ? error.message : "Impossible de charger les données de la fiche de paie.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPayslipData();
+  }, [personId, selectedYear, selectedMonth, employeeId]); // Don't include person or toast to avoid infinite loops
 
   // Smart bidirectional auto-recalculation
   useEffect(() => {
@@ -433,29 +575,120 @@ export default function MonthlyPayslipPage() {
 
     setIsSaving(true);
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const isEmployee = !!employeeId;
 
-      // Here you can add logic to save the payslip data to your backend/database
-      console.log('Saving payslip data:', {
+      // Determine company ID - employees have direct companyId, individuals don't
+      let companyIdToSave = undefined;
+      if (isEmployee && employee) {
+        companyIdToSave = employee.companyId;
+      } else if (company) {
+        companyIdToSave = company.id;
+      }
+
+      // Prepare the data to save
+      const dataToSave = {
+        id: payslipId,
+        employeeId: isEmployee ? personId : undefined,
+        individualId: !isEmployee ? personId : undefined,
+        companyId: companyIdToSave,
+        periodYear: selectedYear,
+        periodMonth: selectedMonth,
+        employeeNumber: payslipData.employeeNumber,
+        indice: payslipData.indice,
+        emploi: payslipData.emploi,
+        dateEntree: payslipData.dateEntree,
+        matriculeAssure: payslipData.matriculeAssure,
+        matriculeEmployeur: payslipData.matriculeEmployeur,
+        hoursWorked: payslipData.hoursWorked,
+        hourlyRate: payslipData.hourlyRate,
+        holidayHours: payslipData.holidayHours,
+        sickLeaveHours: payslipData.sickLeaveHours,
+        publicHolidayHours: payslipData.publicHolidayHours,
+        fd: payslipData.fd,
+        ac: payslipData.ac,
+        ffo: payslipData.ffo,
+        fds: payslipData.fds,
+        impot: payslipData.impot,
+        chequeRepas: payslipData.chequeRepas,
+        avanceSalaire: payslipData.avanceSalaire,
+        legalLeave: payslipData.legalLeave,
+        leaveReport: payslipData.leaveReport,
+        leaveTaken: payslipData.leaveTaken,
+        manualAppointement: payslipData.manualAppointement,
+        manualJoursFeries: payslipData.manualJoursFeries,
+        manualTotalBrut: payslipData.manualTotalBrut,
+        manualAssuranceMaladie: payslipData.manualAssuranceMaladie,
+        manualMajoration: payslipData.manualMajoration,
+        manualAssurancePension: payslipData.manualAssurancePension,
+        manualAssuranceDependance: payslipData.manualAssuranceDependance,
+        manualTotalCotisation: payslipData.manualTotalCotisation,
+        manualTotalImposable: payslipData.manualTotalImposable,
+        manualCissm: payslipData.manualCissm,
+        manualCisCipCim: payslipData.manualCisCipCim,
+        manualCiCo2: payslipData.manualCiCo2,
+        manualNet: payslipData.manualNet,
+        manualNetAPayer: payslipData.manualNetAPayer,
+        m1Appointement: payslipData.m1Appointement,
+        m1JoursFeries: payslipData.m1JoursFeries,
+        m1TotalBrut: payslipData.m1TotalBrut,
+        m1AssuranceMaladie: payslipData.m1AssuranceMaladie,
+        m1Majoration: payslipData.m1Majoration,
+        m1AssurancePension: payslipData.m1AssurancePension,
+        m1AssuranceDependance: payslipData.m1AssuranceDependance,
+        m1TotalCotisation: payslipData.m1TotalCotisation,
+        m1Fd: payslipData.m1FD,
+        m1Ac: payslipData.m1AC,
+        m1Ffo: payslipData.m1FFO,
+        m1Fds: payslipData.m1FDS,
+        m1TotalImposable: payslipData.m1TotalImposable,
+        m1Impot: payslipData.m1Impot,
+        m1Cissm: payslipData.m1Cissm,
+        m1CisCipCim: payslipData.m1CisCipCim,
+        m1CiCo2: payslipData.m1CiCo2,
+        m1Net: payslipData.m1Net,
+      };
+
+      console.log('💾 Saving payslip data to Supabase:', {
+        id: dataToSave.id || 'NEW',
         personId,
-        year: selectedYear,
-        month: selectedMonth,
-        data: payslipData
+        isEmployee,
+        companyId: companyIdToSave,
+        period: `${selectedYear}-${selectedMonth}`,
+        totalBrut: dataToSave.manualTotalBrut,
+        net: dataToSave.manualNet
       });
 
-      // You can add: await updateMonthlyPayslip(personId, selectedYear, selectedMonth, payslipData);
+      // Save to Supabase
+      const savedPayslip = await monthlyPayslipService.save(dataToSave);
+
+      console.log('✅ Payslip saved successfully:', {
+        id: savedPayslip.id,
+        period: `${savedPayslip.periodYear}-${savedPayslip.periodMonth}`
+      });
+
+      // Update the payslip ID if this was a new record
+      if (savedPayslip.id) {
+        setPayslipId(savedPayslip.id);
+      }
 
       setHasUnsavedChanges(false);
       toast({
         title: "✓ Sauvegarde réussie",
-        description: `Fiche de paie de ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear} sauvegardée.`,
+        description: `Fiche de paie de ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear} sauvegardée dans Supabase (ID: ${savedPayslip.id?.substring(0, 8)}...).`,
         duration: 3000,
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Error saving payslip:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+
       toast({
         title: "Erreur de sauvegarde",
-        description: "Une erreur s'est produite lors de la sauvegarde. Veuillez réessayer.",
+        description: error.message || "Une erreur s'est produite lors de la sauvegarde. Veuillez réessayer.",
         variant: "destructive",
         duration: 5000,
       });
@@ -627,7 +860,18 @@ export default function MonthlyPayslipPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-6 relative">
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="p-6">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <p className="text-lg font-semibold">Chargement des données...</p>
+            </div>
+          </Card>
+        </div>
+      )}
       {/* Enhanced Header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
