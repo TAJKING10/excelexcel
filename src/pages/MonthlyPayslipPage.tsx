@@ -15,36 +15,36 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const MONTHS = [
-  { value: 1, label: 'Janvier' },
-  { value: 2, label: 'Février' },
-  { value: 3, label: 'Mars' },
-  { value: 4, label: 'Avril' },
-  { value: 5, label: 'Mai' },
-  { value: 6, label: 'Juin' },
-  { value: 7, label: 'Juillet' },
-  { value: 8, label: 'Août' },
-  { value: 9, label: 'Septembre' },
-  { value: 10, label: 'Octobre' },
-  { value: 11, label: 'Novembre' },
-  { value: 12, label: 'Décembre' },
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
 ];
 
-// Social contributions rates (Luxembourg)
+// Social contributions rates (Luxembourg) - Updated to match Excel file
 const RATES = {
-  assuranceMaladie: 0.028,
-  majoration: 0.0025,
-  assurancePension: 0.08,
-  assuranceDependance: 0.014,
+  healthInsurance: 0.0325,        // Assurance Maladie - 3.25%
+  cashSupplement: 0.0025,         // Majoration espèce - 0.25%
+  pensionInsurance: 0.08,         // Assurance Pension - 8%
+  longTermCareInsurance: 0.014,   // Assurance dépendance - 1.4%
   dependanceThreshold: 642.73,
 };
 
 interface PayslipData {
   employeeNumber: string;
-  indice: string;
-  emploi: string;
-  dateEntree: string;
-  matriculeAssure: string;
-  matriculeEmployeur: string;
+  index: string;
+  position: string;
+  entryDate: string;
+  insuredRegistration: string;
+  employerRegistration: string;
   hoursWorked: number;
   hourlyRate: number;
   holidayHours: number;
@@ -54,27 +54,27 @@ interface PayslipData {
   ac: number;
   ffo: number;
   fds: number;
-  impot: number;
-  chequeRepas: number;
-  avanceSalaire: number;
+  tax: number;
+  mealVouchers: number;
+  salaryAdvance: number;
   legalLeave: number;
-  leaveReport: number;
+  leaveCarryover: number;
   leaveTaken: number;
   // Manual overrides when auto-calculate is off
-  manualAppointement?: number;
-  manualJoursFeries?: number;
-  manualTotalBrut?: number;
-  manualAssuranceMaladie?: number;
-  manualMajoration?: number;
-  manualAssurancePension?: number;
-  manualAssuranceDependance?: number;
-  manualTotalCotisation?: number;
-  manualTotalImposable?: number;
+  manualAppointment?: number;
+  manualPublicHolidays?: number;
+  manualTotalGross?: number;
+  manualHealthInsurance?: number;
+  manualCashSupplement?: number;
+  manualPensionInsurance?: number;
+  manualLongTermCare?: number;
+  manualTotalContribution?: number;
+  manualTotalTaxable?: number;
   manualCissm?: number;
   manualCisCipCim?: number;
   manualCiCo2?: number;
   manualNet?: number;
-  manualNetAPayer?: number;
+  manualNetToPay?: number;
 }
 
 export default function MonthlyPayslipPage() {
@@ -106,11 +106,11 @@ export default function MonthlyPayslipPage() {
 
   const [payslipData, setPayslipData] = useState<PayslipData>({
     employeeNumber: '2',
-    indice: '21',
-    emploi: person?.class || 'Comptable',
-    dateEntree: person?.hireDate || '',
-    matriculeAssure: person?.matricule || '',
-    matriculeEmployeur: '20152206748',
+    index: '21',
+    position: person?.class || 'Accountant',
+    entryDate: person?.hireDate || '',
+    insuredRegistration: person?.matricule || '',
+    employerRegistration: '20152206748',
     hoursWorked: 173,
     hourlyRate: person?.baseSalary ? person.baseSalary / 173 : 18.2968,
     holidayHours: 16,
@@ -120,11 +120,11 @@ export default function MonthlyPayslipPage() {
     ac: 0,
     ffo: 0,
     fds: 0,
-    impot: 225.3,
-    chequeRepas: 56,
-    avanceSalaire: 1000,
+    tax: 225.3,
+    mealVouchers: 56,
+    salaryAdvance: 1000,
     legalLeave: 208,
-    leaveReport: -4,
+    leaveCarryover: -4,
     leaveTaken: 16,
   });
 
@@ -132,69 +132,69 @@ export default function MonthlyPayslipPage() {
     const { hoursWorked, hourlyRate, publicHolidayHours } = payslipData;
 
     // Use manual values if auto-calculate is off, otherwise calculate
-    const appointement = !autoCalculate && payslipData.manualAppointement !== undefined
-      ? payslipData.manualAppointement
+    const appointment = !autoCalculate && payslipData.manualAppointment !== undefined
+      ? payslipData.manualAppointment
       : hoursWorked * hourlyRate;
 
-    const joursFeries = !autoCalculate && payslipData.manualJoursFeries !== undefined
-      ? payslipData.manualJoursFeries
+    const publicHolidays = !autoCalculate && payslipData.manualPublicHolidays !== undefined
+      ? payslipData.manualPublicHolidays
       : publicHolidayHours * hourlyRate;
 
-    const totalBrut = !autoCalculate && payslipData.manualTotalBrut !== undefined
-      ? payslipData.manualTotalBrut
-      : appointement + joursFeries;
+    const totalGross = !autoCalculate && payslipData.manualTotalGross !== undefined
+      ? payslipData.manualTotalGross
+      : appointment + publicHolidays;
 
-    const assuranceMaladie = !autoCalculate && payslipData.manualAssuranceMaladie !== undefined
-      ? payslipData.manualAssuranceMaladie
-      : totalBrut * RATES.assuranceMaladie;
+    const healthInsurance = !autoCalculate && payslipData.manualHealthInsurance !== undefined
+      ? payslipData.manualHealthInsurance
+      : totalGross * RATES.healthInsurance;
 
-    const majorationEspece = !autoCalculate && payslipData.manualMajoration !== undefined
-      ? payslipData.manualMajoration
-      : totalBrut * RATES.majoration;
+    const cashSupplement = !autoCalculate && payslipData.manualCashSupplement !== undefined
+      ? payslipData.manualCashSupplement
+      : totalGross * RATES.cashSupplement;
 
-    const assurancePension = !autoCalculate && payslipData.manualAssurancePension !== undefined
-      ? payslipData.manualAssurancePension
-      : totalBrut * RATES.assurancePension;
+    const pensionInsurance = !autoCalculate && payslipData.manualPensionInsurance !== undefined
+      ? payslipData.manualPensionInsurance
+      : totalGross * RATES.pensionInsurance;
 
-    const assuranceDependance = !autoCalculate && payslipData.manualAssuranceDependance !== undefined
-      ? payslipData.manualAssuranceDependance
-      : Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+    const longTermCareInsurance = !autoCalculate && payslipData.manualLongTermCare !== undefined
+      ? payslipData.manualLongTermCare
+      : Math.max(0, (totalGross - RATES.dependanceThreshold) * RATES.longTermCareInsurance);
 
-    const totalCotisation = !autoCalculate && payslipData.manualTotalCotisation !== undefined
-      ? payslipData.manualTotalCotisation
-      : assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
+    const totalContribution = !autoCalculate && payslipData.manualTotalContribution !== undefined
+      ? payslipData.manualTotalContribution
+      : healthInsurance + cashSupplement + pensionInsurance + longTermCareInsurance;
 
-    const totalImposable = !autoCalculate && payslipData.manualTotalImposable !== undefined
-      ? payslipData.manualTotalImposable
-      : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
+    const totalTaxable = !autoCalculate && payslipData.manualTotalTaxable !== undefined
+      ? payslipData.manualTotalTaxable
+      : totalGross - healthInsurance - cashSupplement - pensionInsurance -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
     const cissm = !autoCalculate && payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
-      : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+      : totalGross < 1800 ? 0 : totalGross <= 3000 ? 81 : totalGross >= 3600 ? 0 : 81 / 600 * (3600 - totalGross);
 
     const cisCipCim = !autoCalculate && payslipData.manualCisCipCim !== undefined
       ? payslipData.manualCisCipCim
-      : totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
+      : totalGross < 78 ? 0 : totalGross < 936 ? ((300 + (totalGross * 12 - 936) * 0.029) / 12) : totalGross < 3333.33 ? 50 : totalGross > 6666.5 ? 0 : ((600 - (totalGross * 12 - 40000) * 0.015) / 12);
 
     const ciCo2 = !autoCalculate && payslipData.manualCiCo2 !== undefined
       ? payslipData.manualCiCo2
-      : totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+      : totalGross < 78 ? 0 : totalGross < 3333.33 ? 16 : totalGross < 6667 ? (16 - (totalGross - 3333.33) * 0.0042) : 0;
 
     const net = !autoCalculate && payslipData.manualNet !== undefined
       ? payslipData.manualNet
-      : totalBrut - totalCotisation - payslipData.impot + cissm + cisCipCim + ciCo2;
+      : totalGross - totalContribution - payslipData.tax + cissm + cisCipCim + ciCo2;
 
-    const netAPayer = !autoCalculate && payslipData.manualNetAPayer !== undefined
-      ? payslipData.manualNetAPayer
-      : net - payslipData.chequeRepas - payslipData.avanceSalaire;
+    const netToPay = !autoCalculate && payslipData.manualNetToPay !== undefined
+      ? payslipData.manualNetToPay
+      : net - payslipData.mealVouchers - payslipData.salaryAdvance;
 
-    const leaveSolde = (payslipData.legalLeave + payslipData.leaveReport) - payslipData.leaveTaken;
+    const leaveBalance = (payslipData.legalLeave + payslipData.leaveCarryover) - payslipData.leaveTaken;
 
     return {
-      appointement, joursFeries, totalBrut,
-      assuranceMaladie, majorationEspece, assurancePension, assuranceDependance, totalCotisation,
-      totalImposable, cissm, cisCipCim, ciCo2, net, netAPayer, leaveSolde
+      appointment, publicHolidays, totalGross,
+      healthInsurance, cashSupplement, pensionInsurance, longTermCareInsurance, totalContribution,
+      totalTaxable, cissm, cisCipCim, ciCo2, net, netToPay, leaveBalance
     };
   };
 
@@ -212,20 +212,20 @@ export default function MonthlyPayslipPage() {
         return {
           ...newData,
           // Clear all manual overrides to trigger recalculation
-          manualAppointement: undefined,
-          manualJoursFeries: undefined,
-          manualTotalBrut: undefined,
-          manualAssuranceMaladie: undefined,
-          manualMajoration: undefined,
-          manualAssurancePension: undefined,
-          manualAssuranceDependance: undefined,
-          manualTotalCotisation: undefined,
-          manualTotalImposable: undefined,
+          manualAppointment: undefined,
+          manualPublicHolidays: undefined,
+          manualTotalGross: undefined,
+          manualHealthInsurance: undefined,
+          manualCashSupplement: undefined,
+          manualPensionInsurance: undefined,
+          manualLongTermCare: undefined,
+          manualTotalContribution: undefined,
+          manualTotalTaxable: undefined,
           manualCissm: undefined,
           manualCisCipCim: undefined,
           manualCiCo2: undefined,
           manualNet: undefined,
-          manualNetAPayer: undefined,
+          manualNetToPay: undefined,
         };
       }
 
@@ -238,7 +238,7 @@ export default function MonthlyPayslipPage() {
   const handleEditToggle = () => {
     if (isEditMode && hasUnsavedChanges) {
       // Ask for confirmation before canceling
-      const confirmed = window.confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment annuler ?');
+      const confirmed = window.confirm('You have unsaved changes. Do you really want to cancel?');
       if (!confirmed) return;
       setHasUnsavedChanges(false);
     }
@@ -265,14 +265,14 @@ export default function MonthlyPayslipPage() {
 
       setHasUnsavedChanges(false);
       toast({
-        title: "✓ Sauvegarde réussie",
-        description: `Fiche de paie de ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear} sauvegardée.`,
+        title: "✓ Save successful",
+        description: `Payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear} saved.`,
         duration: 3000,
       });
     } catch (error) {
       toast({
-        title: "Erreur de sauvegarde",
-        description: "Une erreur s'est produite lors de la sauvegarde. Veuillez réessayer.",
+        title: "Save error",
+        description: "An error occurred while saving. Please try again.",
         variant: "destructive",
         duration: 5000,
       });
@@ -314,20 +314,20 @@ export default function MonthlyPayslipPage() {
     if (autoCalculate && isEditMode) {
       setPayslipData(prev => ({
         ...prev,
-        manualAppointement: undefined,
-        manualJoursFeries: undefined,
-        manualTotalBrut: undefined,
-        manualAssuranceMaladie: undefined,
-        manualMajoration: undefined,
-        manualAssurancePension: undefined,
-        manualAssuranceDependance: undefined,
-        manualTotalCotisation: undefined,
-        manualTotalImposable: undefined,
+        manualAppointment: undefined,
+        manualPublicHolidays: undefined,
+        manualTotalGross: undefined,
+        manualHealthInsurance: undefined,
+        manualCashSupplement: undefined,
+        manualPensionInsurance: undefined,
+        manualLongTermCare: undefined,
+        manualTotalContribution: undefined,
+        manualTotalTaxable: undefined,
         manualCissm: undefined,
         manualCisCipCim: undefined,
         manualCiCo2: undefined,
         manualNet: undefined,
-        manualNetAPayer: undefined,
+        manualNetToPay: undefined,
       }));
     }
   }, [autoCalculate, isEditMode]);
@@ -389,33 +389,33 @@ export default function MonthlyPayslipPage() {
     const pageWidth = doc.internal.pageSize.getWidth();
 
     doc.setFontSize(16);
-    doc.text('DÉCOMPTE SALAIRE/TRAITEMENT', pageWidth / 2, 15, { align: 'center' });
+    doc.text('SALARY/WAGE STATEMENT', pageWidth / 2, 15, { align: 'center' });
 
     doc.setFontSize(9);
-    doc.text(`N° Salarié: ${payslipData.employeeNumber}`, 14, 30);
+    doc.text(`Employee No: ${payslipData.employeeNumber}`, 14, 30);
     doc.text(`${company?.name || 'Groupe Advensys Luxembourg S.A'}`, pageWidth - 14, 30, { align: 'right' });
-    doc.text(`Emploi: ${payslipData.emploi}`, 14, 35);
+    doc.text(`Position: ${payslipData.position}`, 14, 35);
     doc.text(`${person?.firstName} ${person?.lastName}`, pageWidth - 14, 35, { align: 'right' });
-    doc.text(`Période: ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, 14, 40);
+    doc.text(`Period: ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, 14, 40);
 
     autoTable(doc, {
       startY: 50,
-      head: [['Désignation', 'Quantité', 'Valeur', 'Total']],
+      head: [['Description', 'Quantity', 'Value', 'Total']],
       body: [
-        ['Appointement', payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(2), calculated.appointement.toFixed(2)],
-        ['Total brut', '', '', calculated.totalBrut.toFixed(2)],
-        ['Assurance Maladie', RATES.assuranceMaladie.toString(), '', calculated.assuranceMaladie.toFixed(2)],
-        ['Total Cotisation', '', '', calculated.totalCotisation.toFixed(2)],
-        ['Total Imposable', '', '', calculated.totalImposable.toFixed(2)],
-        ['IMPÔT', '', '', payslipData.impot.toFixed(2)],
+        ['Appointment', payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(2), calculated.appointment.toFixed(2)],
+        ['Total Gross', '', '', calculated.totalGross.toFixed(2)],
+        ['Health Insurance', RATES.healthInsurance.toString(), '', calculated.healthInsurance.toFixed(2)],
+        ['Total Contribution', '', '', calculated.totalContribution.toFixed(2)],
+        ['Total Taxable', '', '', calculated.totalTaxable.toFixed(2)],
+        ['TAX', '', '', payslipData.tax.toFixed(2)],
         ['NET', '', '', calculated.net.toFixed(2)],
-        ['NET A PAYER', '', '', calculated.netAPayer.toFixed(2)],
+        ['NET TO PAY', '', '', calculated.netToPay.toFixed(2)],
       ],
       theme: 'striped',
       styles: { fontSize: 8 },
     });
 
-    doc.save(`Bulletin_Salaire_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
+    doc.save(`Payslip_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
   };
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -423,9 +423,9 @@ export default function MonthlyPayslipPage() {
   if (!personId || !person) {
     return (
       <div className="container mx-auto p-6">
-        <Card><CardHeader><CardTitle>Erreur</CardTitle></CardHeader>
-          <CardContent><p className="text-muted-foreground mb-4">Employé non trouvé.</p>
-            <Button onClick={() => navigate(-1)}>Retour</Button></CardContent></Card>
+        <Card><CardHeader><CardTitle>Error</CardTitle></CardHeader>
+          <CardContent><p className="text-muted-foreground mb-4">Employee not found.</p>
+            <Button onClick={() => navigate(-1)}>Back</Button></CardContent></Card>
       </div>
     );
   }
@@ -437,12 +437,12 @@ export default function MonthlyPayslipPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-start gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mt-1">
-              <ArrowLeft className="mr-2 h-4 w-4" />Retour
+              <ArrowLeft className="mr-2 h-4 w-4" />Back
             </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
                 <Calendar className="h-7 w-7 md:h-8 md:w-8 text-blue-600" />
-                DÉCOMPTE SALAIRE
+                SALARY STATEMENT
               </h1>
               <p className="text-base md:text-lg font-semibold text-foreground mt-1">
                 {person.firstName} {person.lastName}
@@ -457,7 +457,7 @@ export default function MonthlyPayslipPage() {
             {isEditMode && (
               <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border border-blue-200 dark:border-blue-800 px-3 py-2 rounded-lg shadow-sm">
                 <Calculator className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-xs font-semibold text-blue-900 dark:text-blue-100">Auto Calcul</span>
+                <span className="text-xs font-semibold text-blue-900 dark:text-blue-100">Auto Calculate</span>
                 <Switch
                   checked={autoCalculate}
                   onCheckedChange={setAutoCalculate}
@@ -485,7 +485,7 @@ export default function MonthlyPayslipPage() {
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md transition-all"
               >
                 <Edit2 className="mr-2 h-4 w-4" />
-                Modifier
+                Edit
               </Button>
             ) : (
               <>
@@ -498,17 +498,17 @@ export default function MonthlyPayslipPage() {
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enregistrement...
+                      Saving...
                     </>
                   ) : hasUnsavedChanges ? (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      Sauvegarder
+                      Save
                     </>
                   ) : (
                     <>
                       <Check className="mr-2 h-4 w-4" />
-                      Sauvegardé
+                      Saved
                     </>
                   )}
                 </Button>
@@ -518,7 +518,7 @@ export default function MonthlyPayslipPage() {
                   variant="outline"
                   className="shadow-sm border-2"
                 >
-                  Annuler
+                  Cancel
                 </Button>
               </>
             )}
@@ -532,7 +532,7 @@ export default function MonthlyPayslipPage() {
         {hasUnsavedChanges && (
           <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-md border border-amber-200 dark:border-amber-800">
             <span className="h-2 w-2 bg-amber-600 dark:bg-amber-400 rounded-full animate-pulse"></span>
-            Modifications non sauvegardées • Appuyez sur Ctrl+S pour sauvegarder rapidement
+            Unsaved changes • Press Ctrl+S to save quickly
           </div>
         )}
       </div>
@@ -542,9 +542,9 @@ export default function MonthlyPayslipPage() {
           <CardContent className="py-4">
             <p className="text-center text-sm md:text-base font-semibold text-orange-900 dark:text-orange-100 flex items-center justify-center gap-3">
               <Edit2 className="h-5 w-5 animate-pulse" />
-              MODE MANUEL ACTIVÉ
+              MANUAL MODE ENABLED
               <span className="text-xs font-normal bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded">
-                Modifiez tout manuellement - Aucun calcul automatique
+                Edit everything manually - No automatic calculations
               </span>
             </p>
           </CardContent>
@@ -556,9 +556,9 @@ export default function MonthlyPayslipPage() {
           <CardContent className="py-4">
             <p className="text-center text-sm md:text-base font-semibold text-blue-900 dark:text-blue-100 flex items-center justify-center gap-3">
               <Calculator className="h-5 w-5" />
-              MODE AUTO ACTIVÉ
+              AUTO MODE ENABLED
               <span className="text-xs font-normal bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
-                Modifiez les champs - Les calculs se mettent à jour automatiquement
+                Edit fields - Calculations update automatically
               </span>
             </p>
           </CardContent>
@@ -569,11 +569,11 @@ export default function MonthlyPayslipPage() {
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           <span className="font-semibold text-blue-900 dark:text-blue-100">
-            Période: {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
+            Period: {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
           </span>
         </div>
         <span className="text-xs text-muted-foreground">
-          Montants en Euros (€)
+          Amounts in Euros (€)
         </span>
       </div>
 
@@ -585,17 +585,17 @@ export default function MonthlyPayslipPage() {
               <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                 <span className="text-sm font-bold text-blue-600 dark:text-blue-400">👤</span>
               </div>
-              Informations Employé
+              Employee Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
             {[
-              ['N° Salarié', 'employeeNumber', 'text'],
-              ['Indice', 'indice', 'text'],
-              ['Emploi', 'emploi', 'text'],
-              ['Date d\'entrée', 'dateEntree', 'date'],
-              ['Matricule assuré', 'matriculeAssure', 'text'],
-              ['Matricule employeur', 'matriculeEmployeur', 'text'],
+              ['Employee No', 'employeeNumber', 'text'],
+              ['Index', 'index', 'text'],
+              ['Position', 'position', 'text'],
+              ['Entry Date', 'entryDate', 'date'],
+              ['Insured Registration', 'insuredRegistration', 'text'],
+              ['Employer Registration', 'employerRegistration', 'text'],
             ].map(([label, field, type]) => (
               <div key={field} className="grid grid-cols-2 gap-3 items-center">
                 <Label className="text-xs font-semibold text-muted-foreground">{label}:</Label>
@@ -611,17 +611,17 @@ export default function MonthlyPayslipPage() {
               <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                 <span className="text-sm font-bold text-green-600 dark:text-green-400">🏢</span>
               </div>
-              Informations Entreprise
+              Company Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-4">
             {[
-              ['Entreprise', company?.name || 'Groupe Advensys Luxembourg S.A'],
-              ['Adresse', company?.address || 'Duarrefstrooss 49'],
-              ['Code Postal', company?.postalCode || 'L-9964'],
-              ['Ville', company?.city || 'Huldange'],
-              ['Pays', company?.country || 'Luxembourg'],
-              ['Nom complet', `${person.firstName} ${person.lastName}`],
+              ['Company', company?.name || 'Groupe Advensys Luxembourg S.A'],
+              ['Address', company?.address || 'Duarrefstrooss 49'],
+              ['Postal Code', company?.postalCode || 'L-9964'],
+              ['City', company?.city || 'Huldange'],
+              ['Country', company?.country || 'Luxembourg'],
+              ['Full Name', `${person.firstName} ${person.lastName}`],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
                 <span className="text-xs font-semibold text-muted-foreground">{label}:</span>
@@ -639,7 +639,7 @@ export default function MonthlyPayslipPage() {
             <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
               <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">💰</span>
             </div>
-            Bulletin de Salaire - {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
+            Salary Statement - {MONTHS.find(m => m.value === selectedMonth)?.label} {selectedYear}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 md:p-6">
@@ -647,18 +647,18 @@ export default function MonthlyPayslipPage() {
             <table className="w-full border-collapse text-xs md:text-sm">
               <thead>
                 <tr className="border-b-2 border-border bg-muted/70">
-                  <th className="text-left py-2 px-2 font-semibold text-foreground">Désignation</th>
-                  <th className="text-right py-2 px-2 font-semibold text-foreground whitespace-nowrap">Quantité</th>
-                  <th className="text-right py-2 px-2 font-semibold text-foreground">Valeur</th>
+                  <th className="text-left py-2 px-2 font-semibold text-foreground">Description</th>
+                  <th className="text-right py-2 px-2 font-semibold text-foreground whitespace-nowrap">Quantity</th>
+                  <th className="text-right py-2 px-2 font-semibold text-foreground">Value</th>
                   <th className="text-right py-2 px-2 font-semibold text-foreground bg-blue-500/15 dark:bg-blue-500/25">Total</th>
                   <th className="text-right py-2 px-2 font-semibold text-foreground whitespace-nowrap">M-1</th>
                   <th className="text-right py-2 px-2 font-semibold text-foreground bg-green-500/15 dark:bg-green-500/25">Total</th>
                 </tr>
               </thead>
               <tbody>
-                {/* Appointement */}
+                {/* Appointment */}
                 <tr className="border-b border-border hover:bg-muted/30">
-                  <td className="py-2 px-2">Appointement</td>
+                  <td className="py-2 px-2">Appointment</td>
                   <td className="text-right py-2 px-2">
                     <EditableInput field="hoursWorked" value={payslipData.hoursWorked} />
                   </td>
@@ -666,29 +666,29 @@ export default function MonthlyPayslipPage() {
                     <EditableInput field="hourlyRate" value={payslipData.hourlyRate.toFixed(2)} step="0.01" className="h-6 w-20 text-right text-xs" />
                   </td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
-                    <EditableValue value={calculated.appointement} manualField="manualAppointement" />
+                    <EditableValue value={calculated.appointment} manualField="manualAppointment" />
                   </td>
                   <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                   <td className="text-right py-2 px-2 bg-green-500/10 dark:bg-green-500/20 text-muted-foreground">-</td>
                 </tr>
 
-                {/* Jours fériés */}
+                {/* Public Holidays */}
                 <tr className="border-b border-border hover:bg-muted/30">
-                  <td className="py-2 px-2">Jours fériés</td>
+                  <td className="py-2 px-2">Public Holidays</td>
                   <td className="text-right py-2 px-2">
                     <EditableInput field="publicHolidayHours" value={payslipData.publicHolidayHours} />
                   </td>
                   <td className="text-right py-2 px-2 text-muted-foreground">0</td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25 font-medium text-foreground">
-                    <EditableValue value={calculated.joursFeries} manualField="manualJoursFeries" />
+                    <EditableValue value={calculated.publicHolidays} manualField="manualPublicHolidays" />
                   </td>
                   <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                   <td className="text-right py-2 px-2 bg-green-500/10 dark:bg-green-500/20 text-muted-foreground">-</td>
                 </tr>
 
-                {/* Congés & Absences */}
+                {/* Vacation & Absences */}
                 <tr className="border-b border-border hover:bg-muted/30">
-                  <td className="py-2 px-2">Congés (H)</td>
+                  <td className="py-2 px-2">Vacation (H)</td>
                   <td className="text-right py-2 px-2">
                     <EditableInput field="holidayHours" value={payslipData.holidayHours} />
                   </td>
@@ -699,7 +699,7 @@ export default function MonthlyPayslipPage() {
                 </tr>
 
                 <tr className="border-b border-border hover:bg-muted/30">
-                  <td className="py-2 px-2">Absences Maladie (H)</td>
+                  <td className="py-2 px-2">Sick Leave (H)</td>
                   <td className="text-right py-2 px-2">
                     <EditableInput field="sickLeaveHours" value={payslipData.sickLeaveHours} />
                   </td>
@@ -709,30 +709,30 @@ export default function MonthlyPayslipPage() {
                   <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-muted-foreground">-</td>
                 </tr>
 
-                {/* Total Brut */}
+                {/* Total Gross */}
                 <tr className="border-b-2 border-border bg-blue-500/20 dark:bg-blue-500/30 font-bold">
-                  <td className="py-2 px-2 text-foreground">Total brut</td>
+                  <td className="py-2 px-2 text-foreground">Total Gross</td>
                   <td className="text-right py-2 px-2 text-foreground">-</td>
                   <td className="text-right py-2 px-2 text-foreground">-</td>
                   <td className="text-right py-2 px-2 bg-blue-500/35 dark:bg-blue-500/45 text-foreground">
-                    <EditableValue value={calculated.totalBrut} manualField="manualTotalBrut" className="font-bold" />
+                    <EditableValue value={calculated.totalGross} manualField="manualTotalGross" className="font-bold" />
                   </td>
                   <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
                   <td className="text-right py-2 px-2 bg-green-500/35 dark:bg-green-500/45 text-foreground">
-                    <EditableValue value={calculated.totalBrut} manualField="manualTotalBrut" className="font-bold" />
+                    <EditableValue value={calculated.totalGross} manualField="manualTotalGross" className="font-bold" />
                   </td>
                 </tr>
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
-                {/* Cotisations */}
-                <tr className="bg-muted/70 font-semibold"><td className="py-2 px-2 text-foreground" colSpan={6}>Cotisation</td></tr>
+                {/* Contributions */}
+                <tr className="bg-muted/70 font-semibold"><td className="py-2 px-2 text-foreground" colSpan={6}>Contributions</td></tr>
 
                 {[
-                  ['Assurance Maladie', RATES.assuranceMaladie, calculated.assuranceMaladie, 'manualAssuranceMaladie'],
-                  ['A-M Majoration espèce', RATES.majoration, calculated.majorationEspece, 'manualMajoration'],
-                  ['Assurance Pension', RATES.assurancePension, calculated.assurancePension, 'manualAssurancePension'],
-                  ['Assurance dépendance', RATES.assuranceDependance, calculated.assuranceDependance, 'manualAssuranceDependance'],
+                  ['Health Insurance', RATES.healthInsurance, calculated.healthInsurance, 'manualHealthInsurance'],
+                  ['H.I. Cash Supplement', RATES.cashSupplement, calculated.cashSupplement, 'manualCashSupplement'],
+                  ['Pension Insurance', RATES.pensionInsurance, calculated.pensionInsurance, 'manualPensionInsurance'],
+                  ['Long-term Care Insurance', RATES.longTermCareInsurance, calculated.longTermCareInsurance, 'manualLongTermCare'],
                 ].map(([label, rate, value, manualField]) => (
                   <tr key={label as string} className="border-b border-border hover:bg-muted/30">
                     <td className="py-2 px-2">{label}</td>
@@ -749,22 +749,22 @@ export default function MonthlyPayslipPage() {
                 ))}
 
                 <tr className="border-b-2 border-border bg-orange-500/20 dark:bg-orange-500/30 font-bold">
-                  <td className="py-2 px-2 text-foreground">Total Cotisation</td>
+                  <td className="py-2 px-2 text-foreground">Total Contributions</td>
                   <td className="text-right py-2 px-2 text-foreground">-</td>
                   <td className="text-right py-2 px-2 text-foreground">-</td>
                   <td className="text-right py-2 px-2 bg-orange-500/35 dark:bg-orange-500/45 text-foreground">
-                    <EditableValue value={calculated.totalCotisation} manualField="manualTotalCotisation" className="font-bold" />
+                    <EditableValue value={calculated.totalContribution} manualField="manualTotalContribution" className="font-bold" />
                   </td>
                   <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
                   <td className="text-right py-2 px-2 bg-orange-500/35 dark:bg-orange-500/45 text-foreground">
-                    <EditableValue value={calculated.totalCotisation} manualField="manualTotalCotisation" className="font-bold" />
+                    <EditableValue value={calculated.totalContribution} manualField="manualTotalContribution" className="font-bold" />
                   </td>
                 </tr>
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
                 {/* Deductions */}
-                <tr className="bg-muted/70 font-semibold"><td className="py-2 px-2 text-foreground" colSpan={6}>Deduction</td></tr>
+                <tr className="bg-muted/70 font-semibold"><td className="py-2 px-2 text-foreground" colSpan={6}>Deductions</td></tr>
 
                 {['fd', 'ac', 'ffo', 'fds'].map((field) => (
                   <tr key={field} className="border-b border-border hover:bg-muted/30">
@@ -783,32 +783,32 @@ export default function MonthlyPayslipPage() {
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
-                {/* Total Imposable */}
+                {/* Total Taxable */}
                 <tr className="border-b-2 border-border bg-purple-500/20 dark:bg-purple-500/30 font-bold">
-                  <td className="py-2 px-2 text-foreground">Total Imposable</td>
+                  <td className="py-2 px-2 text-foreground">Total Taxable</td>
                   <td className="text-right py-2 px-2 text-foreground">-</td>
                   <td className="text-right py-2 px-2 text-foreground">-</td>
                   <td className="text-right py-2 px-2 bg-purple-500/35 dark:bg-purple-500/45 text-foreground">
-                    <EditableValue value={calculated.totalImposable} manualField="manualTotalImposable" className="font-bold" />
+                    <EditableValue value={calculated.totalTaxable} manualField="manualTotalTaxable" className="font-bold" />
                   </td>
                   <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
                   <td className="text-right py-2 px-2 bg-purple-500/35 dark:bg-purple-500/45 text-foreground">
-                    <EditableValue value={calculated.totalImposable} manualField="manualTotalImposable" className="font-bold" />
+                    <EditableValue value={calculated.totalTaxable} manualField="manualTotalTaxable" className="font-bold" />
                   </td>
                 </tr>
 
                 <tr><td colSpan={6} className="py-1"></td></tr>
 
-                {/* Impôts and Credits */}
+                {/* Taxes and Credits */}
                 <tr className="border-b border-border hover:bg-muted/30">
-                  <td className="py-2 px-2 font-semibold">IMPÔT</td>
+                  <td className="py-2 px-2 font-semibold">TAX</td>
                   <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                   <td className="text-right py-2 px-2 text-muted-foreground">-</td>
                   <td className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
-                    <EditableInput field="impot" value={payslipData.impot} step="0.01" className="h-6 w-20 text-right text-xs" />
+                    <EditableInput field="tax" value={payslipData.tax} step="0.01" className="h-6 w-20 text-right text-xs" />
                   </td>
                   <td className="text-right py-2 px-2 text-foreground">0.00 €</td>
-                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">{payslipData.impot.toFixed(2)} €</td>
+                  <td className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25 text-foreground">{payslipData.tax.toFixed(2)} €</td>
                 </tr>
 
                 {[
@@ -848,8 +848,8 @@ export default function MonthlyPayslipPage() {
 
                 {/* Deductions from NET */}
                 {[
-                  ['Chèque repas', 'chequeRepas'],
-                  ['Avance sur salaire', 'avanceSalaire'],
+                  ['Meal Vouchers', 'mealVouchers'],
+                  ['Salary Advance', 'salaryAdvance'],
                 ].map(([label, field]) => (
                   <tr key={field} className="border-b border-border hover:bg-muted/30">
                     <td className="py-2 px-2">{label}</td>
@@ -863,12 +863,12 @@ export default function MonthlyPayslipPage() {
                   </tr>
                 ))}
 
-                {/* NET A PAYER */}
+                {/* NET TO PAY */}
                 <tr className="border-t-2 border-border bg-green-600/30 dark:bg-green-600/40">
                   <td colSpan={4}></td>
-                  <td className="text-right py-3 px-2 font-bold text-base text-foreground">NET À PAYER</td>
+                  <td className="text-right py-3 px-2 font-bold text-base text-foreground">NET TO PAY</td>
                   <td className="text-right py-3 px-2 bg-green-600/50 dark:bg-green-600/60 font-bold text-base text-foreground">
-                    <EditableValue value={calculated.netAPayer} manualField="manualNetAPayer" className="font-bold text-base" />
+                    <EditableValue value={calculated.netToPay} manualField="manualNetToPay" className="font-bold text-base" />
                   </td>
                 </tr>
               </tbody>
@@ -885,14 +885,14 @@ export default function MonthlyPayslipPage() {
               <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
                 <span className="text-sm font-bold text-purple-600 dark:text-purple-400">🏖️</span>
               </div>
-              Congés (H)
+              Vacation (H)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-4">
             {[
-              ['Légaux', 'legalLeave'],
-              ['Report', 'leaveReport'],
-              ['Pris', 'leaveTaken'],
+              ['Legal', 'legalLeave'],
+              ['Carryover', 'leaveCarryover'],
+              ['Taken', 'leaveTaken'],
             ].map(([label, field]) => (
               <div key={field} className="grid grid-cols-2 gap-3 items-center">
                 <Label className="text-xs font-semibold text-muted-foreground">{label}:</Label>
@@ -900,9 +900,9 @@ export default function MonthlyPayslipPage() {
               </div>
             ))}
             <div className="grid grid-cols-2 gap-3 pt-3 border-t-2 border-purple-200 dark:border-purple-800 mt-3">
-              <Label className="text-sm font-bold text-purple-900 dark:text-purple-100">Solde:</Label>
+              <Label className="text-sm font-bold text-purple-900 dark:text-purple-100">Balance:</Label>
               <div className="text-right font-bold text-base text-purple-600 dark:text-purple-400">
-                {calculated.leaveSolde} H
+                {calculated.leaveBalance} H
               </div>
             </div>
           </CardContent>
@@ -914,17 +914,17 @@ export default function MonthlyPayslipPage() {
               <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
                 <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">📊</span>
               </div>
-              Rémunération & Fiche d'impôts
+              Remuneration & Tax Card
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 pt-4">
             {[
-              ['Salaire mensuel', `${calculated.totalBrut.toFixed(2)} €`],
-              ['Heures', payslipData.hoursWorked.toString()],
-              ['Salaire horaire', `${payslipData.hourlyRate.toFixed(4)} €`],
-              ['N° de carte', 'D608388-2022'],
-              ['Classe', '1'],
-              ['Taux', '-'],
+              ['Monthly Salary', `${calculated.totalGross.toFixed(2)} €`],
+              ['Hours', payslipData.hoursWorked.toString()],
+              ['Hourly Rate', `${payslipData.hourlyRate.toFixed(4)} €`],
+              ['Card No', 'D608388-2022'],
+              ['Class', '1'],
+              ['Rate', '-'],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
                 <span className="text-xs font-semibold text-muted-foreground">{label}:</span>
@@ -940,7 +940,7 @@ export default function MonthlyPayslipPage() {
         <CardContent className="py-5">
           <p className="text-center text-sm md:text-base font-bold text-yellow-900 dark:text-yellow-100 flex items-center justify-center gap-3">
             <span className="text-2xl">⚠️</span>
-            CONSERVEZ CE BULLETIN DE PAIE SANS LIMITATION DE DURÉE
+            KEEP THIS PAYSLIP INDEFINITELY
             <span className="text-2xl">⚠️</span>
           </p>
         </CardContent>
