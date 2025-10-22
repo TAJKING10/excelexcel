@@ -1508,6 +1508,9 @@ export interface MonthlyPayslipData {
   companyId?: string;
   periodYear: number;
   periodMonth: number;
+  // Tax rate information (immutable - stored at payslip creation)
+  taxRateId?: string;
+  taxRatePercentage?: number;
   employeeNumber?: string;
   indice?: string;
   emploi?: string;
@@ -1607,6 +1610,8 @@ export const monthlyPayslipService = {
       companyId: data.company_id,
       periodYear: data.period_year,
       periodMonth: data.period_month,
+      taxRateId: data.tax_rate_id,
+      taxRatePercentage: data.tax_rate_percentage ? parseFloat(data.tax_rate_percentage) : undefined,
       employeeNumber: data.employee_number,
       indice: data.indice,
       emploi: data.emploi,
@@ -1683,6 +1688,8 @@ export const monthlyPayslipService = {
       company_id: payslipData.companyId || null,
       period_year: payslipData.periodYear,
       period_month: payslipData.periodMonth,
+      tax_rate_id: payslipData.taxRateId || null,
+      tax_rate_percentage: payslipData.taxRatePercentage || null,
       employee_number: payslipData.employeeNumber,
       indice: payslipData.indice,
       emploi: payslipData.emploi,
@@ -1777,6 +1784,8 @@ export const monthlyPayslipService = {
       companyId: data.company_id,
       periodYear: data.period_year,
       periodMonth: data.period_month,
+      taxRateId: data.tax_rate_id,
+      taxRatePercentage: data.tax_rate_percentage ? parseFloat(data.tax_rate_percentage) : undefined,
       employeeNumber: data.employee_number,
       indice: data.indice,
       emploi: data.emploi,

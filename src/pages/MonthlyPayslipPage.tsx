@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { monthlyPayslipService } from '@/services/supabase';
+import { TaxRateSelector } from '@/components/tax/TaxRateSelector';
+import { useTaxRatesStore } from '@/store/taxRatesStore';
 
 const MONTHS = [
   { value: 1, label: 'Janvier' },
@@ -41,6 +43,9 @@ const RATES = {
 };
 
 interface PayslipData {
+  // Tax rate information (immutable - stored at payslip creation)
+  taxRateId?: string;
+  taxRatePercentage?: number;
   employeeNumber: string;
   indice: string;
   emploi: string;
@@ -120,6 +125,7 @@ export default function MonthlyPayslipPage() {
   const employees = useDataStore((state) => state.employees);
   const individuals = useDataStore((state) => state.individuals);
   const companies = useDataStore((state) => state.companies);
+  const { getActiveTaxRate, getTaxRateById } = useTaxRatesStore();
 
   const personId = employeeId || individualId;
   const employee = employees.find((e) => e.id === personId);
@@ -186,12 +192,16 @@ export default function MonthlyPayslipPage() {
             hoursWorked: savedPayslip.hoursWorked,
             hourlyRate: savedPayslip.hourlyRate,
             totalBrut: savedPayslip.manualTotalBrut,
-            net: savedPayslip.manualNet
+            net: savedPayslip.manualNet,
+            taxRateId: savedPayslip.taxRateId,
+            taxRatePercentage: savedPayslip.taxRatePercentage
           });
 
           // Load all the saved data
           setPayslipId(savedPayslip.id);
           setPayslipData({
+            taxRateId: savedPayslip.taxRateId,
+            taxRatePercentage: savedPayslip.taxRatePercentage,
             employeeNumber: savedPayslip.employeeNumber || '2',
             indice: savedPayslip.indice || '21',
             emploi: savedPayslip.emploi || person?.class || 'Comptable',
@@ -249,9 +259,13 @@ export default function MonthlyPayslipPage() {
           setHasUnsavedChanges(false);
         } else {
           console.log('ℹ️ No saved payslip found, using defaults');
-          // No saved data, reset to defaults
+          // No saved data, reset to defaults and use active tax rate
+          const activeTaxRate = getActiveTaxRate();
+          console.log('📌 Setting active tax rate for new payslip:', activeTaxRate);
           setPayslipId(undefined);
           setPayslipData({
+            taxRateId: activeTaxRate?.id,
+            taxRatePercentage: activeTaxRate?.rate,
             employeeNumber: '2',
             indice: '21',
             emploi: person?.class || 'Comptable',
@@ -593,6 +607,8 @@ export default function MonthlyPayslipPage() {
         companyId: companyIdToSave,
         periodYear: selectedYear,
         periodMonth: selectedMonth,
+        taxRateId: payslipData.taxRateId,
+        taxRatePercentage: payslipData.taxRatePercentage,
         employeeNumber: payslipData.employeeNumber,
         indice: payslipData.indice,
         emploi: payslipData.emploi,
@@ -1047,6 +1063,34 @@ export default function MonthlyPayslipPage() {
                 <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as string} type={type as string} className="h-8 text-xs" />
               </div>
             ))}
+
+            {/* Tax Rate Selector */}
+            <div className="pt-3 border-t border-border">
+              <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Taux de Taxe:</Label>
+              {isEditMode ? (
+                <TaxRateSelector
+                  value={payslipData.taxRateId}
+                  onChange={(taxRateId, taxRate) => {
+                    setPayslipData(prev => ({
+                      ...prev,
+                      taxRateId: taxRateId,
+                      taxRatePercentage: taxRate.rate
+                    }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  className="w-full"
+                />
+              ) : (
+                <div className="text-sm font-medium">
+                  {payslipData.taxRatePercentage ? `${payslipData.taxRatePercentage}%` : 'Non défini'}
+                  {payslipData.taxRateId && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (ID: {payslipData.taxRateId.substring(0, 8)}...)
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

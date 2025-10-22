@@ -63,12 +63,14 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
   ],
 
   addTaxRate: (rateData) => {
+    const currentDefault = get().getActiveTaxRate();
+
     const newRate: TaxRate = {
       ...rateData,
       id: `tax-rate-${Date.now()}`,
       createdAt: new Date().toISOString(),
       status: 'active',
-      isDefault: true, // New rate becomes default
+      isDefault: true, // New rate becomes the ONLY active default
     };
 
     const historyEntry: TaxRateHistory = {
@@ -77,13 +79,19 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
       action: 'created',
       performedBy: rateData.createdBy,
       performedAt: new Date().toISOString(),
+      previousRate: currentDefault?.rate,
       newRate: rateData.rate,
-      notes: rateData.notes
+      notes: rateData.notes || `New default tax rate: ${rateData.rate}%`
     };
 
     set(state => ({
       taxRates: [
-        ...state.taxRates.map(r => ({ ...r, isDefault: false })), // Unset previous defaults
+        // Archive ALL previous rates
+        ...state.taxRates.map(r => ({
+          ...r,
+          status: 'archived',
+          isDefault: false
+        })),
         newRate
       ],
       history: [...state.history, historyEntry]
@@ -92,6 +100,7 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
 
   setDefaultTaxRate: (id) => {
     const targetRate = get().taxRates.find(r => r.id === id);
+    const currentDefault = get().getActiveTaxRate();
     if (!targetRate) return;
 
     const historyEntry: TaxRateHistory = {
@@ -100,15 +109,17 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
       action: 'activated',
       performedBy: 'admin', // TODO: Get from auth context
       performedAt: new Date().toISOString(),
+      previousRate: currentDefault?.rate,
       newRate: targetRate.rate,
-      notes: `Set as default tax rate`
+      notes: `Activated ${targetRate.rate}% as new default tax rate`
     };
 
     set(state => ({
       taxRates: state.taxRates.map(r => ({
         ...r,
+        // Only the target rate is active and default, all others are archived
         isDefault: r.id === id,
-        status: r.id === id ? 'active' : r.status
+        status: r.id === id ? 'active' : 'archived'
       })),
       history: [...state.history, historyEntry]
     }));
@@ -151,10 +162,10 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
       rate: targetRate.rate,
       effectiveFrom: new Date().toISOString().split('T')[0],
       status: 'active',
-      isDefault: true,
+      isDefault: true, // This becomes the ONLY active default
       createdAt: new Date().toISOString(),
       createdBy: performedBy,
-      notes: `Reverted from rate ${targetRate.id} (${targetRate.rate}%)`
+      notes: `Reverted to ${targetRate.rate}% (original effective from ${targetRate.effectiveFrom})`
     };
 
     const historyEntry: TaxRateHistory = {
@@ -165,12 +176,17 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
       performedAt: new Date().toISOString(),
       previousRate: currentDefault?.rate,
       newRate: targetRate.rate,
-      notes: `Reverted to ${targetRate.rate}% from ${currentDefault?.rate}%`
+      notes: `Reverted from ${currentDefault?.rate}% back to ${targetRate.rate}%`
     };
 
     set(state => ({
       taxRates: [
-        ...state.taxRates.map(r => ({ ...r, isDefault: false })),
+        // Archive ALL existing rates
+        ...state.taxRates.map(r => ({
+          ...r,
+          status: 'archived',
+          isDefault: false
+        })),
         revertedRate
       ],
       history: [...state.history, historyEntry]
