@@ -1,200 +1,126 @@
 import { create } from 'zustand';
+import { taxRateService, type TaxRate as TaxRateDB, type TaxRateHistory as TaxRateHistoryDB } from '@/services/supabase';
 
-export interface TaxRate {
-  id: string;
-  rate: number; // e.g., 21 for 21%
-  effectiveFrom: string; // ISO date string
-  status: 'active' | 'archived';
-  isDefault: boolean;
-  createdAt: string;
-  createdBy: string;
-  notes?: string;
-}
-
-interface TaxRateHistory {
-  id: string;
-  taxRateId: string;
-  action: 'created' | 'activated' | 'archived' | 'reverted';
-  performedBy: string;
-  performedAt: string;
-  previousRate?: number;
-  newRate: number;
-  notes?: string;
-}
+// Re-export types for convenience
+export type TaxRate = TaxRateDB;
+export type TaxRateHistory = TaxRateHistoryDB;
 
 interface TaxRatesState {
   taxRates: TaxRate[];
   history: TaxRateHistory[];
+  isLoading: boolean;
+  error: string | null;
+
+  // Data loading
+  loadTaxRates: () => Promise<void>;
+  loadHistory: () => Promise<void>;
 
   // Actions
-  addTaxRate: (rate: Omit<TaxRate, 'id' | 'createdAt' | 'status' | 'isDefault'>) => void;
-  setDefaultTaxRate: (id: string) => void;
-  archiveTaxRate: (id: string) => void;
-  revertToRate: (id: string, performedBy: string) => void;
+  addTaxRate: (rate: { rate: number; effectiveFrom: string; notes?: string; createdBy: string }) => Promise<void>;
+  setDefaultTaxRate: (id: string, performedBy: string) => Promise<void>;
+  revertToRate: (id: string, performedBy: string) => Promise<void>;
+
+  // Getters
   getActiveTaxRate: () => TaxRate | undefined;
   getTaxRateById: (id: string) => TaxRate | undefined;
   getHistoryForRate: (id: string) => TaxRateHistory[];
+  getTaxRateForDate: (date: string) => TaxRate | undefined;
 }
 
 export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
-  taxRates: [
-    // Initialize with a default rate
-    {
-      id: 'default-rate-1',
-      rate: 21.0,
-      effectiveFrom: '2025-10-01',
-      status: 'active',
-      isDefault: true,
-      createdAt: new Date().toISOString(),
-      createdBy: 'system',
-      notes: 'Initial default tax rate'
+  taxRates: [],
+  history: [],
+  isLoading: false,
+  error: null,
+
+  loadTaxRates: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      console.log('🔄 [TaxStore] Starting to load tax rates from Supabase...');
+      const rates = await taxRateService.getAll();
+      console.log('✅ [TaxStore] Tax rates loaded successfully:', rates);
+      console.log('📊 [TaxStore] Active rate found:', rates.find(r => r.status === 'active'));
+      set({ taxRates: rates, isLoading: false });
+      console.log('💾 [TaxStore] State updated with', rates.length, 'tax rates');
+    } catch (error) {
+      console.error('❌ [TaxStore] Failed to load tax rates:', error);
+      set({ error: 'Failed to load tax rates', isLoading: false, taxRates: [] });
     }
-  ],
-  history: [
-    {
-      id: 'history-1',
-      taxRateId: 'default-rate-1',
-      action: 'created',
-      performedBy: 'system',
-      performedAt: new Date().toISOString(),
-      newRate: 21.0,
-      notes: 'System initialization'
-    }
-  ],
-
-  addTaxRate: (rateData) => {
-    const currentDefault = get().getActiveTaxRate();
-
-    const newRate: TaxRate = {
-      ...rateData,
-      id: `tax-rate-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      status: 'active',
-      isDefault: true, // New rate becomes the ONLY active default
-    };
-
-    const historyEntry: TaxRateHistory = {
-      id: `history-${Date.now()}`,
-      taxRateId: newRate.id,
-      action: 'created',
-      performedBy: rateData.createdBy,
-      performedAt: new Date().toISOString(),
-      previousRate: currentDefault?.rate,
-      newRate: rateData.rate,
-      notes: rateData.notes || `New default tax rate: ${rateData.rate}%`
-    };
-
-    set(state => ({
-      taxRates: [
-        // Archive ALL previous rates
-        ...state.taxRates.map(r => ({
-          ...r,
-          status: 'archived',
-          isDefault: false
-        })),
-        newRate
-      ],
-      history: [...state.history, historyEntry]
-    }));
   },
 
-  setDefaultTaxRate: (id) => {
-    const targetRate = get().taxRates.find(r => r.id === id);
-    const currentDefault = get().getActiveTaxRate();
-    if (!targetRate) return;
-
-    const historyEntry: TaxRateHistory = {
-      id: `history-${Date.now()}`,
-      taxRateId: id,
-      action: 'activated',
-      performedBy: 'admin', // TODO: Get from auth context
-      performedAt: new Date().toISOString(),
-      previousRate: currentDefault?.rate,
-      newRate: targetRate.rate,
-      notes: `Activated ${targetRate.rate}% as new default tax rate`
-    };
-
-    set(state => ({
-      taxRates: state.taxRates.map(r => ({
-        ...r,
-        // Only the target rate is active and default, all others are archived
-        isDefault: r.id === id,
-        status: r.id === id ? 'active' : 'archived'
-      })),
-      history: [...state.history, historyEntry]
-    }));
-  },
-
-  archiveTaxRate: (id) => {
-    const targetRate = get().taxRates.find(r => r.id === id);
-    if (!targetRate || targetRate.isDefault) {
-      console.error('Cannot archive default rate');
-      return;
+  loadHistory: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      const history = await taxRateService.getHistory();
+      set({ history, isLoading: false });
+    } catch (error) {
+      console.error('Failed to load tax history:', error);
+      set({ error: 'Failed to load tax history', isLoading: false });
     }
-
-    const historyEntry: TaxRateHistory = {
-      id: `history-${Date.now()}`,
-      taxRateId: id,
-      action: 'archived',
-      performedBy: 'admin',
-      performedAt: new Date().toISOString(),
-      newRate: targetRate.rate,
-      notes: 'Tax rate archived'
-    };
-
-    set(state => ({
-      taxRates: state.taxRates.map(r =>
-        r.id === id ? { ...r, status: 'archived', isDefault: false } : r
-      ),
-      history: [...state.history, historyEntry]
-    }));
   },
 
-  revertToRate: (id, performedBy) => {
-    const targetRate = get().taxRates.find(r => r.id === id);
-    if (!targetRate) return;
+  addTaxRate: async (rateData) => {
+    try {
+      set({ isLoading: true, error: null });
 
-    const currentDefault = get().getActiveTaxRate();
+      // Create new tax rate (backend will handle archiving old ones)
+      const newRate = await taxRateService.create(rateData);
 
-    // Create new rate based on old one
-    const revertedRate: TaxRate = {
-      id: `tax-rate-${Date.now()}`,
-      rate: targetRate.rate,
-      effectiveFrom: new Date().toISOString().split('T')[0],
-      status: 'active',
-      isDefault: true, // This becomes the ONLY active default
-      createdAt: new Date().toISOString(),
-      createdBy: performedBy,
-      notes: `Reverted to ${targetRate.rate}% (original effective from ${targetRate.effectiveFrom})`
-    };
+      // Reload data to get updated status
+      await get().loadTaxRates();
+      await get().loadHistory();
 
-    const historyEntry: TaxRateHistory = {
-      id: `history-${Date.now()}`,
-      taxRateId: revertedRate.id,
-      action: 'reverted',
-      performedBy,
-      performedAt: new Date().toISOString(),
-      previousRate: currentDefault?.rate,
-      newRate: targetRate.rate,
-      notes: `Reverted from ${currentDefault?.rate}% back to ${targetRate.rate}%`
-    };
+      set({ isLoading: false });
+    } catch (error) {
+      console.error('Failed to add tax rate:', error);
+      set({ error: 'Failed to add tax rate', isLoading: false });
+      throw error;
+    }
+  },
 
-    set(state => ({
-      taxRates: [
-        // Archive ALL existing rates
-        ...state.taxRates.map(r => ({
-          ...r,
-          status: 'archived',
-          isDefault: false
-        })),
-        revertedRate
-      ],
-      history: [...state.history, historyEntry]
-    }));
+  setDefaultTaxRate: async (id, performedBy) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // Activate the tax rate (backend will handle archiving others)
+      await taxRateService.activate(id, performedBy);
+
+      // Reload data
+      await get().loadTaxRates();
+      await get().loadHistory();
+
+      set({ isLoading: false });
+    } catch (error) {
+      console.error('Failed to set default tax rate:', error);
+      set({ error: 'Failed to set default tax rate', isLoading: false });
+      throw error;
+    }
+  },
+
+  revertToRate: async (id, performedBy) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // Revert to old rate (creates new rate with old percentage)
+      await taxRateService.revertTo(id, performedBy);
+
+      // Reload data
+      await get().loadTaxRates();
+      await get().loadHistory();
+
+      set({ isLoading: false });
+    } catch (error) {
+      console.error('Failed to revert tax rate:', error);
+      set({ error: 'Failed to revert tax rate', isLoading: false });
+      throw error;
+    }
   },
 
   getActiveTaxRate: () => {
-    return get().taxRates.find(r => r.isDefault && r.status === 'active');
+    // Find the active tax rate (only one can be active at a time)
+    const activeRate = get().taxRates.find(r => r.status === 'active');
+    console.log('🔍 getActiveTaxRate called, found:', activeRate);
+    return activeRate;
   },
 
   getTaxRateById: (id) => {
@@ -203,5 +129,15 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
 
   getHistoryForRate: (id) => {
     return get().history.filter(h => h.taxRateId === id);
+  },
+
+  getTaxRateForDate: (date) => {
+    // Find the tax rate that was effective on the given date
+    const targetDate = new Date(date);
+    const rates = get().taxRates
+      .filter(r => new Date(r.effectiveFrom) <= targetDate)
+      .sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime());
+
+    return rates[0]; // Return the most recent rate before or on the target date
   }
 }));

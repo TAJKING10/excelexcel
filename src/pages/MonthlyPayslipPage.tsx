@@ -125,7 +125,43 @@ export default function MonthlyPayslipPage() {
   const employees = useDataStore((state) => state.employees);
   const individuals = useDataStore((state) => state.individuals);
   const companies = useDataStore((state) => state.companies);
-  const { getActiveTaxRate, getTaxRateById } = useTaxRatesStore();
+  const taxRates = useTaxRatesStore((state) => state.taxRates);
+  const { getTaxRateForDate, getTaxRateById, loadTaxRates } = useTaxRatesStore();
+
+  // Load tax rates from Supabase on mount
+  useEffect(() => {
+    console.log('💰 Loading tax rates from Supabase for payslip page...');
+    loadTaxRates();
+  }, [loadTaxRates]);
+
+  // Update payslip data with active tax rate when tax rates are loaded
+  // IMPORTANT: This should ONLY run for NEW payslips ONCE, never change after
+  const hasAppliedTaxRate = React.useRef(false);
+
+  useEffect(() => {
+    // Only run if tax rates are loaded, no payslip ID, and haven't applied yet
+    if (taxRates.length > 0 && !payslipId && !hasAppliedTaxRate.current) {
+      // Apply date-based tax rate ONCE for new payslips
+      // Use the first day of the selected period to determine the correct tax rate
+      const payslipDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
+      const applicableTaxRate = getTaxRateForDate(payslipDate);
+      console.log('📌 Auto-applying date-based tax rate to NEW payslip (ONCE ONLY):', {
+        payslipDate,
+        period: `${selectedYear}-${selectedMonth}`,
+        applicableTaxRate
+      });
+
+      if (applicableTaxRate) {
+        setPayslipData(prev => ({
+          ...prev,
+          taxRateId: applicableTaxRate.id,
+          taxRatePercentage: applicableTaxRate.rate
+        }));
+        hasAppliedTaxRate.current = true; // LOCK - never apply again
+        console.log('🔒 Tax rate LOCKED at', applicableTaxRate.rate, '% for period', `${selectedYear}-${selectedMonth}`, '- will never change');
+      }
+    }
+  }, [taxRates, payslipId, selectedYear, selectedMonth, getTaxRateForDate]);
 
   const personId = employeeId || individualId;
   const employee = employees.find((e) => e.id === personId);
@@ -164,6 +200,15 @@ export default function MonthlyPayslipPage() {
   useEffect(() => {
     const loadPayslipData = async () => {
       if (!personId) return;
+
+      // Wait for tax rates to be loaded first
+      if (taxRates.length === 0) {
+        console.log('⏳ Waiting for tax rates to load before loading payslip...');
+        return;
+      }
+
+      // Reset the tax rate application flag when loading a different payslip
+      hasAppliedTaxRate.current = false;
 
       setIsLoading(true);
       setIsEditMode(false); // Exit edit mode when loading new data
@@ -259,13 +304,20 @@ export default function MonthlyPayslipPage() {
           setHasUnsavedChanges(false);
         } else {
           console.log('ℹ️ No saved payslip found, using defaults');
-          // No saved data, reset to defaults and use active tax rate
-          const activeTaxRate = getActiveTaxRate();
-          console.log('📌 Setting active tax rate for new payslip:', activeTaxRate);
+          // No saved data, reset to defaults and use date-based tax rate
+          // Use the first day of the selected period to determine the correct tax rate
+          const payslipDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
+          const applicableTaxRate = getTaxRateForDate(payslipDate);
+          console.log('📌 Setting date-based tax rate for new payslip:', {
+            payslipDate,
+            period: `${selectedYear}-${selectedMonth}`,
+            applicableTaxRate
+          });
+          console.log('📊 Available tax rates:', taxRates);
           setPayslipId(undefined);
           setPayslipData({
-            taxRateId: activeTaxRate?.id,
-            taxRatePercentage: activeTaxRate?.rate,
+            taxRateId: applicableTaxRate?.id,
+            taxRatePercentage: applicableTaxRate?.rate,
             employeeNumber: '2',
             indice: '21',
             emploi: person?.class || 'Comptable',
@@ -305,7 +357,7 @@ export default function MonthlyPayslipPage() {
     };
 
     loadPayslipData();
-  }, [personId, selectedYear, selectedMonth, employeeId]); // Don't include person or toast to avoid infinite loops
+  }, [personId, selectedYear, selectedMonth, employeeId, taxRates]); // Include taxRates to wait for them to load
 
   // Smart bidirectional auto-recalculation
   useEffect(() => {
@@ -439,13 +491,25 @@ export default function MonthlyPayslipPage() {
     const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
       (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
 
+    // STEP 5.5: Calculate Tax (IMPÔT) based on saved tax rate percentage
+    // Use the tax rate that was saved with THIS payslip (preserves historical calculations)
+    const taxRateToUse = payslipData.taxRatePercentage || 21; // Default to 21% if not set
+    const calculatedImpot = totalImposable * (taxRateToUse / 100);
+
+    console.log('💰 Tax Calculation:', {
+      totalImposable: totalImposable.toFixed(2),
+      taxRatePercentage: taxRateToUse,
+      calculatedTax: calculatedImpot.toFixed(2),
+      savedTaxRateId: payslipData.taxRateId
+    });
+
     // STEP 6: Calculate Tax Credits
     const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
     const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
     const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
 
     // STEP 7: Calculate NET (Total Brut - Cotisations - Tax + Credits)
-    const net = totalBrut - totalCotisation - (payslipData.impot || 0) + cissm + cisCipCim + ciCo2;
+    const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
 
     // STEP 8: Calculate NET À PAYER (NET - other deductions)
     const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
@@ -453,6 +517,7 @@ export default function MonthlyPayslipPage() {
     // Update ALL manual fields with calculated values
     setPayslipData(prev => ({
       ...prev,
+      impot: calculatedImpot, // Update the tax based on saved tax rate percentage
       manualAppointement: appointement,
       manualJoursFeries: joursFeries,
       manualTotalBrut: totalBrut,
@@ -486,6 +551,7 @@ export default function MonthlyPayslipPage() {
     payslipData.impot,
     payslipData.chequeRepas,
     payslipData.avanceSalaire,
+    payslipData.taxRatePercentage, // IMPORTANT: Watch tax rate to recalculate when it changes
     // Also watch manual fields if user edits them directly
     payslipData.manualAppointement,
     payslipData.manualJoursFeries,
@@ -1037,6 +1103,89 @@ export default function MonthlyPayslipPage() {
           Montants en Euros (€)
         </span>
       </div>
+
+      {/* Tax Rate Indicator - Prominent Display */}
+      {payslipData.taxRatePercentage !== undefined && (
+        <Card className={`shadow-lg border-2 ${
+          getTaxRateById(payslipData.taxRateId || '')?.status === 'active'
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-400 dark:border-green-600'
+            : 'bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950 dark:to-sky-950 border-blue-400 dark:border-blue-600'
+        }`}>
+          <CardContent className="py-4 px-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`h-16 w-16 rounded-full flex items-center justify-center ${
+                  getTaxRateById(payslipData.taxRateId || '')?.status === 'active'
+                    ? 'bg-green-500 dark:bg-green-600'
+                    : 'bg-blue-500 dark:bg-blue-600'
+                } shadow-lg`}>
+                  <span className="text-3xl">💰</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    Taux d'Imposition
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-4xl font-bold ${
+                      getTaxRateById(payslipData.taxRateId || '')?.status === 'active'
+                        ? 'text-green-700 dark:text-green-300'
+                        : 'text-blue-700 dark:text-blue-300'
+                    }`}>
+                      {payslipData.taxRatePercentage}%
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      getTaxRateById(payslipData.taxRateId || '')?.status === 'active'
+                        ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200'
+                        : 'bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200'
+                    }`}>
+                      {getTaxRateById(payslipData.taxRateId || '')?.status === 'active' ? 'ACTUEL' : 'ARCHIVÉ'}
+                    </span>
+                  </div>
+                  {payslipData.taxRateId && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Effectif depuis: {getTaxRateById(payslipData.taxRateId)?.effectiveFrom
+                        ? new Date(getTaxRateById(payslipData.taxRateId)!.effectiveFrom).toLocaleDateString('fr-FR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })
+                        : 'N/A'}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground mb-1">Identifiant du taux:</p>
+                <code className="text-xs bg-black/10 dark:bg-white/10 px-2 py-1 rounded">
+                  {payslipData.taxRateId?.substring(0, 16)}...
+                </code>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {!payslipData.taxRatePercentage && (
+        <Card className="shadow-md border-2 border-yellow-400 dark:border-yellow-600 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950 dark:to-amber-950">
+          <CardContent className="py-4 px-6">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-yellow-500 dark:bg-yellow-600 flex items-center justify-center shadow-lg">
+                <span className="text-3xl">⚠️</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 uppercase tracking-wide">
+                  Taux d'Imposition
+                </p>
+                <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+                  Non Défini
+                </p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                  Veuillez sélectionner un taux d'imposition pour ce bulletin de paie
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Employee and Company Info */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

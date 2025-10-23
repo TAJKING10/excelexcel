@@ -9,7 +9,7 @@ export default defineConfig({
   publicDir: "./static",
   base: "/",
   server: {
-    port: 3042,
+    port: 3046,
     host: true,
   },
   css: {

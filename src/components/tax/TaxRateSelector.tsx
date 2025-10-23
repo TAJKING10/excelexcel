@@ -30,7 +30,9 @@ export function TaxRateSelector({ value, onChange, disabled, className }: TaxRat
   });
 
   const activeTaxRate = getActiveTaxRate();
-  const selectedValue = value || activeTaxRate?.id || '';
+  // IMPORTANT: Always use the provided value if it exists, never fall back to active rate
+  // This preserves the historical tax rate for existing payslips
+  const selectedValue = value || (disabled ? '' : activeTaxRate?.id || '');
 
   const handleValueChange = (newValue: string) => {
     const selectedRate = getTaxRateById(newValue);

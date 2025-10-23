@@ -1498,6 +1498,289 @@ export const individualAnnualPayslipService = {
 };
 
 // ============================================
+// TAX RATE SERVICES
+// ============================================
+
+export interface TaxRate {
+  id: string;
+  rate: number;
+  effectiveFrom: string;
+  status: 'active' | 'archived';
+  isDefault: boolean;
+  notes?: string;
+  createdAt: string;
+  createdBy?: string;
+  updatedAt?: string;
+}
+
+export interface TaxRateHistory {
+  id: string;
+  taxRateId: string;
+  action: 'created' | 'activated' | 'archived' | 'reverted';
+  performedBy: string;
+  performedAt: string;
+  oldRate?: number;
+  newRate?: number;
+  notes?: string;
+}
+
+export const taxRateService = {
+  async getAll(): Promise<TaxRate[]> {
+    console.log('🔍 taxRateService.getAll() called');
+    const { data, error } = await supabase
+      .from('tax_rates')
+      .select('*')
+      .order('effective_from', { ascending: false });
+
+    if (error) {
+      console.error('❌ Error fetching tax rates:', error);
+      throw error;
+    }
+
+    console.log('✅ Raw tax rates from DB:', data);
+
+    const mapped = (data || []).map(row => ({
+      id: row.id,
+      rate: parseFloat(row.rate),
+      effectiveFrom: row.effective_from,
+      status: row.status,
+      isDefault: row.is_default,
+      notes: row.notes,
+      createdAt: row.created_at,
+      createdBy: row.created_by,
+      updatedAt: row.updated_at
+    }));
+
+    console.log('📊 Mapped tax rates:', mapped);
+    console.log('🎯 Active tax rate:', mapped.find(r => r.status === 'active'));
+
+    return mapped;
+  },
+
+  async getActive(): Promise<TaxRate | null> {
+    const { data, error } = await supabase
+      .from('tax_rates')
+      .select('*')
+      .eq('status', 'active')
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw error;
+    }
+
+    return {
+      id: data.id,
+      rate: parseFloat(data.rate),
+      effectiveFrom: data.effective_from,
+      status: data.status,
+      isDefault: data.is_default,
+      notes: data.notes,
+      createdAt: data.created_at,
+      createdBy: data.created_by,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async getById(id: string): Promise<TaxRate | null> {
+    const { data, error } = await supabase
+      .from('tax_rates')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw error;
+    }
+
+    return {
+      id: data.id,
+      rate: parseFloat(data.rate),
+      effectiveFrom: data.effective_from,
+      status: data.status,
+      isDefault: data.is_default,
+      notes: data.notes,
+      createdAt: data.created_at,
+      createdBy: data.created_by,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async create(taxRate: { rate: number; effectiveFrom: string; notes?: string; createdBy: string }): Promise<TaxRate> {
+    // First, get the current active rate for history
+    const currentActive = await this.getActive();
+
+    // Create new tax rate (trigger will automatically archive old ones)
+    const { data, error } = await supabase
+      .from('tax_rates')
+      .insert({
+        rate: taxRate.rate,
+        effective_from: taxRate.effectiveFrom,
+        status: 'active',
+        is_default: true, // New active rate becomes the default
+        notes: taxRate.notes,
+        created_by: taxRate.createdBy,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Add to history
+    await supabase
+      .from('tax_rate_history')
+      .insert({
+        tax_rate_id: data.id,
+        action: 'created',
+        performed_by: taxRate.createdBy,
+        performed_at: new Date().toISOString(),
+        old_rate: currentActive?.rate,
+        new_rate: taxRate.rate,
+        notes: `New tax rate created: ${taxRate.rate}%`
+      });
+
+    if (currentActive) {
+      // Add archive history for old rate
+      await supabase
+        .from('tax_rate_history')
+        .insert({
+          tax_rate_id: currentActive.id,
+          action: 'archived',
+          performed_by: taxRate.createdBy,
+          performed_at: new Date().toISOString(),
+          old_rate: currentActive.rate,
+          new_rate: taxRate.rate,
+          notes: `Archived due to new rate: ${taxRate.rate}%`
+        });
+    }
+
+    return {
+      id: data.id,
+      rate: parseFloat(data.rate),
+      effectiveFrom: data.effective_from,
+      status: data.status,
+      isDefault: data.is_default,
+      notes: data.notes,
+      createdAt: data.created_at,
+      createdBy: data.created_by,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async activate(id: string, performedBy: string): Promise<TaxRate> {
+    const currentActive = await this.getActive();
+    const taxRate = await this.getById(id);
+
+    if (!taxRate) throw new Error('Tax rate not found');
+
+    // Update status (trigger will handle archiving others)
+    const { data, error } = await supabase
+      .from('tax_rates')
+      .update({
+        status: 'active',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Add to history
+    await supabase
+      .from('tax_rate_history')
+      .insert({
+        tax_rate_id: id,
+        action: 'activated',
+        performed_by: performedBy,
+        performed_at: new Date().toISOString(),
+        old_rate: currentActive?.rate,
+        new_rate: taxRate.rate,
+        notes: `Activated tax rate: ${taxRate.rate}%`
+      });
+
+    return {
+      id: data.id,
+      rate: parseFloat(data.rate),
+      effectiveFrom: data.effective_from,
+      status: data.status,
+      isDefault: data.is_default,
+      notes: data.notes,
+      createdAt: data.created_at,
+      createdBy: data.created_by,
+      updatedAt: data.updated_at
+    };
+  },
+
+  async revertTo(id: string, performedBy: string): Promise<TaxRate> {
+    const oldRate = await this.getById(id);
+    if (!oldRate) throw new Error('Tax rate not found');
+
+    // Create a new rate with the old rate's percentage
+    return await this.create({
+      rate: oldRate.rate,
+      effectiveFrom: new Date().toISOString(),
+      notes: `Reverted from rate ${id}`,
+      createdBy: performedBy
+    });
+  },
+
+  async getHistory(taxRateId?: string): Promise<TaxRateHistory[]> {
+    let query = supabase
+      .from('tax_rate_history')
+      .select('*')
+      .order('performed_at', { ascending: false });
+
+    if (taxRateId) {
+      query = query.eq('tax_rate_id', taxRateId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    return (data || []).map(row => ({
+      id: row.id,
+      taxRateId: row.tax_rate_id,
+      action: row.action,
+      performedBy: row.performed_by,
+      performedAt: row.performed_at,
+      oldRate: row.old_rate ? parseFloat(row.old_rate) : undefined,
+      newRate: row.new_rate ? parseFloat(row.new_rate) : undefined,
+      notes: row.notes
+    }));
+  },
+
+  async getTaxRateForDate(date: string): Promise<TaxRate | null> {
+    const { data, error } = await supabase
+      .from('tax_rates')
+      .select('*')
+      .lte('effective_from', date)
+      .order('effective_from', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      rate: parseFloat(data.rate),
+      effectiveFrom: data.effective_from,
+      status: data.status,
+      isDefault: data.is_default,
+      notes: data.notes,
+      createdAt: data.created_at,
+      createdBy: data.created_by,
+      updatedAt: data.updated_at
+    };
+  }
+};
+
+// ============================================
 // MONTHLY PAYSLIP SERVICES
 // ============================================
 
