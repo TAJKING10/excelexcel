@@ -9,16 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useDataStore } from '@/stores/data';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Download, Calendar, Calculator, Edit2, Save, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Calendar, Calculator, Edit2, Save, Check, Loader2, History } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { monthlyPayslipService } from '@/services/supabase';
+import { monthlyPayslipService, supabase } from '@/services/supabase';
 import { TaxRateSelector } from '@/components/tax/TaxRateSelector';
 import { useTaxRatesStore } from '@/store/taxRatesStore';
 import { recordPayslipEdit } from '@/services/payslipEditHistory';
-import { PayslipEditHistoryComponent } from '@/components/payslips/PayslipEditHistory';
 import { PayslipHistoryButton } from '@/components/payslips/PayslipHistoryButton';
 
 const MONTHS = [
@@ -226,14 +225,109 @@ export default function MonthlyPayslipPage() {
           individual: individual ? `${individual.firstName} ${individual.lastName}` : 'N/A'
         });
 
-        const savedPayslip = await monthlyPayslipService.getByPeriod(
-          personId,
-          selectedYear,
-          selectedMonth,
-          isEmployee
-        );
+        let savedPayslip = null;
 
-        console.log('📥 Database query result:', savedPayslip ? 'FOUND' : 'NOT FOUND');
+        try {
+          savedPayslip = await monthlyPayslipService.getByPeriod(
+            personId,
+            selectedYear,
+            selectedMonth,
+            isEmployee
+          );
+          console.log('📥 Database query result:', savedPayslip ? 'FOUND' : 'NOT FOUND');
+        } catch (queryError: any) {
+          // Handle the case where multiple records exist (PGRST116 error)
+          if (queryError?.code === 'PGRST116' || queryError?.message?.includes('multiple')) {
+            console.warn('⚠️ Multiple payslips found for this period, fetching the most recent one');
+
+            // Fetch all matching records and get the most recent
+            let query = supabase
+              .from('monthlypayslips')
+              .select('*')
+              .eq('period_year', selectedYear)
+              .eq('period_month', selectedMonth);
+
+            if (isEmployee) {
+              query = query.eq('employee_id', personId);
+            } else {
+              query = query.eq('individual_id', personId);
+            }
+
+            const { data: multipleRecords } = await query.order('created_at', { ascending: false });
+
+            if (multipleRecords && multipleRecords.length > 0) {
+              console.log(`✅ Found ${multipleRecords.length} duplicate records, using the most recent one`);
+              const mostRecent = multipleRecords[0];
+
+              savedPayslip = {
+                id: mostRecent.id,
+                employeeId: mostRecent.employee_id,
+                individualId: mostRecent.individual_id,
+                companyId: mostRecent.company_id,
+                periodYear: mostRecent.period_year,
+                periodMonth: mostRecent.period_month,
+                taxRateId: mostRecent.tax_rate_id,
+                taxRatePercentage: mostRecent.tax_rate_percentage,
+                employeeNumber: mostRecent.employee_number,
+                indice: mostRecent.indice,
+                emploi: mostRecent.emploi,
+                dateEntree: mostRecent.date_entree,
+                matriculeAssure: mostRecent.matricule_assure,
+                matriculeEmployeur: mostRecent.matricule_employeur,
+                hoursWorked: mostRecent.hours_worked,
+                hourlyRate: mostRecent.hourly_rate,
+                holidayHours: mostRecent.holiday_hours,
+                sickLeaveHours: mostRecent.sick_leave_hours,
+                publicHolidayHours: mostRecent.public_holiday_hours,
+                fd: mostRecent.fd,
+                ac: mostRecent.ac,
+                ffo: mostRecent.ffo,
+                fds: mostRecent.fds,
+                impot: mostRecent.impot,
+                chequeRepas: mostRecent.cheque_repas,
+                avanceSalaire: mostRecent.avance_salaire,
+                legalLeave: mostRecent.legal_leave,
+                leaveReport: mostRecent.leave_report,
+                leaveTaken: mostRecent.leave_taken,
+                manualAppointement: mostRecent.manual_appointement,
+                manualJoursFeries: mostRecent.manual_jours_feries,
+                manualTotalBrut: mostRecent.manual_total_brut,
+                manualAssuranceMaladie: mostRecent.manual_assurance_maladie,
+                manualMajoration: mostRecent.manual_majoration,
+                manualAssurancePension: mostRecent.manual_assurance_pension,
+                manualAssuranceDependance: mostRecent.manual_assurance_dependance,
+                manualTotalCotisation: mostRecent.manual_total_cotisation,
+                manualTotalImposable: mostRecent.manual_total_imposable,
+                manualCissm: mostRecent.manual_cissm,
+                manualCisCipCim: mostRecent.manual_cis_cip_cim,
+                manualCiCo2: mostRecent.manual_ci_co2,
+                manualNet: mostRecent.manual_net,
+                manualNetAPayer: mostRecent.manual_net_a_payer,
+                m1Appointement: mostRecent.m1_appointement,
+                m1JoursFeries: mostRecent.m1_jours_feries,
+                m1TotalBrut: mostRecent.m1_total_brut,
+                m1AssuranceMaladie: mostRecent.m1_assurance_maladie,
+                m1Majoration: mostRecent.m1_majoration,
+                m1AssurancePension: mostRecent.m1_assurance_pension,
+                m1AssuranceDependance: mostRecent.m1_assurance_dependance,
+                m1TotalCotisation: mostRecent.m1_total_cotisation,
+                m1Fd: mostRecent.m1_fd,
+                m1Ac: mostRecent.m1_ac,
+                m1Ffo: mostRecent.m1_ffo,
+                m1Fds: mostRecent.m1_fds,
+                m1TotalImposable: mostRecent.m1_total_imposable,
+                m1Impot: mostRecent.m1_impot,
+                m1Cissm: mostRecent.m1_cissm,
+                m1CisCipCim: mostRecent.m1_cis_cip_cim,
+                m1CiCo2: mostRecent.m1_ci_co2,
+                m1Net: mostRecent.m1_net,
+              };
+            }
+          } else {
+            // Re-throw other errors
+            throw queryError;
+          }
+        }
 
         if (savedPayslip) {
           console.log('✅ Payslip data loaded from database:', {
@@ -309,8 +403,8 @@ export default function MonthlyPayslipPage() {
           setOriginalPayslipData(loadedData); // Store original data for edit history tracking
           setHasUnsavedChanges(false);
         } else {
-          console.log('ℹ️ No saved payslip found, using defaults');
-          // No saved data, reset to defaults and use date-based tax rate
+          console.log('ℹ️ No saved payslip found, auto-creating with defaults');
+          // No saved data - auto-create the payslip record so history tracking works
           // Use the first day of the selected period to determine the correct tax rate
           const payslipDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
           const applicableTaxRate = getTaxRateForDate(payslipDate);
@@ -319,9 +413,8 @@ export default function MonthlyPayslipPage() {
             period: `${selectedYear}-${selectedMonth}`,
             applicableTaxRate
           });
-          console.log('📊 Available tax rates:', taxRates);
-          setPayslipId(undefined);
-          setPayslipData({
+
+          const defaultData = {
             taxRateId: applicableTaxRate?.id,
             taxRatePercentage: applicableTaxRate?.rate,
             employeeNumber: '2',
@@ -345,7 +438,136 @@ export default function MonthlyPayslipPage() {
             legalLeave: 208,
             leaveReport: -4,
             leaveTaken: 16,
-          });
+          };
+
+          // Calculate values for the initial save
+          // We need to temporarily set the data to calculate values
+          const tempData = { ...defaultData };
+
+          // Calculate using the same logic as the main calculatePayslip function
+          const hoursWorked = tempData.hoursWorked;
+          const hourlyRate = tempData.hourlyRate;
+          const publicHolidayHours = tempData.publicHolidayHours;
+
+          const appointement = (hoursWorked + publicHolidayHours) * hourlyRate;
+          const joursFeries = publicHolidayHours * hourlyRate;
+          const totalBrut = appointement;
+
+          const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+          const majorationEspece = totalBrut * RATES.majoration;
+          const assurancePension = totalBrut * RATES.assurancePension;
+          const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+          const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
+
+          const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension;
+          const taxRateToUse = tempData.taxRatePercentage || 21;
+          const calculatedImpot = totalImposable * (taxRateToUse / 100);
+
+          const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+          const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
+          const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+          const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
+          const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire;
+
+          const calculations = {
+            appointement,
+            joursFeries,
+            totalBrut,
+            assuranceMaladie,
+            majorationEspece,
+            assurancePension,
+            assuranceDependance,
+            totalCotisation,
+            totalImposable,
+            calculatedImpot,
+            cissm,
+            cisCipCim,
+            ciCo2,
+            net,
+            netAPayer
+          };
+
+          // Auto-save the payslip to database immediately
+          try {
+            console.log('💾 Auto-creating payslip record in database...');
+
+            // Determine company ID - employees have direct companyId, individuals don't
+            let companyIdToSave = undefined;
+            if (isEmployee && employee) {
+              companyIdToSave = employee.companyId;
+            } else if (company) {
+              companyIdToSave = company.id;
+            }
+
+            const dataToSave = {
+              [isEmployee ? 'employeeId' : 'individualId']: personId,
+              companyId: companyIdToSave,
+              periodYear: selectedYear,
+              periodMonth: selectedMonth,
+              taxRateId: applicableTaxRate?.id,
+              taxRatePercentage: applicableTaxRate?.rate,
+              employeeNumber: defaultData.employeeNumber,
+              indice: defaultData.indice,
+              emploi: defaultData.emploi,
+              dateEntree: defaultData.dateEntree,
+              matriculeAssure: defaultData.matriculeAssure,
+              matriculeEmployeur: defaultData.matriculeEmployeur,
+              hoursWorked: defaultData.hoursWorked,
+              hourlyRate: defaultData.hourlyRate,
+              holidayHours: defaultData.holidayHours,
+              sickLeaveHours: defaultData.sickLeaveHours,
+              publicHolidayHours: defaultData.publicHolidayHours,
+              fd: defaultData.fd,
+              ac: defaultData.ac,
+              ffo: defaultData.ffo,
+              fds: defaultData.fds,
+              impot: defaultData.impot,
+              chequeRepas: defaultData.chequeRepas,
+              avanceSalaire: defaultData.avanceSalaire,
+              legalLeave: defaultData.legalLeave,
+              leaveReport: defaultData.leaveReport,
+              leaveTaken: defaultData.leaveTaken,
+              manualAppointement: calculations.appointement,
+              manualTotalBrut: calculations.totalBrut,
+              manualAssuranceMaladie: calculations.assuranceMaladie,
+              manualMajoration: calculations.majorationEspece,
+              manualAssurancePension: calculations.assurancePension,
+              manualAssuranceDependance: calculations.assuranceDependance,
+              manualTotalCotisation: calculations.totalCotisation,
+              manualTotalImposable: calculations.totalImposable,
+              manualCissm: calculations.cissm,
+              manualCisCipCim: calculations.cisCipCim,
+              manualCiCo2: calculations.ciCo2,
+              manualNet: calculations.net,
+              manualNetAPayer: calculations.netAPayer,
+            };
+
+            const autoCreatedPayslip = await monthlyPayslipService.save(dataToSave);
+            console.log('✅ Payslip auto-created successfully:', autoCreatedPayslip.id);
+
+            // Set the payslip ID so history tracking works
+            setPayslipId(autoCreatedPayslip.id);
+
+            // Record the creation in history
+            try {
+              await recordPayslipEdit(
+                autoCreatedPayslip.id,
+                'monthly',
+                null, // No old values for new payslips
+                defaultData,
+                `Created monthly payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+              );
+              console.log('📝 Creation history recorded for auto-created payslip');
+            } catch (historyError) {
+              console.error('Failed to record creation history:', historyError);
+            }
+          } catch (autoCreateError) {
+            console.error('❌ Failed to auto-create payslip:', autoCreateError);
+            // Continue anyway with undefined payslipId
+          }
+
+          setPayslipData(defaultData);
+          setOriginalPayslipData(defaultData);
           setHasUnsavedChanges(false);
         }
       } catch (error) {
@@ -772,19 +994,38 @@ export default function MonthlyPayslipPage() {
         setPayslipId(savedPayslip.id);
       }
 
-      // Record edit history (only for updates, not new payslips)
-      if (!isNewPayslip && savedPayslip.id && originalPayslipData) {
+      // Record edit history for both creation and updates
+      if (savedPayslip.id) {
         try {
-          await recordPayslipEdit(
-            savedPayslip.id,
-            'monthly',
-            originalPayslipData,
-            payslipData,
-            `Updated monthly payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
-          );
-          console.log('📝 Edit history recorded');
+          if (isNewPayslip) {
+            // For new payslips, record creation with no old values
+            console.log('📝 Recording CREATION history for payslip:', savedPayslip.id);
+            await recordPayslipEdit(
+              savedPayslip.id,
+              'monthly',
+              null, // No old values for new payslips
+              payslipData,
+              `Created monthly payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+            );
+            console.log('✅ Creation history recorded successfully');
+          } else if (originalPayslipData) {
+            // For existing payslips, record the update
+            console.log('📝 Recording UPDATE history for payslip:', savedPayslip.id);
+            console.log('   Old data:', originalPayslipData);
+            console.log('   New data:', payslipData);
+            await recordPayslipEdit(
+              savedPayslip.id,
+              'monthly',
+              originalPayslipData,
+              payslipData,
+              `Updated monthly payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+            );
+            console.log('✅ Edit history recorded successfully');
+          } else {
+            console.warn('⚠️ No originalPayslipData available, skipping history recording');
+          }
         } catch (historyError) {
-          console.error('Failed to record edit history:', historyError);
+          console.error('❌ Failed to record edit history:', historyError);
           // Don't fail the save if history recording fails
         }
       }
@@ -1089,9 +1330,21 @@ export default function MonthlyPayslipPage() {
               </>
             )}
 
-            {payslipId && (
-              <PayslipHistoryButton payslipId={payslipId} payslipType="monthly" />
-            )}
+            {(() => {
+              // Debug: Log payslipId at render time
+              console.log('🔍 Render: payslipId =', payslipId);
+
+              if (payslipId) {
+                return <PayslipHistoryButton payslipId={payslipId} payslipType="monthly" />;
+              } else {
+                return (
+                  <Button variant="outline" size="default" className="gap-2" disabled title="Sauvegardez d'abord pour voir l'historique">
+                    <History className="h-4 w-4" />
+                    Historique
+                  </Button>
+                );
+              }
+            })()}
 
             <Button onClick={handleExportPDF} size="default" variant="outline" className="shadow-sm">
               <Download className="mr-2 h-4 w-4" />PDF
@@ -1770,14 +2023,6 @@ export default function MonthlyPayslipPage() {
           </p>
         </CardContent>
       </Card>
-
-      {/* Edit History */}
-      {payslipId && (
-        <PayslipEditHistoryComponent
-          payslipId={payslipId}
-          payslipType="monthly"
-        />
-      )}
     </div>
   );
 }

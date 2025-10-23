@@ -27,10 +27,15 @@ export async function recordPayslipEdit(
   newValues: any,
   comment?: string
 ): Promise<void> {
+  console.log('📝 Recording payslip edit:', { payslipId, payslipType, comment });
+
   const user = (await supabase.auth.getUser()).data.user;
   if (!user) {
+    console.error('❌ User not authenticated');
     throw new Error('User not authenticated');
   }
+
+  console.log('   User ID:', user.id);
 
   // Calculate changed fields
   const changedFields: string[] = [];
@@ -42,7 +47,9 @@ export async function recordPayslipEdit(
     });
   }
 
-  const { error } = await supabase.from('payslip_edit_history').insert({
+  console.log('   Changed fields:', changedFields.length, 'fields:', changedFields.slice(0, 10));
+
+  const recordToInsert = {
     payslip_id: payslipId,
     payslip_type: payslipType,
     edited_by: user.id,
@@ -53,12 +60,18 @@ export async function recordPayslipEdit(
       changedFields,
     },
     comment: comment || null,
-  });
+  };
+
+  console.log('   Inserting record:', recordToInsert);
+
+  const { error } = await supabase.from('payslip_edit_history').insert(recordToInsert);
 
   if (error) {
-    console.error('Failed to record payslip edit:', error);
+    console.error('❌ Failed to record payslip edit:', error);
     throw error;
   }
+
+  console.log('✅ Payslip edit recorded successfully');
 }
 
 /**
@@ -68,6 +81,8 @@ export async function getPayslipEditHistory(
   payslipId: string,
   payslipType: 'monthly' | 'annual'
 ): Promise<PayslipEditHistory[]> {
+  console.log('🔍 Fetching edit history from Supabase:', { payslipId, payslipType });
+
   const { data, error } = await supabase
     .from('payslip_edit_history')
     .select(`
@@ -84,9 +99,12 @@ export async function getPayslipEditHistory(
     .order('edited_at', { ascending: false });
 
   if (error) {
-    console.error('Failed to fetch payslip edit history:', error);
+    console.error('❌ Failed to fetch payslip edit history:', error);
     throw error;
   }
+
+  console.log('✅ Raw data from Supabase:', data);
+  console.log('   Found', data?.length || 0, 'history records');
 
   return (data || []).map((item: any) => ({
     id: item.id,
