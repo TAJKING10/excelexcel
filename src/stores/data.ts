@@ -1144,6 +1144,21 @@ export const useDataStore = create<DataState>((set, get) => ({
         updatedPayslip = await annualPayslipService.update(id, updates);
       }
 
+      // Record edit history
+      if (existingPayslip) {
+        const { recordPayslipEdit } = await import('@/services/payslipEditHistory');
+        await recordPayslipEdit(
+          id,
+          'annual',
+          existingPayslip,
+          updatedPayslip,
+          `Updated annual payslip for ${existingPayslip.year}`
+        ).catch(err => {
+          console.error('Failed to record edit history:', err);
+          // Don't throw - allow the payslip update to succeed even if history recording fails
+        });
+      }
+
       set((state) => ({
         annualPayslips: state.annualPayslips.map((p) => (p.id === id ? updatedPayslip : p)),
         isLoading: false

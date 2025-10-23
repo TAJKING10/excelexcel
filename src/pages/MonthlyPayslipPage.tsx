@@ -17,6 +17,9 @@ import autoTable from 'jspdf-autotable';
 import { monthlyPayslipService } from '@/services/supabase';
 import { TaxRateSelector } from '@/components/tax/TaxRateSelector';
 import { useTaxRatesStore } from '@/store/taxRatesStore';
+import { recordPayslipEdit } from '@/services/payslipEditHistory';
+import { PayslipEditHistoryComponent } from '@/components/payslips/PayslipEditHistory';
+import { PayslipHistoryButton } from '@/components/payslips/PayslipHistoryButton';
 
 const MONTHS = [
   { value: 1, label: 'Janvier' },
@@ -121,6 +124,7 @@ export default function MonthlyPayslipPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [payslipId, setPayslipId] = useState<string | undefined>(undefined);
+  const [originalPayslipData, setOriginalPayslipData] = useState<PayslipData | null>(null);
 
   const employees = useDataStore((state) => state.employees);
   const individuals = useDataStore((state) => state.individuals);
@@ -244,7 +248,7 @@ export default function MonthlyPayslipPage() {
 
           // Load all the saved data
           setPayslipId(savedPayslip.id);
-          setPayslipData({
+          const loadedData = {
             taxRateId: savedPayslip.taxRateId,
             taxRatePercentage: savedPayslip.taxRatePercentage,
             employeeNumber: savedPayslip.employeeNumber || '2',
@@ -300,7 +304,9 @@ export default function MonthlyPayslipPage() {
             m1CisCipCim: savedPayslip.m1CisCipCim,
             m1CiCo2: savedPayslip.m1CiCo2,
             m1Net: savedPayslip.m1Net,
-          });
+          };
+          setPayslipData(loadedData);
+          setOriginalPayslipData(loadedData); // Store original data for edit history tracking
           setHasUnsavedChanges(false);
         } else {
           console.log('ℹ️ No saved payslip found, using defaults');
@@ -761,9 +767,30 @@ export default function MonthlyPayslipPage() {
       });
 
       // Update the payslip ID if this was a new record
+      const isNewPayslip = !payslipId;
       if (savedPayslip.id) {
         setPayslipId(savedPayslip.id);
       }
+
+      // Record edit history (only for updates, not new payslips)
+      if (!isNewPayslip && savedPayslip.id && originalPayslipData) {
+        try {
+          await recordPayslipEdit(
+            savedPayslip.id,
+            'monthly',
+            originalPayslipData,
+            payslipData,
+            `Updated monthly payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+          );
+          console.log('📝 Edit history recorded');
+        } catch (historyError) {
+          console.error('Failed to record edit history:', historyError);
+          // Don't fail the save if history recording fails
+        }
+      }
+
+      // Update original data to current
+      setOriginalPayslipData(payslipData);
 
       setHasUnsavedChanges(false);
       const monthLabel = MONTHS.find(m => m.value === selectedMonth)?.label || selectedMonth;
@@ -1060,6 +1087,10 @@ export default function MonthlyPayslipPage() {
                   {t('common.cancel')}
                 </Button>
               </>
+            )}
+
+            {payslipId && (
+              <PayslipHistoryButton payslipId={payslipId} payslipType="monthly" />
             )}
 
             <Button onClick={handleExportPDF} size="default" variant="outline" className="shadow-sm">
@@ -1739,6 +1770,14 @@ export default function MonthlyPayslipPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Edit History */}
+      {payslipId && (
+        <PayslipEditHistoryComponent
+          payslipId={payslipId}
+          payslipType="monthly"
+        />
+      )}
     </div>
   );
 }

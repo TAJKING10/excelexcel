@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AnnualPayslipView } from '@/components/payslips/AnnualPayslipView';
+import { PayslipEditHistoryComponent } from '@/components/payslips/PayslipEditHistory';
+import { PayslipHistoryButton } from '@/components/payslips/PayslipHistoryButton';
 import { useDataStore } from '@/stores/data';
 import { useAuth } from '@/contexts/AuthContext';
 import { Download, ArrowLeft, Edit, Loader2 } from 'lucide-react';
@@ -367,6 +369,10 @@ export default function AnnualPayslipPage() {
             </Button>
           )}
 
+          {annualPayslip?.id && (
+            <PayslipHistoryButton payslipId={annualPayslip.id} payslipType="annual" />
+          )}
+
           <Button onClick={handleExportPDF}>
             <Download className="mr-2 h-4 w-4" />
             {t('common.pdf', 'PDF')}
@@ -376,6 +382,14 @@ export default function AnnualPayslipPage() {
 
       {/* Annual Payslip View */}
       <AnnualPayslipView payslip={annualPayslip} />
+
+      {/* Edit History */}
+      {annualPayslip.id && (
+        <PayslipEditHistoryComponent
+          payslipId={annualPayslip.id}
+          payslipType="annual"
+        />
+      )}
     </div>
   );
 }
