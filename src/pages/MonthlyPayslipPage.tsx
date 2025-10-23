@@ -602,6 +602,18 @@ export default function MonthlyPayslipPage() {
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
+    // Calculate tax using the stored tax rate percentage (immutable per payslip)
+    const taxRateToUse = payslipData.taxRatePercentage || 21;
+    const calculatedImpot = totalImposable * (taxRateToUse / 100);
+
+    console.log('💰 Display Tax Calculation:', {
+      period: `${selectedYear}-${selectedMonth}`,
+      taxRatePercentage: taxRateToUse,
+      totalImposable: totalImposable.toFixed(2),
+      calculatedTax: calculatedImpot.toFixed(2),
+      savedTaxRateId: payslipData.taxRateId
+    });
+
     const cissm = payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
       : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
@@ -616,7 +628,7 @@ export default function MonthlyPayslipPage() {
 
     const net = payslipData.manualNet !== undefined
       ? payslipData.manualNet
-      : totalBrut - totalCotisation - payslipData.impot + cissm + cisCipCim + ciCo2;
+      : totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
 
     const netAPayer = payslipData.manualNetAPayer !== undefined
       ? payslipData.manualNetAPayer
@@ -627,7 +639,7 @@ export default function MonthlyPayslipPage() {
     return {
       appointement, joursFeries, totalBrut,
       assuranceMaladie, majorationEspece, assurancePension, assuranceDependance, totalCotisation,
-      totalImposable, cissm, cisCipCim, ciCo2, net, netAPayer, leaveSolde
+      totalImposable, calculatedImpot, cissm, cisCipCim, ciCo2, net, netAPayer, leaveSolde
     };
   };
 
