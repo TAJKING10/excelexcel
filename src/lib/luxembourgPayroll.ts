@@ -379,10 +379,93 @@ export interface GenerateAnnualPayslipInput {
 
 import type { MonthlyPayslipData, AnnualPayslip, Employee, Company } from '@/types';
 
+// Social contributions rates (Luxembourg) - matching MonthlyPayslipPage.tsx
+const RATES = {
+  assuranceMaladie: 0.028,
+  majoration: 0.0025,
+  assurancePension: 0.08,
+  assuranceDependance: 0.014,
+  dependanceThreshold: 642.73,
+};
+
+/**
+ * Calculate monthly payslip with date-based tax rate
+ * This matches the logic in MonthlyPayslipPage.tsx
+ */
+export function calculateMonthlyWithTaxRate(
+  grossSalary: number,
+  taxRatePercentage: number,
+  month: number,
+  year: number
+): PayslipCalculationResult {
+  // STEP 1: Calculate social contributions
+  const assuranceMaladie = grossSalary * RATES.assuranceMaladie;
+  const majorationEspece = grossSalary * RATES.majoration;
+  const assurancePension = grossSalary * RATES.assurancePension;
+  const assuranceDependance = Math.max(0, (grossSalary - RATES.dependanceThreshold) * RATES.assuranceDependance);
+
+  const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
+
+  // STEP 2: Calculate imposable (taxable income)
+  const totalImposable = grossSalary - assuranceMaladie - majorationEspece - assurancePension;
+
+  // STEP 3: Calculate tax using the provided tax rate
+  const calculatedImpot = totalImposable * (taxRatePercentage / 100);
+
+  console.log(`📅 Annual Payslip - ${year}-${month.toString().padStart(2, '0')}:`, {
+    grossSalary,
+    taxRatePercentage,
+    totalImposable: totalImposable.toFixed(2),
+    calculatedImpot: calculatedImpot.toFixed(2),
+  });
+
+  // STEP 4: Calculate tax credits
+  const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 81 : grossSalary >= 3600 ? 0 : 81 / 600 * (3600 - grossSalary);
+  const cisCipCim = grossSalary < 78 ? 0 : grossSalary < 936 ? ((300 + (grossSalary * 12 - 936) * 0.029) / 12) : grossSalary < 3333.33 ? 50 : grossSalary > 6666.5 ? 0 : ((600 - (grossSalary * 12 - 40000) * 0.015) / 12);
+  const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 16 : grossSalary < 6667 ? (16 - (grossSalary - 3333.33) * 0.0042) : 0;
+
+  // STEP 5: Calculate NET
+  const net = grossSalary - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
+
+  const earnings: Earnings = {
+    remunerationBase: grossSalary,
+    grossMonthly: grossSalary,
+    cotisable: grossSalary,
+    imposable: totalImposable,
+  };
+
+  const employeeContrib: EmployeeContrib = {
+    maladie: assuranceMaladie,
+    pension: assurancePension,
+    ciCo2: ciCo2,
+    cis: cisCipCim,
+    cissm: cissm,
+    deductions: 0,
+    incomeTax: calculatedImpot,
+    total: totalCotisation + calculatedImpot,
+  };
+
+  const employerContrib: EmployerContrib = {
+    maladie: assuranceMaladie,
+    pension: assurancePension,
+    sante: grossSalary * LUXEMBOURG_RATES.employer.sante,
+    accident: grossSalary * LUXEMBOURG_RATES.employer.accident,
+    socialSecurityTotal: assuranceMaladie + assurancePension + (grossSalary * LUXEMBOURG_RATES.employer.sante) + (grossSalary * LUXEMBOURG_RATES.employer.accident),
+  };
+
+  return {
+    earnings,
+    employeeContrib,
+    employerContrib,
+    netPay: net,
+  };
+}
+
 export function generateAnnualPayslip(
   input: GenerateAnnualPayslipInput,
   employee: Employee,
-  company: Company
+  company: Company,
+  getTaxRateForDate?: (date: string) => { rate: number; id: string } | undefined
 ): AnnualPayslip {
   const monthlyData: MonthlyPayslipData[] = [];
   let annualTotalsEarnings = { remunerationBase: 0, grossMonthly: 0, cotisable: 0, imposable: 0 };
@@ -402,11 +485,17 @@ export function generateAnnualPayslip(
 
   // Generate payslip for each month (1-12)
   for (let month = 1; month <= 12; month++) {
-    const payslip = calculatePayslip({
-      remunerationBase: input.baseSalary,
-      taxClass: input.taxClass,
-      additionalDeductions: input.additionalDeductions
-    });
+    // Get date-based tax rate for this month
+    const payslipDate = new Date(input.year, month - 1, 1).toISOString();
+    const applicableTaxRate = getTaxRateForDate ? getTaxRateForDate(payslipDate) : undefined;
+    const taxRatePercentage = applicableTaxRate?.rate || 21; // Default to 21% if not found
+
+    const payslip = calculateMonthlyWithTaxRate(
+      input.baseSalary,
+      taxRatePercentage,
+      month,
+      input.year
+    );
 
     const monthData: MonthlyPayslipData = {
       monthName: getMonthAbbreviation(month),

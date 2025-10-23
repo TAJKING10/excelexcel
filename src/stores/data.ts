@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Company, Employee, Payslip, CompanyAnalytics, User, UserAccess, Individual, AnnualPayslip, CompanyAnnualAnalysis, PayslipLine, ActivityLog } from '@/types';
-import { generateAnnualPayslip, calculatePayslip } from '@/lib/luxembourgPayroll';
+import { generateAnnualPayslip, calculatePayslip, calculateMonthlyWithTaxRate } from '@/lib/luxembourgPayroll';
 import { companyService, employeeService, individualService, payslipService, annualPayslipService, individualAnnualPayslipService, activityLogService } from '@/services/supabase';
 
 interface DataState {
@@ -843,6 +843,10 @@ export const useDataStore = create<DataState>((set, get) => ({
         return existing;
       }
 
+      // Get tax rate lookup function
+      const { useTaxRatesStore } = await import('@/store/taxRatesStore');
+      const getTaxRateForDate = useTaxRatesStore.getState().getTaxRateForDate;
+
       // Generate new annual payslip
       const generatedPayslip = generateAnnualPayslip(
         {
@@ -853,7 +857,8 @@ export const useDataStore = create<DataState>((set, get) => ({
           workingHoursPerMonth: 173,
         },
         employee,
-        company
+        company,
+        getTaxRateForDate
       );
 
       // Save to Supabase
@@ -894,15 +899,24 @@ export const useDataStore = create<DataState>((set, get) => ({
         return existing;
       }
 
+      // Get tax rate lookup function
+      const { useTaxRatesStore } = await import('@/store/taxRatesStore');
+      const getTaxRateForDate = useTaxRatesStore.getState().getTaxRateForDate;
+
       // Generate annual payslip with auto-calculated values from base salary
       const baseSalary = individual.baseSalary || 0;
       const taxClass = String(individual.taxClass || 2);
 
       const monthlyData = [];
       for (let month = 1; month <= 12; month++) {
+        // Get date-based tax rate for this month
+        const payslipDate = new Date(year, month - 1, 1).toISOString();
+        const applicableTaxRate = getTaxRateForDate(payslipDate);
+        const taxRatePercentage = applicableTaxRate?.rate || 21;
+
         // Calculate payslip for this month
         const calc = baseSalary > 0
-          ? calculatePayslip({ remunerationBase: baseSalary, taxClass })
+          ? calculateMonthlyWithTaxRate(baseSalary, taxRatePercentage, month, year)
           : {
               earnings: { remunerationBase: 0, grossMonthly: 0, cotisable: 0, imposable: 0 },
               employeeContrib: { maladie: 0, pension: 0, ciCo2: 0, cis: 0, cissm: 0, deductions: 0, incomeTax: 0, total: 0 },
