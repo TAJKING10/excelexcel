@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save } from 'lucide-react';
 import type { Payslip } from '@/types';
+import { calculateMaladie, calculatePension, calculateCiCo2, calculateIncomeTax, LUXEMBOURG_RATES } from '@/lib/luxembourgPayroll';
 
 export function IndividualPayslip() {
   const { individualId, payslipId } = useParams<{ individualId: string; payslipId?: string }>();
@@ -110,11 +111,22 @@ export function IndividualPayslip() {
   };
 
   const calculateDeductions = (gross: number) => {
-    // Luxembourg tax calculations (simplified)
-    const healthInsurance = gross * 0.0305; // 3.05%
-    const pension = gross * 0.08; // 8%
-    const incomeTax = Math.max(0, gross * 0.15 - 800); // Simplified progressive tax
-    const total = healthInsurance + pension + incomeTax;
+    // Use proper Luxembourg payroll calculations
+    const cotisable = gross; // For individuals, cotisable = gross
+    const healthInsurance = calculateMaladie(cotisable); // 3% by default
+    const pension = calculatePension(cotisable); // 8%
+    const ciCo2 = calculateCiCo2(); // 14€ fixed
+    const cis = LUXEMBOURG_RATES.cis; // 50€ fixed
+    const cissm = LUXEMBOURG_RATES.cissm; // 70€ fixed
+
+    // Calculate imposable (taxable income after social contributions)
+    const imposable = cotisable - healthInsurance - pension;
+
+    // Use tax class 1 (single) as default for individuals
+    const incomeTax = calculateIncomeTax(imposable, 1, 0);
+
+    // Total deductions
+    const total = healthInsurance + pension + ciCo2 + cis + cissm + incomeTax;
     const net = gross - total;
 
     setForm(prev => ({
@@ -139,6 +151,24 @@ export function IndividualPayslip() {
 
     try {
       setLoading(true);
+
+      // Calculate all components properly
+      const cotisable = form.grossSalary;
+      const healthInsurance = calculateMaladie(cotisable);
+      const pension = calculatePension(cotisable);
+      const ciCo2 = calculateCiCo2();
+      const cis = LUXEMBOURG_RATES.cis;
+      const cissm = LUXEMBOURG_RATES.cissm;
+      const imposable = cotisable - healthInsurance - pension;
+      const incomeTax = calculateIncomeTax(imposable, 1, 0);
+      const totalDeductions = healthInsurance + pension + ciCo2 + cis + cissm + incomeTax;
+
+      // Calculate employer contributions for individuals (matching employee contributions)
+      const employerMaladie = healthInsurance;
+      const employerPension = pension;
+      const sante = Math.round(cotisable * LUXEMBOURG_RATES.employer.sante * 100) / 100;
+      const accident = Math.round(cotisable * LUXEMBOURG_RATES.employer.accident * 100) / 100;
+      const socialSecurityTotal = employerMaladie + employerPension + sante + accident;
 
       const payslipData: any = {
         individualId: individualId,
@@ -170,26 +200,26 @@ export function IndividualPayslip() {
           bonus: form.bonus,
           overtime: form.overtime,
           grossMonthly: form.grossSalary,
-          cotisable: form.grossSalary,
-          imposable: form.grossSalary
+          cotisable: cotisable,
+          imposable: imposable
         },
         employeeContrib: {
-          maladie: form.healthInsurance,
-          pension: form.pension,
-          incomeTax: form.incomeTax,
-          total: form.totalDeductions,
+          maladie: healthInsurance,
+          pension: pension,
+          ciCo2: ciCo2,
+          cis: cis,
+          cissm: cissm,
+          incomeTax: incomeTax,
+          total: totalDeductions,
           otherDeductions: 0,
-          ciCo2: 0,
-          cis: 0,
-          cissm: 0,
           deductions: 0
         },
         employerContrib: {
-          maladie: 0,
-          pension: 0,
-          sante: 0,
-          accident: 0,
-          socialSecurityTotal: 0
+          maladie: employerMaladie,
+          pension: employerPension,
+          sante: sante,
+          accident: accident,
+          socialSecurityTotal: socialSecurityTotal
         },
         netPay: form.netSalary,
         ytd: {

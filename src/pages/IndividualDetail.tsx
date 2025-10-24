@@ -13,8 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, UserCircle, CreditCard, TrendingUp, FileText, Download, FileSpreadsheet, Edit } from 'lucide-react';
-import { formatCurrency } from '@/lib/luxembourgPayroll';
+import { ArrowLeft, Plus, UserCircle, CreditCard, TrendingUp, FileText, Download, FileSpreadsheet, Edit, Eye } from 'lucide-react';
+import { formatCurrency, calculateMaladie, calculatePension, calculateCiCo2, calculateIncomeTax, LUXEMBOURG_RATES } from '@/lib/luxembourgPayroll';
 import { generatePayslipPDF } from '@/lib/pdf';
 
 export function IndividualDetail() {
@@ -69,12 +69,24 @@ export function IndividualDetail() {
       return;
     }
 
-    // Calculate contributions (simplified)
-    const maladie = payslipForm.grossMonthly * 0.028;
-    const pension = payslipForm.grossMonthly * 0.08;
-    const incomeTax = payslipForm.imposable * 0.15;
-    const totalContrib = maladie + pension + incomeTax;
+    // Calculate contributions using proper Luxembourg payroll calculations
+    const cotisable = payslipForm.cotisable || payslipForm.grossMonthly;
+    const maladie = calculateMaladie(cotisable);
+    const pension = calculatePension(cotisable);
+    const ciCo2 = calculateCiCo2();
+    const cis = LUXEMBOURG_RATES.cis;
+    const cissm = LUXEMBOURG_RATES.cissm;
+    const imposable = payslipForm.imposable || (cotisable - maladie - pension);
+    const incomeTax = calculateIncomeTax(imposable, 1, 0);
+    const totalContrib = maladie + pension + ciCo2 + cis + cissm + incomeTax;
     const netPay = payslipForm.grossMonthly - totalContrib;
+
+    // Calculate employer contributions
+    const employerMaladie = maladie;
+    const employerPension = pension;
+    const sante = cotisable * LUXEMBOURG_RATES.employer.sante;
+    const accident = cotisable * LUXEMBOURG_RATES.employer.accident;
+    const socialSecurityTotal = employerMaladie + employerPension + sante + accident;
 
     addPayslip({
       individualId: individualId,
@@ -98,22 +110,26 @@ export function IndividualDetail() {
       },
       earnings: {
         grossMonthly: payslipForm.grossMonthly,
-        cotisable: payslipForm.cotisable || payslipForm.grossMonthly,
-        imposable: payslipForm.imposable || payslipForm.grossMonthly,
+        cotisable: cotisable,
+        imposable: imposable,
       },
       employeeContrib: {
         maladie,
         pension,
+        ciCo2,
+        cis,
+        cissm,
         otherDeductions: 0,
+        deductions: 0,
         incomeTax,
         total: totalContrib,
       },
       employerContrib: {
-        maladie,
-        pension,
-        sante: payslipForm.grossMonthly * 0.04,
-        accident: payslipForm.grossMonthly * 0.01,
-        socialSecurityTotal: payslipForm.grossMonthly * 0.158,
+        maladie: employerMaladie,
+        pension: employerPension,
+        sante,
+        accident,
+        socialSecurityTotal,
       },
       netPay,
       ytd: {
@@ -267,15 +283,27 @@ export function IndividualDetail() {
         <TabsContent value="payslips" className="space-y-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">{t('payslips.title', 'Payslips')}</h3>
-            {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
-              <Button onClick={() => {
-                const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
-                navigate(`${basePath}/payslips/create-annual/${individualId}`);
-              }}>
-                <Plus className="mr-2 h-4 w-4" />
-                {t('payslips.createAnnual', 'Create Annual Payslip')}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                  navigate(`${basePath}/individuals/${individualId}/annual-payslip`);
+                }}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                {t('payslips.viewAnnual', 'View Annual Payslip')}
               </Button>
-            )}
+              {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
+                <Button onClick={() => {
+                  const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                  navigate(`${basePath}/payslips/create-annual/${individualId}`);
+                }}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t('payslips.createAnnual', 'Create Annual Payslip')}
+                </Button>
+              )}
+            </div>
           </div>
           <Card>
             <CardHeader>
@@ -306,6 +334,18 @@ export function IndividualDetail() {
                         <TableCell>{formatCurrency(payslip.netPay)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                                navigate(`${basePath}/individuals/${individualId}/monthly-payslip?month=${payslip.period.month}&year=${payslip.period.year}`);
+                              }}
+                              title="View Monthly Payslip"
+                            >
+                              <Eye size={16} className="mr-2" />
+                              Voir
+                            </Button>
                             {(user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips) && (
                               <Button
                                 size="sm"
