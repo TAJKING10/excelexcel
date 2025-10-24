@@ -1872,9 +1872,107 @@ export const monthlyPayslipService = {
       query = query.eq('individual_id', personId);
     }
 
+    // First try maybeSingle, if it fails due to multiple rows, get all and use the most recent
     const { data, error } = await query.maybeSingle();
 
     if (error) {
+      // If error is PGRST116 (multiple rows), fetch all and use the most recent
+      if (error.code === 'PGRST116') {
+        console.warn('⚠️ Multiple payslips found, fetching the most recent one');
+
+        let multiQuery = supabase
+          .from('monthlypayslips')
+          .select('*')
+          .eq('period_year', year)
+          .eq('period_month', month)
+          .order('created_at', { ascending: false });
+
+        if (isEmployee) {
+          multiQuery = multiQuery.eq('employee_id', personId);
+        } else {
+          multiQuery = multiQuery.eq('individual_id', personId);
+        }
+
+        const { data: multiData, error: multiError } = await multiQuery;
+
+        if (multiError) {
+          console.error('❌ Supabase query error:', multiError);
+          throw multiError;
+        }
+
+        if (!multiData || multiData.length === 0) {
+          console.log('ℹ️ No payslip found in database for this period');
+          return null;
+        }
+
+        const mostRecent = multiData[0];
+        console.log(`✅ Found ${multiData.length} payslips, using the most recent:`, mostRecent.id);
+
+        return {
+          id: mostRecent.id,
+          employeeId: mostRecent.employee_id,
+          individualId: mostRecent.individual_id,
+          companyId: mostRecent.company_id,
+          periodYear: mostRecent.period_year,
+          periodMonth: mostRecent.period_month,
+          taxRateId: mostRecent.tax_rate_id,
+          taxRatePercentage: mostRecent.tax_rate_percentage,
+          employeeNumber: mostRecent.employee_number,
+          indice: mostRecent.indice,
+          emploi: mostRecent.emploi,
+          dateEntree: mostRecent.date_entree,
+          matriculeAssure: mostRecent.matricule_assure,
+          matriculeEmployeur: mostRecent.matricule_employeur,
+          hoursWorked: mostRecent.hours_worked,
+          hourlyRate: mostRecent.hourly_rate,
+          holidayHours: mostRecent.holiday_hours,
+          sickLeaveHours: mostRecent.sick_leave_hours,
+          publicHolidayHours: mostRecent.public_holiday_hours,
+          fd: mostRecent.fd,
+          ac: mostRecent.ac,
+          ffo: mostRecent.ffo,
+          fds: mostRecent.fds,
+          impot: mostRecent.impot,
+          chequeRepas: mostRecent.cheque_repas,
+          avanceSalaire: mostRecent.avance_salaire,
+          legalLeave: mostRecent.legal_leave,
+          leaveReport: mostRecent.leave_report,
+          leaveTaken: mostRecent.leave_taken,
+          manualAppointement: mostRecent.manual_appointement,
+          manualJoursFeries: mostRecent.manual_jours_feries,
+          manualTotalBrut: mostRecent.manual_total_brut,
+          manualAssuranceMaladie: mostRecent.manual_assurance_maladie,
+          manualMajoration: mostRecent.manual_majoration,
+          manualAssurancePension: mostRecent.manual_assurance_pension,
+          manualAssuranceDependance: mostRecent.manual_assurance_dependance,
+          manualTotalCotisation: mostRecent.manual_total_cotisation,
+          manualTotalImposable: mostRecent.manual_total_imposable,
+          manualCissm: mostRecent.manual_cissm,
+          manualCisCipCim: mostRecent.manual_cis_cip_cim,
+          manualCiCo2: mostRecent.manual_ci_co2,
+          manualNet: mostRecent.manual_net,
+          manualNetAPayer: mostRecent.manual_net_a_payer,
+          m1Appointement: mostRecent.m1_appointement,
+          m1JoursFeries: mostRecent.m1_jours_feries,
+          m1TotalBrut: mostRecent.m1_total_brut,
+          m1AssuranceMaladie: mostRecent.m1_assurance_maladie,
+          m1Majoration: mostRecent.m1_majoration,
+          m1AssurancePension: mostRecent.m1_assurance_pension,
+          m1AssuranceDependance: mostRecent.m1_assurance_dependance,
+          m1TotalCotisation: mostRecent.m1_total_cotisation,
+          m1Fd: mostRecent.m1_fd,
+          m1Ac: mostRecent.m1_ac,
+          m1Ffo: mostRecent.m1_ffo,
+          m1Fds: mostRecent.m1_fds,
+          m1TotalImposable: mostRecent.m1_total_imposable,
+          m1Impot: mostRecent.m1_impot,
+          m1Cissm: mostRecent.m1_cissm,
+          m1CisCipCim: mostRecent.m1_cis_cip_cim,
+          m1CiCo2: mostRecent.m1_ci_co2,
+          m1Net: mostRecent.m1_net,
+        };
+      }
+
       console.error('❌ Supabase query error:', error);
       throw error;
     }

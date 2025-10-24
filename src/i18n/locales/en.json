@@ -668,5 +668,25 @@
     "preview": "Preview:",
     "showingRows": "Showing 5 of",
     "fixErrorsBeforeImport": "Please go back and fix the errors before importing."
+  },
+  "history": {
+    "title": "History",
+    "viewHistory": "View edit history",
+    "editHistory": "Edit History",
+    "allChanges": "All changes made to this payslip",
+    "loading": "Loading history...",
+    "error": "Error",
+    "noHistory": "No history found",
+    "changesWillBeSaved": "Changes will be recorded here",
+    "created": "Created",
+    "modified": "Modified",
+    "restored": "Restored",
+    "user": "User",
+    "modifiedFields": "Modified Fields",
+    "comment": "Comment",
+    "totalChanges": "Total changes",
+    "modification": "modification",
+    "modifications": "modifications",
+    "others": "others"
   }
 }

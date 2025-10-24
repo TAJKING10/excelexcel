@@ -14,7 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { monthlyPayslipService, supabase } from '@/services/supabase';
+import { monthlyPayslipService } from '@/services/supabase';
+import { supabase } from '@/lib/supabase';
 import { TaxRateSelector } from '@/components/tax/TaxRateSelector';
 import { useTaxRatesStore } from '@/store/taxRatesStore';
 import { recordPayslipEdit } from '@/services/payslipEditHistory';
@@ -225,109 +226,14 @@ export default function MonthlyPayslipPage() {
           individual: individual ? `${individual.firstName} ${individual.lastName}` : 'N/A'
         });
 
-        let savedPayslip = null;
+        const savedPayslip = await monthlyPayslipService.getByPeriod(
+          personId,
+          selectedYear,
+          selectedMonth,
+          isEmployee
+        );
 
-        try {
-          savedPayslip = await monthlyPayslipService.getByPeriod(
-            personId,
-            selectedYear,
-            selectedMonth,
-            isEmployee
-          );
-          console.log('📥 Database query result:', savedPayslip ? 'FOUND' : 'NOT FOUND');
-        } catch (queryError: any) {
-          // Handle the case where multiple records exist (PGRST116 error)
-          if (queryError?.code === 'PGRST116' || queryError?.message?.includes('multiple')) {
-            console.warn('⚠️ Multiple payslips found for this period, fetching the most recent one');
-
-            // Fetch all matching records and get the most recent
-            let query = supabase
-              .from('monthlypayslips')
-              .select('*')
-              .eq('period_year', selectedYear)
-              .eq('period_month', selectedMonth);
-
-            if (isEmployee) {
-              query = query.eq('employee_id', personId);
-            } else {
-              query = query.eq('individual_id', personId);
-            }
-
-            const { data: multipleRecords } = await query.order('created_at', { ascending: false });
-
-            if (multipleRecords && multipleRecords.length > 0) {
-              console.log(`✅ Found ${multipleRecords.length} duplicate records, using the most recent one`);
-              const mostRecent = multipleRecords[0];
-
-              savedPayslip = {
-                id: mostRecent.id,
-                employeeId: mostRecent.employee_id,
-                individualId: mostRecent.individual_id,
-                companyId: mostRecent.company_id,
-                periodYear: mostRecent.period_year,
-                periodMonth: mostRecent.period_month,
-                taxRateId: mostRecent.tax_rate_id,
-                taxRatePercentage: mostRecent.tax_rate_percentage,
-                employeeNumber: mostRecent.employee_number,
-                indice: mostRecent.indice,
-                emploi: mostRecent.emploi,
-                dateEntree: mostRecent.date_entree,
-                matriculeAssure: mostRecent.matricule_assure,
-                matriculeEmployeur: mostRecent.matricule_employeur,
-                hoursWorked: mostRecent.hours_worked,
-                hourlyRate: mostRecent.hourly_rate,
-                holidayHours: mostRecent.holiday_hours,
-                sickLeaveHours: mostRecent.sick_leave_hours,
-                publicHolidayHours: mostRecent.public_holiday_hours,
-                fd: mostRecent.fd,
-                ac: mostRecent.ac,
-                ffo: mostRecent.ffo,
-                fds: mostRecent.fds,
-                impot: mostRecent.impot,
-                chequeRepas: mostRecent.cheque_repas,
-                avanceSalaire: mostRecent.avance_salaire,
-                legalLeave: mostRecent.legal_leave,
-                leaveReport: mostRecent.leave_report,
-                leaveTaken: mostRecent.leave_taken,
-                manualAppointement: mostRecent.manual_appointement,
-                manualJoursFeries: mostRecent.manual_jours_feries,
-                manualTotalBrut: mostRecent.manual_total_brut,
-                manualAssuranceMaladie: mostRecent.manual_assurance_maladie,
-                manualMajoration: mostRecent.manual_majoration,
-                manualAssurancePension: mostRecent.manual_assurance_pension,
-                manualAssuranceDependance: mostRecent.manual_assurance_dependance,
-                manualTotalCotisation: mostRecent.manual_total_cotisation,
-                manualTotalImposable: mostRecent.manual_total_imposable,
-                manualCissm: mostRecent.manual_cissm,
-                manualCisCipCim: mostRecent.manual_cis_cip_cim,
-                manualCiCo2: mostRecent.manual_ci_co2,
-                manualNet: mostRecent.manual_net,
-                manualNetAPayer: mostRecent.manual_net_a_payer,
-                m1Appointement: mostRecent.m1_appointement,
-                m1JoursFeries: mostRecent.m1_jours_feries,
-                m1TotalBrut: mostRecent.m1_total_brut,
-                m1AssuranceMaladie: mostRecent.m1_assurance_maladie,
-                m1Majoration: mostRecent.m1_majoration,
-                m1AssurancePension: mostRecent.m1_assurance_pension,
-                m1AssuranceDependance: mostRecent.m1_assurance_dependance,
-                m1TotalCotisation: mostRecent.m1_total_cotisation,
-                m1Fd: mostRecent.m1_fd,
-                m1Ac: mostRecent.m1_ac,
-                m1Ffo: mostRecent.m1_ffo,
-                m1Fds: mostRecent.m1_fds,
-                m1TotalImposable: mostRecent.m1_total_imposable,
-                m1Impot: mostRecent.m1_impot,
-                m1Cissm: mostRecent.m1_cissm,
-                m1CisCipCim: mostRecent.m1_cis_cip_cim,
-                m1CiCo2: mostRecent.m1_ci_co2,
-                m1Net: mostRecent.m1_net,
-              };
-            }
-          } else {
-            // Re-throw other errors
-            throw queryError;
-          }
-        }
+        console.log('📥 Database query result:', savedPayslip ? 'FOUND' : 'NOT FOUND');
 
         if (savedPayslip) {
           console.log('✅ Payslip data loaded from database:', {
@@ -1096,7 +1002,7 @@ export default function MonthlyPayslipPage() {
   const EditableValue = React.useCallback(({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
-      return <span className={className}>{value.toFixed(2)} €</span>;
+      return <span className={className}>{(value || 0).toFixed(2)} €</span>;
     }
 
     // In edit mode, ALWAYS show as editable input field (autocalculate will handle updates)
@@ -1106,7 +1012,7 @@ export default function MonthlyPayslipPage() {
       <Input
         type="number"
         step="0.01"
-        value={storedValue.toFixed(2)}
+        value={(storedValue || 0).toFixed(2)}
         onChange={(e) => {
           const val = parseFloat(e.target.value) || 0;
           handleInputChange(manualField, val);
@@ -1154,7 +1060,7 @@ export default function MonthlyPayslipPage() {
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
       const displayValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
-      return <span className={className}>{displayValue.toFixed(2)} €</span>;
+      return <span className={className}>{(displayValue || 0).toFixed(2)} €</span>;
     }
 
     // In edit mode, show as editable input field
@@ -1164,7 +1070,7 @@ export default function MonthlyPayslipPage() {
       <Input
         type="number"
         step="0.01"
-        value={storedValue.toFixed(2)}
+        value={(storedValue || 0).toFixed(2)}
         onChange={(e) => {
           const val = parseFloat(e.target.value) || 0;
           handleInputChange(manualField, val);

@@ -668,5 +668,25 @@
     "preview": "Aperçu :",
     "showingRows": "Affichage de 5 sur",
     "fixErrorsBeforeImport": "Veuillez revenir en arrière et corriger les erreurs avant d'importer."
+  },
+  "history": {
+    "title": "Historique",
+    "viewHistory": "Voir l'historique des modifications",
+    "editHistory": "Historique des Modifications",
+    "allChanges": "Toutes les modifications apportées à cette fiche de paie",
+    "loading": "Chargement de l'historique...",
+    "error": "Erreur",
+    "noHistory": "Aucun historique trouvé",
+    "changesWillBeSaved": "Les modifications seront enregistrées ici",
+    "created": "Créé",
+    "modified": "Modifié",
+    "restored": "Restauré",
+    "user": "Utilisateur",
+    "modifiedFields": "Champs Modifiés",
+    "comment": "Commentaire",
+    "totalChanges": "Total des modifications",
+    "modification": "modification",
+    "modifications": "modifications",
+    "others": "autres"
   }
 }
