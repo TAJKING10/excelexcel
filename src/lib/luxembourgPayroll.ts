@@ -380,8 +380,9 @@ export interface GenerateAnnualPayslipInput {
 import type { MonthlyPayslipData, AnnualPayslip, Employee, Company } from '@/types';
 
 // Social contributions rates (Luxembourg) - matching MonthlyPayslipPage.tsx
+// Updated to match 2024 Excel "Livre de Paie"
 const RATES = {
-  assuranceMaladie: 0.028,
+  assuranceMaladie: 0.0305, // 3.05% (was 2.8%) - matches Excel
   majoration: 0.0025,
   assurancePension: 0.08,
   assuranceDependance: 0.014,
@@ -419,10 +420,10 @@ export function calculateMonthlyWithTaxRate(
     calculatedImpot: calculatedImpot.toFixed(2),
   });
 
-  // STEP 4: Calculate tax credits
-  const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 81 : grossSalary >= 3600 ? 0 : 81 / 600 * (3600 - grossSalary);
+  // STEP 4: Calculate tax credits - Updated to match Excel 2024
+  const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 70 : grossSalary >= 3600 ? 0 : 70 / 600 * (3600 - grossSalary); // Changed from 81 to 70
   const cisCipCim = grossSalary < 78 ? 0 : grossSalary < 936 ? ((300 + (grossSalary * 12 - 936) * 0.029) / 12) : grossSalary < 3333.33 ? 50 : grossSalary > 6666.5 ? 0 : ((600 - (grossSalary * 12 - 40000) * 0.015) / 12);
-  const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 16 : grossSalary < 6667 ? (16 - (grossSalary - 3333.33) * 0.0042) : 0;
+  const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 14 : grossSalary < 6667 ? (14 - (grossSalary - 3333.33) * 0.0042) : 0; // Changed from 16 to 14
 
   // STEP 5: Calculate NET
   const net = grossSalary - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;

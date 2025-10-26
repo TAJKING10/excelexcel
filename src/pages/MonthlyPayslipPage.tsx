@@ -37,8 +37,9 @@ const MONTHS = [
 ];
 
 // Social contributions rates (Luxembourg)
+// Updated to match 2024 Excel "Livre de Paie"
 const RATES = {
-  assuranceMaladie: 0.028,
+  assuranceMaladie: 0.0305, // 3.05% (was 2.8%) - matches Excel
   majoration: 0.0025,
   assurancePension: 0.08,
   assuranceDependance: 0.014,
@@ -369,9 +370,9 @@ export default function MonthlyPayslipPage() {
           const taxRateToUse = tempData.taxRatePercentage || 21;
           const calculatedImpot = totalImposable * (taxRateToUse / 100);
 
-          const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+          const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
           const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-          const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+          const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
           const net = totalBrut - totalCotisation - tempData.impot + cissm + cisCipCim + ciCo2;
           const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire;
 
@@ -571,9 +572,9 @@ export default function MonthlyPayslipPage() {
       // Estimate totalBrut through iteration (since credits depend on totalBrut)
       let totalBrut = targetNet; // Initial guess
       for (let i = 0; i < 10; i++) {
-        const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+        const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
         const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-        const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+        const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
 
         const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
         const majorationEspece = totalBrut * RATES.majoration;
@@ -637,10 +638,10 @@ export default function MonthlyPayslipPage() {
       savedTaxRateId: payslipData.taxRateId
     });
 
-    // STEP 6: Calculate Tax Credits
-    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+    // STEP 6: Calculate Tax Credits - Updated to match Excel 2024
+    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut); // Changed from 81 to 70
     const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0; // Changed from 16 to 14
 
     // STEP 7: Calculate NET (Total Brut - Cotisations - Tax + Credits)
     // Use manual IMPÔT value (payslipData.impot) instead of calculated to match Excel
@@ -752,7 +753,7 @@ export default function MonthlyPayslipPage() {
 
     const cissm = payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
-      : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+      : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
 
     const cisCipCim = payslipData.manualCisCipCim !== undefined
       ? payslipData.manualCisCipCim
@@ -760,7 +761,7 @@ export default function MonthlyPayslipPage() {
 
     const ciCo2 = payslipData.manualCiCo2 !== undefined
       ? payslipData.manualCiCo2
-      : totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+      : totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
 
     const net = payslipData.manualNet !== undefined
       ? payslipData.manualNet
