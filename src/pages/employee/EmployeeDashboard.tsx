@@ -363,6 +363,18 @@ export function EmployeeDashboard() {
                             size="sm"
                             onClick={() => {
                               const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
+                              navigate(`${basePath}/individuals/${individual.id}/monthly-payslip`);
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Fiche de Paie Mensuelle
+                          </Button>
+                          <Button
+                            className="w-full"
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              const basePath = user?.role === 'SUPER_ADMIN' ? '/admin' : '/employee';
                               navigate(`${basePath}/individuals/${individual.id}/annual-payslip`);
                             }}
                           >

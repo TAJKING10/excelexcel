@@ -16,3 +16,4 @@ build/
 !.env.example
 ~$Groupe Advensys Luxembourg SA - Livre de paie 2024.xlsx
 nul
+~$monthly payslip advensys.xlsx

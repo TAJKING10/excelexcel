@@ -206,10 +206,18 @@ export function IndividualList() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/admin/individuals/${individual.id}/payslip`)}
+                          onClick={() => navigate(`/admin/individuals/${individual.id}/monthly-payslip`)}
                         >
                           <FileText size={16} className="mr-2" />
-                          Créer Fiche de Paie
+                          Fiche de Paie Mensuelle
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/admin/individuals/${individual.id}/annual-payslip`)}
+                        >
+                          <FileSpreadsheet size={16} className="mr-2" />
+                          Fiche de Paie Annuelle
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -218,14 +226,6 @@ export function IndividualList() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/admin/individuals/${individual.id}/monthly-payslip`)}>
-                              <FileText size={16} className="mr-2" />
-                              Fiche de Paie Mensuelle
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/admin/individuals/${individual.id}/annual-payslip`)}>
-                              <FileSpreadsheet size={16} className="mr-2" />
-                              Fiche de Paie Annuelle
-                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => navigate(`/admin/individuals/${individual.id}`)}>
                               <Eye size={16} className="mr-2" />
                               {t('employees.view')}
