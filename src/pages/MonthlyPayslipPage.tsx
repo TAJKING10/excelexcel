@@ -372,7 +372,7 @@ export default function MonthlyPayslipPage() {
           const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
           const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
           const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
-          const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
+          const net = totalBrut - totalCotisation - tempData.impot + cissm + cisCipCim + ciCo2;
           const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire;
 
           const calculations = {
@@ -643,7 +643,8 @@ export default function MonthlyPayslipPage() {
     const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
 
     // STEP 7: Calculate NET (Total Brut - Cotisations - Tax + Credits)
-    const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
+    // Use manual IMPÔT value (payslipData.impot) instead of calculated to match Excel
+    const net = totalBrut - totalCotisation - (payslipData.impot || 0) + cissm + cisCipCim + ciCo2;
 
     // STEP 8: Calculate NET À PAYER (NET - other deductions)
     const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
@@ -651,7 +652,8 @@ export default function MonthlyPayslipPage() {
     // Update ALL manual fields with calculated values
     setPayslipData(prev => ({
       ...prev,
-      impot: calculatedImpot, // Update the tax based on saved tax rate percentage
+      // Don't overwrite manual impot - user can set this manually to match Excel
+      // impot: calculatedImpot,
       manualAppointement: appointement,
       manualJoursFeries: joursFeries,
       manualTotalBrut: totalBrut,
@@ -762,7 +764,7 @@ export default function MonthlyPayslipPage() {
 
     const net = payslipData.manualNet !== undefined
       ? payslipData.manualNet
-      : totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
+      : totalBrut - totalCotisation - (payslipData.impot || 0) + cissm + cisCipCim + ciCo2;
 
     const netAPayer = payslipData.manualNetAPayer !== undefined
       ? payslipData.manualNetAPayer
