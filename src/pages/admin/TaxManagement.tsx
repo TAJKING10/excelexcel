@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../../components/ui/dialog';
-import { Plus, History, CheckCircle, Archive, RotateCcw, Calendar, User, Loader2 } from 'lucide-react';
+import { Plus, History, CheckCircle, Archive, RotateCcw, Calendar, User, Loader2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,6 +39,7 @@ export default function TaxManagement() {
   const addTaxRate = useTaxRatesStore((state) => state.addTaxRate);
   const setDefaultTaxRate = useTaxRatesStore((state) => state.setDefaultTaxRate);
   const revertToRate = useTaxRatesStore((state) => state.revertToRate);
+  const deleteTaxRate = useTaxRatesStore((state) => state.deleteTaxRate);
   const getActiveTaxRate = useTaxRatesStore((state) => state.getActiveTaxRate);
   const loadTaxRates = useTaxRatesStore((state) => state.loadTaxRates);
   const loadHistory = useTaxRatesStore((state) => state.loadHistory);
@@ -132,6 +133,27 @@ export default function TaxManagement() {
       toast({
         title: 'Error',
         description: 'Failed to set default tax rate. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDelete = async (rateId: string, rate: number) => {
+    if (!confirm(`Are you sure you want to delete the tax rate ${rate}%? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteTaxRate(rateId, user?.email || 'admin');
+      toast({
+        title: 'Success',
+        description: `Tax rate ${rate}% has been deleted successfully`,
+      });
+    } catch (error: any) {
+      console.error('Failed to delete tax rate:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete tax rate. Please try again.',
         variant: 'destructive'
       });
     }
@@ -396,16 +418,28 @@ export default function TaxManagement() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {!rate.isDefault && rate.status === 'archived' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRevert(rate.id)}
-                            disabled={isLoading}
-                          >
-                            <RotateCcw className="h-3 w-3 mr-1" />
-                            Revert to This
-                          </Button>
+                        {rate.status === 'archived' && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRevert(rate.id)}
+                              disabled={isLoading}
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Revert to This
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={() => handleDelete(rate.id, rate.rate)}
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>

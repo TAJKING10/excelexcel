@@ -1777,6 +1777,37 @@ export const taxRateService = {
       createdBy: data.created_by,
       updatedAt: data.updated_at
     };
+  },
+
+  async delete(id: string, performedBy: string): Promise<void> {
+    // Get the tax rate to be deleted
+    const taxRate = await this.getById(id);
+    if (!taxRate) throw new Error('Tax rate not found');
+
+    // Prevent deleting the active tax rate
+    if (taxRate.status === 'active') {
+      throw new Error('Cannot delete the active tax rate. Please activate another rate first.');
+    }
+
+    // Delete from database
+    const { error } = await supabase
+      .from('tax_rates')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // Add to history
+    await supabase
+      .from('tax_rate_history')
+      .insert({
+        tax_rate_id: id,
+        action: 'deleted',
+        performed_by: performedBy,
+        performed_at: new Date().toISOString(),
+        old_rate: taxRate.rate,
+        notes: `Tax rate ${taxRate.rate}% deleted`
+      });
   }
 };
 

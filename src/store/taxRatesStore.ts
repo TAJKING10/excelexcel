@@ -19,6 +19,7 @@ interface TaxRatesState {
   addTaxRate: (rate: { rate: number; effectiveFrom: string; notes?: string; createdBy: string }) => Promise<void>;
   setDefaultTaxRate: (id: string, performedBy: string) => Promise<void>;
   revertToRate: (id: string, performedBy: string) => Promise<void>;
+  deleteTaxRate: (id: string, performedBy: string) => Promise<void>;
 
   // Getters
   getActiveTaxRate: () => TaxRate | undefined;
@@ -112,6 +113,25 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
     } catch (error) {
       console.error('Failed to revert tax rate:', error);
       set({ error: 'Failed to revert tax rate', isLoading: false });
+      throw error;
+    }
+  },
+
+  deleteTaxRate: async (id, performedBy) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // Delete the tax rate
+      await taxRateService.delete(id, performedBy);
+
+      // Reload data
+      await get().loadTaxRates();
+      await get().loadHistory();
+
+      set({ isLoading: false });
+    } catch (error) {
+      console.error('Failed to delete tax rate:', error);
+      set({ error: 'Failed to delete tax rate', isLoading: false });
       throw error;
     }
   },

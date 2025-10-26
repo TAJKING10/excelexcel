@@ -42,7 +42,7 @@ const RATES = {
   majoration: 0.0025,
   assurancePension: 0.08,
   assuranceDependance: 0.014,
-  dependanceThreshold: 642.73,
+  dependanceThreshold: 675.93,
 };
 
 interface PayslipData {
