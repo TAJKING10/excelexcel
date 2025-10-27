@@ -58,119 +58,119 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
         </CardContent>
       </Card>
 
-      {/* Monthly Breakdown Table */}
+      {/* Monthly Breakdown Table - Détail Mensuel */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('analytics.annualPayslip.monthlyBreakdown')}</CardTitle>
+          <CardTitle className="text-xl">{t('analytics.annualPayslip.monthlyBreakdown', 'Détail Mensuel')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-24">{t('analytics.annualPayslip.month')}</TableHead>
-                  <TableHead className="w-24">{t('analytics.annualPayslip.days')}</TableHead>
-                  <TableHead className="w-20">{t('analytics.annualPayslip.stat')}</TableHead>
-                  <TableHead className="w-24">{t('analytics.annualPayslip.class')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.baseRemuneration')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.monthlyGross')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.contributable')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.health')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.pension')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.deductions')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.taxable')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.taxes')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.ciCo2')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.cis')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.cissm')}</TableHead>
-                  <TableHead className="text-right font-bold">{t('analytics.annualPayslip.netSalary')}</TableHead>
+                <TableRow className="bg-blue-100 dark:bg-blue-950">
+                  <TableHead className="w-24 font-bold text-xs">{t('analytics.annualPayslip.month', 'Mois')}</TableHead>
+                  <TableHead className="w-16 font-bold text-xs text-center">{t('analytics.annualPayslip.days', 'Jours')}</TableHead>
+                  <TableHead className="w-16 font-bold text-xs text-center">{t('analytics.annualPayslip.stat', 'Stat.')}</TableHead>
+                  <TableHead className="w-16 font-bold text-xs text-center">{t('analytics.annualPayslip.class', 'Classe')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.baseRemuneration', 'Rémun. Base')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.monthlyGross', 'Brut Mensuel')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.contributable', 'Cotisable')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.health', 'Maladie')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.pension', 'Pension')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.deductions', 'Déductions')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.taxable', 'Imposable')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.taxes', 'Impôts')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.ciCo2', 'CI-CO2')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.cis', 'CIS')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.cissm', 'CISSM')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs bg-green-100 dark:bg-green-950">{t('analytics.annualPayslip.netSalary', 'Salaire Net')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payslip.monthlyData.map((month) => (
-                  <TableRow key={month.monthNumber}>
+                  <TableRow key={month.monthNumber} className="hover:bg-muted/50 text-sm">
                     <TableCell className="font-medium">
                       {month.monthName} {month.days}
                     </TableCell>
-                    <TableCell>{month.daysImposable}</TableCell>
-                    <TableCell>{month.status}</TableCell>
-                    <TableCell>{month.taxClass}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-center">{month.daysImposable}</TableCell>
+                    <TableCell className="text-center">{month.status}</TableCell>
+                    <TableCell className="text-center">{month.taxClass}</TableCell>
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.earnings.remunerationBase)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.earnings.grossMonthly)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.earnings.cotisable)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.employeeContrib.maladie)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.employeeContrib.pension)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.employeeContrib.deductions)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.earnings.imposable)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.employeeContrib.incomeTax)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.employeeContrib.ciCo2)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.employeeContrib.cis)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right tabular-nums">
                       {formatCurrency(month.employeeContrib.cissm)}
                     </TableCell>
-                    <TableCell className="text-right font-bold">
+                    <TableCell className="text-right font-bold tabular-nums bg-green-50 dark:bg-green-950/30">
                       {formatCurrency(month.netPay)}
                     </TableCell>
                   </TableRow>
                 ))}
 
                 {/* Annual Total Row */}
-                <TableRow className="bg-muted/50 font-bold">
-                  <TableCell colSpan={4}>{t('analytics.annualPayslip.annualTotal')}</TableCell>
-                  <TableCell className="text-right">
+                <TableRow className="bg-blue-100 dark:bg-blue-950 font-bold text-sm">
+                  <TableCell colSpan={4} className="text-left">{t('analytics.annualPayslip.annualTotal', 'TOTAL ANNUEL')}</TableCell>
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.earnings.remunerationBase)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.earnings.grossMonthly)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.earnings.cotisable)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employeeContrib.maladie)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employeeContrib.pension)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employeeContrib.deductions)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.earnings.imposable)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employeeContrib.incomeTax)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employeeContrib.ciCo2)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employeeContrib.cis)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employeeContrib.cissm)}
                   </TableCell>
-                  <TableCell className="text-right text-lg">
+                  <TableCell className="text-right text-base tabular-nums bg-green-200 dark:bg-green-900">
                     {formatCurrency(payslip.annualTotals.netPay)}
                   </TableCell>
                 </TableRow>
@@ -180,22 +180,22 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
         </CardContent>
       </Card>
 
-      {/* Employer Contributions Table */}
+      {/* Employer Contributions Table - Cotisations Patronales */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('analytics.annualPayslip.employerContributions')}</CardTitle>
+          <CardTitle className="text-xl">{t('analytics.annualPayslip.employerContributions', 'Cotisations Patronales')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-40">{t('analytics.annualPayslip.month')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.health')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.annualPayslip.pension')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.sante')}</TableHead>
-                  <TableHead className="text-right">{t('analytics.accident')}</TableHead>
-                  <TableHead className="text-right font-bold">{t('analytics.annualPayslip.socialSecurityTotal')}</TableHead>
+                <TableRow className="bg-orange-100 dark:bg-orange-950">
+                  <TableHead className="w-40 font-bold text-xs">{t('analytics.annualPayslip.month', 'Mois')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.health', 'Maladie')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.annualPayslip.pension', 'Pension')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.sante', 'Santé')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs">{t('analytics.accident', 'Accident')}</TableHead>
+                  <TableHead className="text-right font-bold text-xs bg-orange-200 dark:bg-orange-900">{t('analytics.annualPayslip.socialSecurityTotal', 'Total Séc. Sociale')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -208,23 +208,23 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
                   const total = employerMaladie + employerPension + employerSante + employerAccident;
 
                   return (
-                    <TableRow key={month.monthNumber}>
+                    <TableRow key={month.monthNumber} className="hover:bg-muted/50 text-sm">
                       <TableCell className="font-medium">
                         {getMonthNameFr(month.monthNumber)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right tabular-nums">
                         {formatCurrency(employerMaladie)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right tabular-nums">
                         {formatCurrency(employerPension)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right tabular-nums">
                         {formatCurrency(employerSante)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right tabular-nums">
                         {formatCurrency(employerAccident)}
                       </TableCell>
-                      <TableCell className="text-right font-bold">
+                      <TableCell className="text-right font-bold tabular-nums bg-orange-50 dark:bg-orange-950/30">
                         {formatCurrency(total)}
                       </TableCell>
                     </TableRow>
@@ -232,21 +232,21 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
                 })}
 
                 {/* Total Row */}
-                <TableRow className="bg-muted/50 font-bold">
-                  <TableCell>{t('analytics.annualPayslip.annualTotal')}</TableCell>
-                  <TableCell className="text-right">
+                <TableRow className="bg-orange-100 dark:bg-orange-950 font-bold text-sm">
+                  <TableCell>{t('analytics.annualPayslip.annualTotal', 'TOTAL ANNUEL')}</TableCell>
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employerContrib.maladie)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employerContrib.pension)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employerContrib.sante)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(payslip.annualTotals.employerContrib.accident)}
                   </TableCell>
-                  <TableCell className="text-right text-lg">
+                  <TableCell className="text-right text-base tabular-nums bg-orange-200 dark:bg-orange-900">
                     {formatCurrency(payslip.annualTotals.employerContrib.socialSecurityTotal)}
                   </TableCell>
                 </TableRow>

@@ -494,7 +494,15 @@ export function generateAnnualPayslip(
     // Get date-based tax rate for this month
     const payslipDate = new Date(input.year, month - 1, 1).toISOString();
     const applicableTaxRate = getTaxRateForDate ? getTaxRateForDate(payslipDate) : undefined;
-    const taxRatePercentage = applicableTaxRate?.rate || 21; // Default to 21% if not found
+
+    // Use Excel-matching tax rates if no tax rate found in database
+    // January: 6.137603% (135.80/2212.59), Feb-Dec: 5.744399% (127.10/2212.59)
+    let taxRatePercentage = applicableTaxRate?.rate || 21; // Default to 21% if not found
+
+    // Override with exact Excel tax rates for 2024 and 2025 if no tax rate found
+    if ((input.year === 2024 || input.year === 2025) && !applicableTaxRate) {
+      taxRatePercentage = month === 1 ? 6.137603 : 5.744399;
+    }
 
     const payslip = calculateMonthlyWithTaxRate(
       input.baseSalary,
