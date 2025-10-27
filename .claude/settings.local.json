@@ -32,7 +32,8 @@
       "Bash(powershell -Command \"(Get-Content ''src/pages/MonthlyPayslipPage.tsx'') -replace ''<tr '', ''<TableRow '' -replace ''</tr>'', ''</TableRow>'' -replace ''<td '', ''<TableCell '' -replace ''</td>'', ''</TableCell>'' | Set-Content ''src/pages/MonthlyPayslipPage.tsx''\")",
       "Bash(curl -s -o nul -w \"%{http_code}\" http://localhost:3042)",
       "Bash(curl:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []

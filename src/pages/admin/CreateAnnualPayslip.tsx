@@ -75,7 +75,7 @@ export function CreateAnnualPayslip() {
       maladie: 0,
       pension: 0,
       ciCo2: 0,
-      deductions: 0,
+      deductions: 74.25, // Fixed monthly deduction (Excel 2024)
       imposable: 0,
       incomeTax: 0,
       cis: 0,

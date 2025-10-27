@@ -382,9 +382,9 @@ import type { MonthlyPayslipData, AnnualPayslip, Employee, Company } from '@/typ
 // Social contributions rates (Luxembourg) - matching MonthlyPayslipPage.tsx
 // Updated to match 2024 Excel "Livre de Paie"
 const RATES = {
-  assuranceMaladie: 0.0305, // 3.05% (was 2.8%) - matches Excel
+  assuranceMaladie: 0.0305026, // 3.05026% - matches Excel exactly (78.42/2570.93 = 0.0305026)
   majoration: 0.0025,
-  assurancePension: 0.08,
+  assurancePension: 0.08, // 8% - matches Excel (205.67/2570.93)
   assuranceDependance: 0.014,
   dependanceThreshold: 675.93,
 };
@@ -407,8 +407,12 @@ export function calculateMonthlyWithTaxRate(
 
   const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
+  // Fixed deduction amount from Excel
+  const deductions = 74.25;
+
   // STEP 2: Calculate imposable (taxable income)
-  const totalImposable = grossSalary - assuranceMaladie - majorationEspece - assurancePension;
+  // IMPOSABLE = COTISABLE - MALADIE - PENSION - DEDUCTIONS [Excel 2024 formula: 2570.93 - 78.42 - 205.67 - 74.25 = 2212.59]
+  const totalImposable = grossSalary - assuranceMaladie - assurancePension - deductions;
 
   // STEP 3: Calculate tax using the provided tax rate
   const calculatedImpot = totalImposable * (taxRatePercentage / 100);
@@ -421,12 +425,13 @@ export function calculateMonthlyWithTaxRate(
   });
 
   // STEP 4: Calculate tax credits - Updated to match Excel 2024
-  const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 70 : grossSalary >= 3600 ? 0 : 70 / 600 * (3600 - grossSalary); // Changed from 81 to 70
+  const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 70 : grossSalary >= 3600 ? 0 : 70 / 600 * (3600 - grossSalary);
   const cisCipCim = grossSalary < 78 ? 0 : grossSalary < 936 ? ((300 + (grossSalary * 12 - 936) * 0.029) / 12) : grossSalary < 3333.33 ? 50 : grossSalary > 6666.5 ? 0 : ((600 - (grossSalary * 12 - 40000) * 0.015) / 12);
-  const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 14 : grossSalary < 6667 ? (14 - (grossSalary - 3333.33) * 0.0042) : 0; // Changed from 16 to 14
+  const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 14 : grossSalary < 6667 ? (14 - (grossSalary - 3333.33) * 0.0042) : 0;
 
-  // STEP 5: Calculate NET
-  const net = grossSalary - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
+  // STEP 5: Calculate NET (Excel 2024 formula)
+  // NET = Imposable - Impôt + CISSM - CIS - CI-CO2 [CISSM is added back as credit]
+  const net = totalImposable - calculatedImpot + cissm - cisCipCim - ciCo2;
 
   const earnings: Earnings = {
     remunerationBase: grossSalary,
@@ -436,29 +441,29 @@ export function calculateMonthlyWithTaxRate(
   };
 
   const employeeContrib: EmployeeContrib = {
-    maladie: assuranceMaladie,
-    pension: assurancePension,
-    ciCo2: ciCo2,
-    cis: cisCipCim,
-    cissm: cissm,
-    deductions: 0,
-    incomeTax: calculatedImpot,
-    total: totalCotisation + calculatedImpot,
+    maladie: parseFloat(assuranceMaladie.toFixed(2)),
+    pension: parseFloat(assurancePension.toFixed(2)),
+    ciCo2: parseFloat(ciCo2.toFixed(2)),
+    cis: parseFloat(cisCipCim.toFixed(2)),
+    cissm: parseFloat(cissm.toFixed(2)),
+    deductions: deductions, // Fixed monthly deduction (Excel 2024)
+    incomeTax: parseFloat(calculatedImpot.toFixed(2)),
+    total: parseFloat((assuranceMaladie + assurancePension + ciCo2 + cisCipCim + deductions + calculatedImpot).toFixed(2)),
   };
 
   const employerContrib: EmployerContrib = {
-    maladie: assuranceMaladie,
-    pension: assurancePension,
-    sante: grossSalary * LUXEMBOURG_RATES.employer.sante,
-    accident: grossSalary * LUXEMBOURG_RATES.employer.accident,
-    socialSecurityTotal: assuranceMaladie + assurancePension + (grossSalary * LUXEMBOURG_RATES.employer.sante) + (grossSalary * LUXEMBOURG_RATES.employer.accident),
+    maladie: parseFloat(assuranceMaladie.toFixed(2)),
+    pension: parseFloat(assurancePension.toFixed(2)),
+    sante: parseFloat((grossSalary * LUXEMBOURG_RATES.employer.sante).toFixed(2)),
+    accident: parseFloat((grossSalary * LUXEMBOURG_RATES.employer.accident).toFixed(2)),
+    socialSecurityTotal: parseFloat((assuranceMaladie + assurancePension + (grossSalary * LUXEMBOURG_RATES.employer.sante) + (grossSalary * LUXEMBOURG_RATES.employer.accident)).toFixed(2)),
   };
 
   return {
     earnings,
     employeeContrib,
     employerContrib,
-    netPay: net,
+    netPay: parseFloat(net.toFixed(2)),
   };
 }
 

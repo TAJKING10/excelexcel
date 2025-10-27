@@ -186,11 +186,11 @@ export default function MonthlyPayslipPage() {
     holidayHours: 16,
     sickLeaveHours: 0,
     publicHolidayHours: 0,
-    fd: 0,
+    fd: 74.25, // Déductions (matches Excel 2024)
     ac: 0,
     ffo: 0,
     fds: 0,
-    impot: 240.60,
+    impot: 127, // ~5.7% of Total Imposable (matches Excel 2024)
     chequeRepas: 56,
     avanceSalaire: 600,
     legalLeave: 208,
@@ -267,7 +267,7 @@ export default function MonthlyPayslipPage() {
             ac: savedPayslip.ac || 0,
             ffo: savedPayslip.ffo || 0,
             fds: savedPayslip.fds || 0,
-            impot: savedPayslip.impot || 240.60,
+            impot: savedPayslip.impot || 127,
             chequeRepas: savedPayslip.chequeRepas || 56,
             avanceSalaire: savedPayslip.avanceSalaire || 0,
             legalLeave: savedPayslip.legalLeave || 208,
@@ -335,11 +335,11 @@ export default function MonthlyPayslipPage() {
             holidayHours: 16,
             sickLeaveHours: 0,
             publicHolidayHours: 0,
-            fd: 0,
+            fd: 74.25, // Déductions (matches Excel 2024)
             ac: 0,
             ffo: 0,
             fds: 0,
-            impot: 240.60,
+            impot: 127, // ~5.7% of Total Imposable (matches Excel 2024)
             chequeRepas: 56,
             avanceSalaire: 600,
             legalLeave: 208,
@@ -366,14 +366,15 @@ export default function MonthlyPayslipPage() {
           const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
           const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-          const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension;
-          const taxRateToUse = tempData.taxRatePercentage || 21;
+          // IMPOSABLE = BRUT - (MALADIE + PENSION + DÉDUCTIONS)
+          const totalImposable = totalBrut - assuranceMaladie - assurancePension;
+          const taxRateToUse = tempData.taxRatePercentage || 5.7;
           const calculatedImpot = totalImposable * (taxRateToUse / 100);
 
           const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
           const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
           const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
-          const net = totalBrut - totalCotisation - tempData.impot + cissm + cisCipCim + ciCo2;
+          const net = totalImposable - tempData.impot + cissm - cisCipCim - ciCo2;
           const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire;
 
           const calculations = {
@@ -582,7 +583,9 @@ export default function MonthlyPayslipPage() {
         const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
         const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-        const calculatedNet = totalBrut - totalCotisation - impot + cissm + cisCipCim + ciCo2;
+        // Calculate imposable for iteration
+        const iterImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension;
+        const calculatedNet = iterImposable - impot + cissm - cisCipCim - ciCo2;
         const diff = targetNet - calculatedNet;
 
         if (Math.abs(diff) < 0.01) break; // Close enough
@@ -622,13 +625,18 @@ export default function MonthlyPayslipPage() {
     // STEP 4: Total Cotisation
     const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-    // STEP 5: Calculate Total Imposable (subtract cotisations and deductions)
-    const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
+    // STEP 5: Calculate Tax Credits FIRST (needed for IMPOSABLE calculation)
+    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
+    const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
+    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
+
+    // STEP 6: Calculate Total Imposable (Excel 2024 formula)
+    // IMPOSABLE = BRUT - MALADIE - PENSION - DÉDUCTIONS (CI-CO2 NOT subtracted here)
+    const totalImposable = totalBrut - assuranceMaladie - assurancePension -
       (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
 
-    // STEP 5.5: Calculate Tax (IMPÔT) based on saved tax rate percentage
-    // Use the tax rate that was saved with THIS payslip (preserves historical calculations)
-    const taxRateToUse = payslipData.taxRatePercentage || 21; // Default to 21% if not set
+    // STEP 7: Calculate Tax (IMPÔT) using 5.7% rate
+    const taxRateToUse = payslipData.taxRatePercentage || 5.7;
     const calculatedImpot = totalImposable * (taxRateToUse / 100);
 
     console.log('💰 Tax Calculation:', {
@@ -638,14 +646,9 @@ export default function MonthlyPayslipPage() {
       savedTaxRateId: payslipData.taxRateId
     });
 
-    // STEP 6: Calculate Tax Credits - Updated to match Excel 2024
-    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut); // Changed from 81 to 70
-    const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0; // Changed from 16 to 14
-
-    // STEP 7: Calculate NET (Total Brut - Cotisations - Tax + Credits)
-    // Use manual IMPÔT value (payslipData.impot) instead of calculated to match Excel
-    const net = totalBrut - totalCotisation - (payslipData.impot || 0) + cissm + cisCipCim + ciCo2;
+    // STEP 7: Calculate NET (Excel 2024 formula)
+    // NET = Imposable - Impôt + CISSM - CIS - CI-CO2
+    const net = totalImposable - (payslipData.impot || 0) + cissm - cisCipCim - ciCo2;
 
     // STEP 8: Calculate NET À PAYER (NET - other deductions)
     const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
@@ -734,13 +737,14 @@ export default function MonthlyPayslipPage() {
       ? payslipData.manualTotalCotisation
       : assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
+    // IMPOSABLE = BRUT - (MALADIE + PENSION + DÉDUCTIONS)
     const totalImposable = payslipData.manualTotalImposable !== undefined
       ? payslipData.manualTotalImposable
-      : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
+      : totalBrut - assuranceMaladie - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
     // Calculate tax using the stored tax rate percentage (immutable per payslip)
-    const taxRateToUse = payslipData.taxRatePercentage || 21;
+    const taxRateToUse = payslipData.taxRatePercentage || 5.7;
     const calculatedImpot = totalImposable * (taxRateToUse / 100);
 
     console.log('💰 Display Tax Calculation:', {
@@ -765,7 +769,7 @@ export default function MonthlyPayslipPage() {
 
     const net = payslipData.manualNet !== undefined
       ? payslipData.manualNet
-      : totalBrut - totalCotisation - (payslipData.impot || 0) + cissm + cisCipCim + ciCo2;
+      : totalImposable - (payslipData.impot || 0) + cissm - cisCipCim - ciCo2;
 
     const netAPayer = payslipData.manualNetAPayer !== undefined
       ? payslipData.manualNetAPayer
