@@ -407,7 +407,7 @@ export function calculateMonthlyWithTaxRate(
 
   const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-  // Fixed deduction amount from Excel
+  // Fixed deduction amount from Excel (used for taxable income calculation only, not subtracted from net)
   const deductions = 74.25;
 
   // STEP 2: Calculate imposable (taxable income)
@@ -425,13 +425,18 @@ export function calculateMonthlyWithTaxRate(
   });
 
   // STEP 4: Calculate tax credits - Updated to match Excel 2024
+  // These are TAX CREDITS that reduce the tax amount, not deductions from gross
   const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 70 : grossSalary >= 3600 ? 0 : 70 / 600 * (3600 - grossSalary);
   const cisCipCim = grossSalary < 78 ? 0 : grossSalary < 936 ? ((300 + (grossSalary * 12 - 936) * 0.029) / 12) : grossSalary < 3333.33 ? 50 : grossSalary > 6666.5 ? 0 : ((600 - (grossSalary * 12 - 40000) * 0.015) / 12);
   const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 14 : grossSalary < 6667 ? (14 - (grossSalary - 3333.33) * 0.0042) : 0;
 
-  // STEP 5: Calculate NET (Excel 2024 formula)
-  // NET = Imposable - Impôt + CISSM - CIS - CI-CO2 [CISSM is added back as credit]
-  const net = totalImposable - calculatedImpot + cissm - cisCipCim - ciCo2;
+  // STEP 5: Calculate final tax after credits
+  const finalTax = Math.max(0, calculatedImpot - cisCipCim - ciCo2 - cissm);
+
+  // STEP 6: Calculate NET (Excel 2024 formula)
+  // NET = Brut Mensuel - (Maladie + Pension + Final Tax after credits)
+  // Note: Deductions are used to calculate imposable but not subtracted from net
+  const net = grossSalary - (assuranceMaladie + assurancePension + finalTax);
 
   const earnings: Earnings = {
     remunerationBase: grossSalary,
@@ -446,9 +451,9 @@ export function calculateMonthlyWithTaxRate(
     ciCo2: parseFloat(ciCo2.toFixed(2)),
     cis: parseFloat(cisCipCim.toFixed(2)),
     cissm: parseFloat(cissm.toFixed(2)),
-    deductions: deductions, // Fixed monthly deduction (Excel 2024)
+    deductions: deductions, // Fixed monthly deduction (Excel 2024) - used for taxable calc only
     incomeTax: parseFloat(calculatedImpot.toFixed(2)),
-    total: parseFloat((assuranceMaladie + assurancePension + ciCo2 + cisCipCim + deductions + calculatedImpot).toFixed(2)),
+    total: parseFloat((assuranceMaladie + assurancePension + finalTax).toFixed(2)),
   };
 
   const employerContrib: EmployerContrib = {
