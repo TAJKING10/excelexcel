@@ -1526,19 +1526,14 @@ export interface TaxRateHistory {
 
 export const taxRateService = {
   async getAll(): Promise<TaxRate[]> {
-    console.log('🔍 taxRateService.getAll() called');
     const { data, error } = await supabase
       .from('tax_rates')
       .select('*')
       .order('effective_from', { ascending: false });
 
     if (error) {
-      console.error('❌ Error fetching tax rates:', error);
       throw error;
     }
-
-    console.log('✅ Raw tax rates from DB:', data);
-
     const mapped = (data || []).map(row => ({
       id: row.id,
       rate: parseFloat(row.rate),
@@ -1550,10 +1545,6 @@ export const taxRateService = {
       createdBy: row.created_by,
       updatedAt: row.updated_at
     }));
-
-    console.log('📊 Mapped tax rates:', mapped);
-    console.log('🎯 Active tax rate:', mapped.find(r => r.status === 'active'));
-
     return mapped;
   },
 
@@ -1889,8 +1880,6 @@ export const monthlyPayslipService = {
     month: number,
     isEmployee: boolean
   ): Promise<MonthlyPayslipData | null> {
-    console.log('🔍 Querying monthlypayslips:', { personId, year, month, isEmployee });
-
     let query = supabase
       .from('monthlypayslips')
       .select('*')
@@ -1909,8 +1898,6 @@ export const monthlyPayslipService = {
     if (error) {
       // If error is PGRST116 (multiple rows), fetch all and use the most recent
       if (error.code === 'PGRST116') {
-        console.warn('⚠️ Multiple payslips found, fetching the most recent one');
-
         let multiQuery = supabase
           .from('monthlypayslips')
           .select('*')
@@ -1927,18 +1914,14 @@ export const monthlyPayslipService = {
         const { data: multiData, error: multiError } = await multiQuery;
 
         if (multiError) {
-          console.error('❌ Supabase query error:', multiError);
           throw multiError;
         }
 
         if (!multiData || multiData.length === 0) {
-          console.log('ℹ️ No payslip found in database for this period');
           return null;
         }
 
         const mostRecent = multiData[0];
-        console.log(`✅ Found ${multiData.length} payslips, using the most recent:`, mostRecent.id);
-
         return {
           id: mostRecent.id,
           employeeId: mostRecent.employee_id,
@@ -2003,18 +1986,12 @@ export const monthlyPayslipService = {
           m1Net: mostRecent.m1_net,
         };
       }
-
-      console.error('❌ Supabase query error:', error);
       throw error;
     }
 
     if (!data) {
-      console.log('ℹ️ No payslip found in database for this period');
       return null;
     }
-
-    console.log('✅ Found payslip in database:', data.id);
-
     return {
       id: data.id,
       employeeId: data.employee_id,
@@ -2083,15 +2060,6 @@ export const monthlyPayslipService = {
   },
 
   async save(payslipData: MonthlyPayslipData): Promise<MonthlyPayslipData> {
-    console.log('💾 Saving payslip to database:', {
-      id: payslipData.id,
-      employeeId: payslipData.employeeId,
-      individualId: payslipData.individualId,
-      period: `${payslipData.periodYear}-${payslipData.periodMonth}`,
-      hoursWorked: payslipData.hoursWorked,
-      totalBrut: payslipData.manualTotalBrut
-    });
-
     const { data: { user } } = await supabase.auth.getUser();
 
     const dbData: any = {
@@ -2174,20 +2142,12 @@ export const monthlyPayslipService = {
       .single();
 
     if (error) {
-      console.error('❌ Supabase upsert error:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       throw error;
     }
 
     if (!data) {
       throw new Error('No data returned from upsert');
     }
-
-    console.log('✅ Payslip saved successfully:', {
-      id: data.id,
-      period: `${data.period_year}-${data.period_month}`
-    });
-
     // Convert the database response back to our format
     return {
       id: data.id,

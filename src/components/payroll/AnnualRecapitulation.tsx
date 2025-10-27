@@ -105,7 +105,7 @@ export function AnnualRecapitulation({
 
   const handleExport = () => {
     // TODO: Implement Excel export
-    console.log('Exporting annual recapitulation...');
+
   };
 
   if (yearlyPayslips.length === 0) {

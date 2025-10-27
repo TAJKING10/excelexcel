@@ -13,7 +13,10 @@
     "invalidCredentials": "Invalid credentials",
     "demoAccounts": "Demo accounts",
     "error": "Authentication error",
-    "passwordHint": "same as username"
+    "passwordHint": "same as username",
+    "usernameOrEmail": "Username or Email",
+    "rememberMe": "Remember me on this device",
+    "loading": "Loading..."
   },
   "nav": {
     "dashboard": "Dashboard",

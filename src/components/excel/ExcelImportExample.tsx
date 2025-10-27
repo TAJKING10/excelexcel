@@ -26,13 +26,6 @@ export function ExcelImportExample({ companyId }: ExcelImportExampleProps) {
     // 1. Send the data to your backend API
     // 2. Update your local state/store
     // 3. Refresh the data grid/list
-
-    console.log('Import completed:', {
-      payslips,
-      employeesCreated,
-      payslipsCreated
-    });
-
     // Show success message
     toast({
       title: t('excel.import.success'),

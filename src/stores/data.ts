@@ -387,7 +387,6 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   // Initialize data from Supabase
   initializeData: async () => {
-    console.log('🔄 Starting initializeData...');
     set({ isLoading: true, error: null });
     try {
       const [companies, employees, individuals, annualPayslips] = await Promise.all([
@@ -396,14 +395,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         individualService.getAll(),
         annualPayslipService.getAll()
       ]);
-
-      console.log('✅ Data loaded:', {
-        companiesCount: companies.length,
-        employeesCount: employees.length,
-        individualsCount: individuals.length,
-        annualPayslipsCount: annualPayslips.length
-      });
-
       set({
         companies,
         employees,
@@ -412,7 +403,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         isLoading: false
       });
     } catch (error: any) {
-      console.error('❌ Failed to initialize data:', error);
       set({ error: error.message, isLoading: false });
     }
   },
@@ -428,7 +418,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return newCompany;
     } catch (error: any) {
-      console.error('Failed to add company:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -444,7 +433,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return updatedCompany;
     } catch (error: any) {
-      console.error('Failed to update company:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -459,7 +447,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         isLoading: false
       }));
     } catch (error: any) {
-      console.error('Failed to delete company:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -476,7 +463,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return newEmployee;
     } catch (error: any) {
-      console.error('Failed to add employee:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -492,7 +478,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return updatedEmployee;
     } catch (error: any) {
-      console.error('Failed to update employee:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -507,7 +492,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         isLoading: false
       }));
     } catch (error: any) {
-      console.error('Failed to delete employee:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -524,7 +508,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return newIndividual;
     } catch (error: any) {
-      console.error('Failed to add individual:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -540,7 +523,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return updatedIndividual;
     } catch (error: any) {
-      console.error('Failed to update individual:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -555,7 +537,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         isLoading: false
       }));
     } catch (error: any) {
-      console.error('Failed to delete individual:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -572,7 +553,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return newPayslip;
     } catch (error: any) {
-      console.error('Failed to add payslip:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -588,7 +568,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return updatedPayslip;
     } catch (error: any) {
-      console.error('Failed to update payslip:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -603,7 +582,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         isLoading: false
       }));
     } catch (error: any) {
-      console.error('Failed to delete payslip:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -620,7 +598,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return payslips;
     } catch (error: any) {
-      console.error('Failed to get payslips:', error);
       return [];
     }
   },
@@ -663,7 +640,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         activityLogs: [newLog, ...state.activityLogs]
       }));
     } catch (error) {
-      console.error('Failed to log activity:', error);
     }
   },
 
@@ -673,7 +649,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       set({ activityLogs: logs });
       return logs;
     } catch (error) {
-      console.error('Failed to get activity logs:', error);
       return get().activityLogs;
     }
   },
@@ -877,7 +852,6 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       return savedPayslip;
     } catch (error: any) {
-      console.error('Failed to generate annual payslip:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -1051,7 +1025,6 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       return savedPayslip;
     } catch (error: any) {
-      console.error('Failed to generate annual payslip for individual:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -1089,7 +1062,6 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       return payslip;
     } catch (error) {
-      console.error('Failed to get annual payslip:', error);
       return undefined;
     }
   },
@@ -1122,7 +1094,6 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       return payslip;
     } catch (error) {
-      console.error('Failed to get individual annual payslip:', error);
       return undefined;
     }
   },
@@ -1154,7 +1125,6 @@ export const useDataStore = create<DataState>((set, get) => ({
           updatedPayslip,
           `Updated annual payslip for ${existingPayslip.year}`
         ).catch(err => {
-          console.error('Failed to record edit history:', err);
           // Don't throw - allow the payslip update to succeed even if history recording fails
         });
       }
@@ -1165,7 +1135,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }));
       return updatedPayslip;
     } catch (error: any) {
-      console.error('Failed to update annual payslip:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }
@@ -1192,7 +1161,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         isLoading: false
       }));
     } catch (error: any) {
-      console.error('Failed to delete annual payslip:', error);
       set({ error: error.message, isLoading: false });
       throw error;
     }

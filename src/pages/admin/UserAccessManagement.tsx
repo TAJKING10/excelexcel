@@ -90,8 +90,6 @@ export function UserAccessManagement() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      console.log('📥 Fetching users...');
-
       // Fetch users (only EMPLOYEE role)
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
@@ -101,11 +99,7 @@ export function UserAccessManagement() {
         `)
         .eq('role', 'EMPLOYEE')
         .order('created_at', { ascending: false });
-
-      console.log('📥 Users data:', { usersData, usersError });
-
       if (usersError) {
-        console.error('❌ Users fetch error:', usersError);
         throw usersError;
       }
 
@@ -120,8 +114,6 @@ export function UserAccessManagement() {
         isActive: true,
         user_access: u.user_access?.[0]
       }));
-
-      console.log('✅ Transformed users:', transformedUsers);
       setUsers(transformedUsers);
 
       // Fetch companies
@@ -143,7 +135,6 @@ export function UserAccessManagement() {
       setIndividuals(individualsData || []);
 
     } catch (error) {
-      console.error('Error fetching data:', error);
       toast({
         title: t('common.error'),
         description: t('errors.failedToLoadData'),
@@ -250,7 +241,6 @@ export function UserAccessManagement() {
         fetchData();
       }, 500);
     } catch (error: any) {
-      console.error('Error saving user:', error);
       toast({
         title: t('common.error'),
         description: error.message || t('users.userSaveFailed'),
@@ -262,14 +252,7 @@ export function UserAccessManagement() {
   };
 
   const createNewUser = async () => {
-    console.log('🚀 Starting user creation...', {
-      email: formData.email,
-      username: formData.username,
-    });
-
     // Step 1: Create user via database function (doesn't auto-login)
-    console.log('📝 Step 1: Creating user via database function...');
-
     const { data: userData, error: userError } = await supabase.rpc('create_employee_user', {
       user_email: formData.email,
       user_password: formData.password,
@@ -279,15 +262,11 @@ export function UserAccessManagement() {
     });
 
     if (userError) {
-      console.error('❌ User creation error:', userError);
       throw new Error(`User creation error: ${userError.message}`);
     }
 
     const userId = userData.id;
-    console.log('✅ User and profile created with ID:', userId);
-
     // Step 2: Create user access record
-    console.log('📝 Step 2: Creating user access...');
     const { data: accessData_result, error: accessError } = await supabase
       .from('user_access')
       .insert({
@@ -305,15 +284,9 @@ export function UserAccessManagement() {
         can_create_employees: accessData.canCreateEmployees,
       })
       .select();
-
-    console.log('📝 Access insert result:', { accessData_result, accessError });
-
     if (accessError) {
-      console.error('❌ Access error:', accessError);
       throw new Error(`Access error: ${accessError.message}`);
     }
-    console.log('✅ User access created successfully!');
-    console.log('✅ User creation complete! Admin session unchanged.');
   };
 
   const updateExistingUser = async () => {
@@ -392,7 +365,6 @@ export function UserAccessManagement() {
 
       fetchData();
     } catch (error: any) {
-      console.error('Error deleting user:', error);
       toast({
         title: t('common.error'),
         description: error.message || t('users.userDeleteFailed'),

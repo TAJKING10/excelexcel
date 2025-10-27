@@ -135,7 +135,6 @@ export default function MonthlyPayslipPage() {
 
   // Load tax rates from Supabase on mount
   useEffect(() => {
-    console.log('💰 Loading tax rates from Supabase for payslip page...');
     loadTaxRates();
   }, [loadTaxRates]);
 
@@ -150,12 +149,6 @@ export default function MonthlyPayslipPage() {
       // Use the first day of the selected period to determine the correct tax rate
       const payslipDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
       const applicableTaxRate = getTaxRateForDate(payslipDate);
-      console.log('📌 Auto-applying date-based tax rate to NEW payslip (ONCE ONLY):', {
-        payslipDate,
-        period: `${selectedYear}-${selectedMonth}`,
-        applicableTaxRate
-      });
-
       if (applicableTaxRate) {
         setPayslipData(prev => ({
           ...prev,
@@ -163,7 +156,6 @@ export default function MonthlyPayslipPage() {
           taxRatePercentage: applicableTaxRate.rate
         }));
         hasAppliedTaxRate.current = true; // LOCK - never apply again
-        console.log('🔒 Tax rate LOCKED at', applicableTaxRate.rate, '% for period', `${selectedYear}-${selectedMonth}`, '- will never change');
       }
     }
   }, [taxRates, payslipId, selectedYear, selectedMonth, getTaxRateForDate]);
@@ -208,7 +200,6 @@ export default function MonthlyPayslipPage() {
 
       // Wait for tax rates to be loaded first
       if (taxRates.length === 0) {
-        console.log('⏳ Waiting for tax rates to load before loading payslip...');
         return;
       }
 
@@ -219,34 +210,13 @@ export default function MonthlyPayslipPage() {
       setIsEditMode(false); // Exit edit mode when loading new data
       try {
         const isEmployee = !!employeeId;
-        console.log('📂 Loading payslip data from Supabase:', {
-          personId,
-          isEmployee,
-          period: `${selectedYear}-${selectedMonth}`,
-          employee: employee ? `${employee.firstName} ${employee.lastName}` : 'N/A',
-          individual: individual ? `${individual.firstName} ${individual.lastName}` : 'N/A'
-        });
-
         const savedPayslip = await monthlyPayslipService.getByPeriod(
           personId,
           selectedYear,
           selectedMonth,
           isEmployee
         );
-
-        console.log('📥 Database query result:', savedPayslip ? 'FOUND' : 'NOT FOUND');
-
         if (savedPayslip) {
-          console.log('✅ Payslip data loaded from database:', {
-            id: savedPayslip.id,
-            hoursWorked: savedPayslip.hoursWorked,
-            hourlyRate: savedPayslip.hourlyRate,
-            totalBrut: savedPayslip.manualTotalBrut,
-            net: savedPayslip.manualNet,
-            taxRateId: savedPayslip.taxRateId,
-            taxRatePercentage: savedPayslip.taxRatePercentage
-          });
-
           // Load all the saved data
           setPayslipId(savedPayslip.id);
           const loadedData = {
@@ -310,17 +280,10 @@ export default function MonthlyPayslipPage() {
           setOriginalPayslipData(loadedData); // Store original data for edit history tracking
           setHasUnsavedChanges(false);
         } else {
-          console.log('ℹ️ No saved payslip found, auto-creating with defaults');
           // No saved data - auto-create the payslip record so history tracking works
           // Use the first day of the selected period to determine the correct tax rate
           const payslipDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
           const applicableTaxRate = getTaxRateForDate(payslipDate);
-          console.log('📌 Setting date-based tax rate for new payslip:', {
-            payslipDate,
-            period: `${selectedYear}-${selectedMonth}`,
-            applicableTaxRate
-          });
-
           const defaultData = {
             taxRateId: applicableTaxRate?.id,
             taxRatePercentage: applicableTaxRate?.rate,
@@ -397,8 +360,6 @@ export default function MonthlyPayslipPage() {
 
           // Auto-save the payslip to database immediately
           try {
-            console.log('💾 Auto-creating payslip record in database...');
-
             // Determine company ID - employees have direct companyId, individuals don't
             let companyIdToSave = undefined;
             if (isEmployee && employee) {
@@ -451,8 +412,6 @@ export default function MonthlyPayslipPage() {
             };
 
             const autoCreatedPayslip = await monthlyPayslipService.save(dataToSave);
-            console.log('✅ Payslip auto-created successfully:', autoCreatedPayslip.id);
-
             // Set the payslip ID so history tracking works
             setPayslipId(autoCreatedPayslip.id);
 
@@ -465,12 +424,9 @@ export default function MonthlyPayslipPage() {
                 defaultData,
                 `Created monthly payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
               );
-              console.log('📝 Creation history recorded for auto-created payslip');
             } catch (historyError) {
-              console.error('Failed to record creation history:', historyError);
             }
           } catch (autoCreateError) {
-            console.error('❌ Failed to auto-create payslip:', autoCreateError);
             // Continue anyway with undefined payslipId
           }
 
@@ -479,9 +435,6 @@ export default function MonthlyPayslipPage() {
           setHasUnsavedChanges(false);
         }
       } catch (error) {
-        console.error('❌ Error loading payslip data:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
-
         toast({
           title: t('payslips.loadError'),
           description: error instanceof Error ? error.message : t('payslips.unableToLoad'),
@@ -638,14 +591,6 @@ export default function MonthlyPayslipPage() {
     // STEP 7: Calculate Tax (IMPÔT) using 5.7% rate
     const taxRateToUse = payslipData.taxRatePercentage || 5.7;
     const calculatedImpot = totalImposable * (taxRateToUse / 100);
-
-    console.log('💰 Tax Calculation:', {
-      totalImposable: totalImposable.toFixed(2),
-      taxRatePercentage: taxRateToUse,
-      calculatedTax: calculatedImpot.toFixed(2),
-      savedTaxRateId: payslipData.taxRateId
-    });
-
     // STEP 7: Calculate NET (Excel 2024 formula)
     // NET = Imposable - Impôt + CISSM - CIS - CI-CO2
     const net = totalImposable - (payslipData.impot || 0) + cissm - cisCipCim - ciCo2;
@@ -746,15 +691,6 @@ export default function MonthlyPayslipPage() {
     // Calculate tax using the stored tax rate percentage (immutable per payslip)
     const taxRateToUse = payslipData.taxRatePercentage || 5.7;
     const calculatedImpot = totalImposable * (taxRateToUse / 100);
-
-    console.log('💰 Display Tax Calculation:', {
-      period: `${selectedYear}-${selectedMonth}`,
-      taxRatePercentage: taxRateToUse,
-      totalImposable: totalImposable.toFixed(2),
-      calculatedTax: calculatedImpot.toFixed(2),
-      savedTaxRateId: payslipData.taxRateId
-    });
-
     const cissm = payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
       : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
@@ -882,25 +818,8 @@ export default function MonthlyPayslipPage() {
         m1CiCo2: payslipData.m1CiCo2,
         m1Net: payslipData.m1Net,
       };
-
-      console.log('💾 Saving payslip data to Supabase:', {
-        id: dataToSave.id || 'NEW',
-        personId,
-        isEmployee,
-        companyId: companyIdToSave,
-        period: `${selectedYear}-${selectedMonth}`,
-        totalBrut: dataToSave.manualTotalBrut,
-        net: dataToSave.manualNet
-      });
-
       // Save to Supabase
       const savedPayslip = await monthlyPayslipService.save(dataToSave);
-
-      console.log('✅ Payslip saved successfully:', {
-        id: savedPayslip.id,
-        period: `${savedPayslip.periodYear}-${savedPayslip.periodMonth}`
-      });
-
       // Update the payslip ID if this was a new record
       const isNewPayslip = !payslipId;
       if (savedPayslip.id) {
@@ -912,7 +831,6 @@ export default function MonthlyPayslipPage() {
         try {
           if (isNewPayslip) {
             // For new payslips, record creation with no old values
-            console.log('📝 Recording CREATION history for payslip:', savedPayslip.id);
             await recordPayslipEdit(
               savedPayslip.id,
               'monthly',
@@ -920,12 +838,8 @@ export default function MonthlyPayslipPage() {
               payslipData,
               `Created monthly payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
             );
-            console.log('✅ Creation history recorded successfully');
           } else if (originalPayslipData) {
             // For existing payslips, record the update
-            console.log('📝 Recording UPDATE history for payslip:', savedPayslip.id);
-            console.log('   Old data:', originalPayslipData);
-            console.log('   New data:', payslipData);
             await recordPayslipEdit(
               savedPayslip.id,
               'monthly',
@@ -933,12 +847,9 @@ export default function MonthlyPayslipPage() {
               payslipData,
               `Updated monthly payslip for ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
             );
-            console.log('✅ Edit history recorded successfully');
           } else {
-            console.warn('⚠️ No originalPayslipData available, skipping history recording');
           }
         } catch (historyError) {
-          console.error('❌ Failed to record edit history:', historyError);
           // Don't fail the save if history recording fails
         }
       }
@@ -958,14 +869,6 @@ export default function MonthlyPayslipPage() {
         duration: 3000,
       });
     } catch (error: any) {
-      console.error('❌ Error saving payslip:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      });
-
       toast({
         title: t('payslips.saveError'),
         description: error.message || t('payslips.saveErrorDesc'),
@@ -1245,8 +1148,6 @@ export default function MonthlyPayslipPage() {
 
             {(() => {
               // Debug: Log payslipId at render time
-              console.log('🔍 Render: payslipId =', payslipId);
-
               if (payslipId) {
                 return <PayslipHistoryButton payslipId={payslipId} payslipType="monthly" />;
               } else {

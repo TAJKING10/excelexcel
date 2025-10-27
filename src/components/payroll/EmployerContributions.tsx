@@ -96,7 +96,7 @@ export function EmployerContributions({
 
   const handleExport = () => {
     // TODO: Implement Excel export
-    console.log('Exporting employer contributions...');
+
   };
 
   if (yearlyPayslips.length === 0) {

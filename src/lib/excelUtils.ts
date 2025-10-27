@@ -320,7 +320,6 @@ export function transformToPayslips(
 
       payslips.push(payslip as Payslip);
     } catch (error) {
-      console.error(`Error transforming row ${index}:`, error);
     }
   });
 

@@ -417,13 +417,6 @@ export function calculateMonthlyWithTaxRate(
   // STEP 3: Calculate tax using the provided tax rate
   const calculatedImpot = totalImposable * (taxRatePercentage / 100);
 
-  console.log(`📅 Annual Payslip - ${year}-${month.toString().padStart(2, '0')}:`, {
-    grossSalary,
-    taxRatePercentage,
-    totalImposable: totalImposable.toFixed(2),
-    calculatedImpot: calculatedImpot.toFixed(2),
-  });
-
   // STEP 4: Calculate tax credits - Updated to match Excel 2024
   // These are TAX CREDITS that reduce the tax amount, not deductions from gross
   const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 70 : grossSalary >= 3600 ? 0 : 70 / 600 * (3600 - grossSalary);

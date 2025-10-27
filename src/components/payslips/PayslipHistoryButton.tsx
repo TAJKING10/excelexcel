@@ -31,21 +31,15 @@ export function PayslipHistoryButton({ payslipId, payslipType }: PayslipHistoryB
 
   const loadHistory = async () => {
     if (!payslipId) {
-      console.warn('⚠️ No payslipId provided to PayslipHistoryButton');
       return;
     }
-
-    console.log('🔍 Loading history for payslip:', payslipId, 'type:', payslipType);
     setIsLoading(true);
     setError(null);
 
     try {
       const data = await getPayslipEditHistory(payslipId, payslipType);
-      console.log('✅ History loaded:', data.length, 'records');
-      console.log('   Data:', data);
       setHistory(data);
     } catch (err: any) {
-      console.error('❌ Failed to load edit history:', err);
       setError(err.message || 'Échec du chargement de l\'historique');
     } finally {
       setIsLoading(false);

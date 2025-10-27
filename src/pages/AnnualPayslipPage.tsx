@@ -57,7 +57,6 @@ export default function AnnualPayslipPage() {
           : await getEmployeeAnnualPayslip(personId, selectedYear);
         setAnnualPayslip(payslip);
       } catch (error) {
-        console.error('Error loading annual payslip:', error);
         setAnnualPayslip(undefined);
       } finally {
         setLoading(false);
@@ -298,7 +297,6 @@ export default function AnnualPayslipPage() {
                         : await generateEmployeeAnnualPayslip(personId, selectedYear);
                       setAnnualPayslip(payslip);
                     } catch (error: any) {
-                      console.error('Failed to generate:', error);
                       alert(`Error: ${error.message}`);
                     } finally {
                       setLoading(false);

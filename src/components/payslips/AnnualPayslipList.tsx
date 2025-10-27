@@ -103,7 +103,6 @@ export function AnnualPayslipList() {
             generated++;
           }
         } catch (error) {
-          console.error(`Failed to generate for employee ${employee.id}:`, error);
         }
       }
 

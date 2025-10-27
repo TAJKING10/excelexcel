@@ -28,7 +28,6 @@ export function PayslipEditHistoryComponent({ payslipId, payslipType }: PayslipE
         const data = await getPayslipEditHistory(payslipId, payslipType);
         setHistory(data);
       } catch (err: any) {
-        console.error('Failed to load edit history:', err);
         setError(err.message || 'Failed to load edit history');
       } finally {
         setIsLoading(false);

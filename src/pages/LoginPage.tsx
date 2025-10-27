@@ -73,14 +73,11 @@ export default function LoginPage() {
 
       if (signInError) {
         setError(t('auth.invalidCredentials'));
-      } else {
-        // Reload the page to reinitialize Supabase client with the correct storage
-        window.location.reload();
+        setIsLoading(false);
       }
+      // Navigation will be handled automatically by the useEffect hook above
     } catch (err) {
-      console.error('Login error:', err);
       setError(t('auth.invalidCredentials'));
-    } finally {
       setIsLoading(false);
     }
   };
@@ -94,7 +91,7 @@ export default function LoginPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t('auth.loading')}</p>
         </div>
       </div>
     );
@@ -142,13 +139,13 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="dark:text-gray-200">Username or Email</Label>
+                <Label htmlFor="username" className="dark:text-gray-200">{t('auth.usernameOrEmail')}</Label>
                 <Input
                   id="username"
                   type="text"
                   value={usernameOrEmail}
                   onChange={(e) => setUsernameOrEmail(e.target.value)}
-                  placeholder="Admin"
+                  placeholder={t('auth.demoAccounts')}
                   required
                   autoComplete="username"
                   className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
@@ -179,7 +176,7 @@ export default function LoginPage() {
                   htmlFor="remember"
                   className="text-sm font-normal cursor-pointer dark:text-gray-300"
                 >
-                  Remember me on this device
+                  {t('auth.rememberMe')}
                 </Label>
               </div>
               {error && (

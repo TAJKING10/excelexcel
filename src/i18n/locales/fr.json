@@ -13,7 +13,10 @@
     "invalidCredentials": "Identifiants invalides",
     "demoAccounts": "Comptes de démonstration",
     "error": "Erreur d'authentification",
-    "passwordHint": "identique au nom d'utilisateur"
+    "passwordHint": "identique au nom d'utilisateur",
+    "usernameOrEmail": "Nom d'utilisateur ou Email",
+    "rememberMe": "Se souvenir de moi sur cet appareil",
+    "loading": "Chargement..."
   },
   "nav": {
     "dashboard": "Tableau de bord",

@@ -104,7 +104,6 @@ export function IndividualPayslip() {
         }
       }
     } catch (error) {
-      console.error('Failed to load payslips:', error);
     } finally {
       setLoading(false);
     }

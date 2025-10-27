@@ -308,7 +308,7 @@ function parseEmployeeSheet(
       payslips,
     };
   } catch (error) {
-    console.error(`Error parsing sheet ${sheetName}:`, error);
+
     return null;
   }
 }

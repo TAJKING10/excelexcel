@@ -89,7 +89,7 @@ export function MonthlyPayrollSummary({
 
   const handleExport = () => {
     // TODO: Implement Excel export
-    console.log('Exporting monthly payroll summary...');
+
   };
 
   if (monthlyPayslips.length === 0) {

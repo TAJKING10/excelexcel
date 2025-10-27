@@ -27,26 +27,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // If input doesn't contain @, treat it as username and lookup email
       if (!emailOrUsername.includes('@')) {
-        console.log('Looking up username:', emailOrUsername);
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('email')
           .eq('username', emailOrUsername)
           .maybeSingle();
-
-        console.log('Username lookup result:', profile, profileError);
-
         if (profileError || !profile) {
-          console.error('Username lookup error:', profileError);
           return false;
         }
 
         email = profile.email;
-        console.log('Found email for username:', email);
       }
-
-      console.log('Attempting login with email:', email);
-
       // Sign in with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
@@ -54,17 +45,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (authError || !authData.user) {
-        console.error('Login error:', authError);
         return false;
       }
-
-      console.log('Login successful, fetching profile...');
-
       // Fetch user profile and access
       await get().fetchUserProfile(authData.user.id);
       return true;
     } catch (error) {
-      console.error('Login exception:', error);
       return false;
     }
   },
@@ -74,14 +60,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await supabase.auth.signOut();
       set({ user: null, isAuthenticated: false });
     } catch (error) {
-      console.error('Logout error:', error);
     }
   },
 
   fetchUserProfile: async (userId: string) => {
     try {
-      console.log('Fetching profile for user:', userId);
-
       // Fetch profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -90,19 +73,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .maybeSingle();
 
       if (profileError) {
-        console.error('Profile fetch error:', profileError);
         set({ isLoading: false, isAuthenticated: false });
         return;
       }
 
       if (!profile) {
-        console.error('Profile not found for user:', userId);
         set({ isLoading: false, isAuthenticated: false });
         return;
       }
-
-      console.log('Profile fetched:', profile);
-
       // Fetch user access
       const { data: access, error: accessError } = await supabase
         .from('user_access')
@@ -111,11 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .maybeSingle();
 
       if (accessError) {
-        console.error('Access fetch error:', accessError);
       }
-
-      console.log('Access fetched:', access);
-
       // Map to User type
       const user: User = {
         id: profile.id,
@@ -142,7 +116,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({ user, isAuthenticated: true, isLoading: false });
     } catch (error) {
-      console.error('Fetch user profile exception:', error);
       set({ isLoading: false });
     }
   },
@@ -267,7 +240,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .select('*, user_access(*)');
 
       if (profilesError) {
-        console.error('Get users error:', profilesError);
         return [];
       }
 
@@ -294,7 +266,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } : undefined,
       }));
     } catch (error) {
-      console.error('Get all users exception:', error);
       return [];
     }
   },

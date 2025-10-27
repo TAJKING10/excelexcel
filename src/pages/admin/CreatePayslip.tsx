@@ -54,9 +54,6 @@ export function CreatePayslip() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [autoCalc, setAutoCalc] = useState<boolean>(false);
   const [existingPayslipId, setExistingPayslipId] = useState<string | null>(null);
-
-  console.log('CreatePayslip mounted with urlEmployeeId:', urlEmployeeId);
-
   // Initialize 12 months with zeros
   const [monthsData, setMonthsData] = useState<MonthData[]>(() =>
     Array.from({ length: 12 }, (_, i) => ({
@@ -99,16 +96,10 @@ export function CreatePayslip() {
       if (!selectedEmployeeId || !year) return;
 
       try {
-        console.log('Loading existing payslip for employee:', selectedEmployeeId, 'year:', year);
         const existing = await getEmployeeAnnualPayslip(selectedEmployeeId, year);
-        console.log('Existing payslip loaded:', existing);
-
         if (existing && existing.monthlyData && existing.monthlyData.length > 0) {
           setExistingPayslipId(existing.id);
           setSelectedCompanyId(existing.companyId);
-          console.log('Set existing payslip ID:', existing.id);
-          console.log('Set company ID:', existing.companyId);
-
           // Map existing data to monthsData format
           const loadedMonths = existing.monthlyData.map((month: any) => ({
             monthNumber: month.monthNumber,
@@ -139,7 +130,6 @@ export function CreatePayslip() {
           setMonthsData(loadedMonths);
         }
       } catch (error) {
-        console.error('Error loading existing payslip:', error);
       }
     }
 
@@ -392,18 +382,11 @@ export function CreatePayslip() {
 
       if (existingPayslipId) {
         // Update existing payslip
-        console.log('Updating payslip with ID:', existingPayslipId);
-        console.log('Monthly data:', formattedMonthlyData);
-        console.log('Annual totals:', annualTotals);
-
         const result = await updateAnnualPayslip(existingPayslipId, {
           monthlyData: formattedMonthlyData,
           annualTotals,
           recapitulation,
         });
-
-        console.log('Update result:', result);
-
         toast({
           title: 'Success',
           description: `Annual payslip updated successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,

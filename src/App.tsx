@@ -52,12 +52,7 @@ function AppRoutes() {
   // Initialize data from Supabase when user is authenticated
   useEffect(() => {
     if (user) {
-      console.log('🔄 Initializing data from Supabase...');
-      initializeData().then(() => {
-        console.log('✅ Data initialized successfully');
-      }).catch((error) => {
-        console.error('❌ Failed to initialize data:', error);
-      });
+      initializeData();
     }
   }, [user, initializeData]);
 

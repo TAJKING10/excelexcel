@@ -55,7 +55,6 @@ export default function TaxManagement() {
 
   // Load tax rates and history on mount
   useEffect(() => {
-    console.log('📊 Loading tax rates from Supabase...');
     loadTaxRates();
     loadHistory();
   }, [loadTaxRates, loadHistory]);
@@ -89,7 +88,6 @@ export default function TaxManagement() {
       setNewRate({ rate: '', effectiveFrom: new Date().toISOString().split('T')[0], notes: '' });
       setIsAddDialogOpen(false);
     } catch (error) {
-      console.error('Failed to add tax rate:', error);
       toast({
         title: 'Error',
         description: 'Failed to add tax rate. Please try again.',
@@ -112,7 +110,6 @@ export default function TaxManagement() {
         description: 'Tax rate has been reverted successfully',
       });
     } catch (error) {
-      console.error('Failed to revert tax rate:', error);
       toast({
         title: 'Error',
         description: 'Failed to revert tax rate. Please try again.',
@@ -129,7 +126,6 @@ export default function TaxManagement() {
         description: 'Tax rate has been set as default successfully',
       });
     } catch (error) {
-      console.error('Failed to set default tax rate:', error);
       toast({
         title: 'Error',
         description: 'Failed to set default tax rate. Please try again.',
@@ -150,7 +146,6 @@ export default function TaxManagement() {
         description: `Tax rate ${rate}% has been deleted successfully`,
       });
     } catch (error: any) {
-      console.error('Failed to delete tax rate:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete tax rate. Please try again.',

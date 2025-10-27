@@ -66,7 +66,6 @@ export function CompanyDetail() {
           )
         );
       } catch (error) {
-        console.error('Error loading annual payslips:', error);
       } finally {
         setIsLoadingPayslips(false);
       }

@@ -37,14 +37,9 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
   loadTaxRates: async () => {
     try {
       set({ isLoading: true, error: null });
-      console.log('🔄 [TaxStore] Starting to load tax rates from Supabase...');
       const rates = await taxRateService.getAll();
-      console.log('✅ [TaxStore] Tax rates loaded successfully:', rates);
-      console.log('📊 [TaxStore] Active rate found:', rates.find(r => r.status === 'active'));
       set({ taxRates: rates, isLoading: false });
-      console.log('💾 [TaxStore] State updated with', rates.length, 'tax rates');
     } catch (error) {
-      console.error('❌ [TaxStore] Failed to load tax rates:', error);
       set({ error: 'Failed to load tax rates', isLoading: false, taxRates: [] });
     }
   },
@@ -55,7 +50,6 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
       const history = await taxRateService.getHistory();
       set({ history, isLoading: false });
     } catch (error) {
-      console.error('Failed to load tax history:', error);
       set({ error: 'Failed to load tax history', isLoading: false });
     }
   },
@@ -73,7 +67,6 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
 
       set({ isLoading: false });
     } catch (error) {
-      console.error('Failed to add tax rate:', error);
       set({ error: 'Failed to add tax rate', isLoading: false });
       throw error;
     }
@@ -92,7 +85,6 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
 
       set({ isLoading: false });
     } catch (error) {
-      console.error('Failed to set default tax rate:', error);
       set({ error: 'Failed to set default tax rate', isLoading: false });
       throw error;
     }
@@ -111,7 +103,6 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
 
       set({ isLoading: false });
     } catch (error) {
-      console.error('Failed to revert tax rate:', error);
       set({ error: 'Failed to revert tax rate', isLoading: false });
       throw error;
     }
@@ -130,7 +121,6 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
 
       set({ isLoading: false });
     } catch (error) {
-      console.error('Failed to delete tax rate:', error);
       set({ error: 'Failed to delete tax rate', isLoading: false });
       throw error;
     }
@@ -139,7 +129,6 @@ export const useTaxRatesStore = create<TaxRatesState>((set, get) => ({
   getActiveTaxRate: () => {
     // Find the active tax rate (only one can be active at a time)
     const activeRate = get().taxRates.find(r => r.status === 'active');
-    console.log('🔍 getActiveTaxRate called, found:', activeRate);
     return activeRate;
   },
 

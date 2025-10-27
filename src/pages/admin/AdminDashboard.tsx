@@ -52,12 +52,10 @@ export function AdminDashboard() {
           .eq('role', 'EMPLOYEE');
 
         if (error) {
-          console.error('Error fetching employee count:', error);
         } else {
           setTotalAdvensysStaff(count || 0);
         }
       } catch (err) {
-        console.error('Error:', err);
       }
     };
 
@@ -194,7 +192,6 @@ export function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-   
 
       {/* Overview Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -427,7 +424,6 @@ export function AdminDashboard() {
             </p>
           </CardContent>
         </Card>
-
 
       </div>
     </div>
