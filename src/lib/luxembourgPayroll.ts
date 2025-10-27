@@ -380,12 +380,12 @@ export interface GenerateAnnualPayslipInput {
 import type { MonthlyPayslipData, AnnualPayslip, Employee, Company } from '@/types';
 
 // Social contributions rates (Luxembourg) - matching MonthlyPayslipPage.tsx
-// Updated to match 2024 Excel "Livre de Paie"
+// Updated to match 2024/2025 Excel "Livre de Paie"
 const RATES = {
-  assuranceMaladie: 0.0305026, // 3.05026% - matches Excel exactly (78.42/2570.93 = 0.0305026)
-  majoration: 0.0025,
-  assurancePension: 0.08, // 8% - matches Excel (205.67/2570.93)
-  assuranceDependance: 0.014,
+  assuranceMaladie: 0.028, // 2.80% - matches Excel Sept 2025 (90.84 / 3244.40)
+  majoration: 0.0025, // 0.25% - matches Excel (8.11 / 3244.40)
+  assurancePension: 0.08, // 8.00% - matches Excel (259.55 / 3244.40)
+  assuranceDependance: 0.014, // 1.40% - matches Excel (35.96 / (3244.40 - 675.93))
   dependanceThreshold: 675.93,
 };
 
