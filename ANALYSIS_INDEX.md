@@ -11,7 +11,7 @@
 ### For Quick Reference
 - **[QUICK_REFERENCE_MAPPING.md](#quick_reference_mappingmd)** - Visual layouts, row/column mappings, code snippets
 - **[payslip_analysis.json](#payslip_analysisjson)** - Structured JSON data
-
+- **[paysli
 ### For Detailed Understanding
 - **[PAYSLIP_ANALYSIS_REPORT.md](#payslip_analysis_reportmd)** - Comprehensive analysis report (MAIN DOCUMENT)
 
