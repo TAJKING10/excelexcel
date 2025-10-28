@@ -590,10 +590,12 @@ export default function MonthlyPayslipPage() {
     const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
     const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
 
-    // STEP 6: Calculate Total Imposable
-    // Based on actual Excel output: 2790.18 = 3128 - 87.58 - 250.24
-    // IMPOSABLE = BRUT - MALADIE - PENSION (FD and Majoration are NOT subtracted here)
-    const totalImposable = totalBrut - assuranceMaladie - assurancePension;
+    // STEP 6: Calculate Total Imposable (Luxembourg formula from your guide)
+    // Excel formula: D20-D23-D24-D25-D30-D31-D32-D33
+    // IMPOSABLE = BRUT - MALADIE - MAJORATION - PENSION - FD - AC - FFO - FDS
+    // Note: Assurance Dépendance is NOT deducted per Luxembourg tax law
+    const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
+      (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
 
     // STEP 7: Calculate Tax (IMPÔT) using tax rate percentage
     const taxRateToUse = payslipData.taxRatePercentage || 5.7;
@@ -672,10 +674,11 @@ export default function MonthlyPayslipPage() {
       ? payslipData.manualTotalCotisation
       : assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-    // IMPOSABLE = BRUT - MALADIE - PENSION (actual Excel behavior, no FD or Majoration)
+    // IMPOSABLE = BRUT - MALADIE - MAJORATION - PENSION - FD - AC - FFO - FDS (Luxembourg formula)
     const totalImposable = payslipData.manualTotalImposable !== undefined
       ? payslipData.manualTotalImposable
-      : totalBrut - assuranceMaladie - assurancePension;
+      : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
+        payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
     // Calculate tax using the stored tax rate percentage (immutable per payslip)
     const taxRateToUse = payslipData.taxRatePercentage || 5.7;
