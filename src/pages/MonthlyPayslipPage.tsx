@@ -178,7 +178,7 @@ export default function MonthlyPayslipPage() {
     holidayHours: 16,
     sickLeaveHours: 0,
     publicHolidayHours: 0,
-    fd: 74.25, // Déductions (matches Excel 2024)
+    fd: 0, // Default to 0 - user can add manually
     ac: 0,
     ffo: 0,
     fds: 0,
@@ -298,7 +298,7 @@ export default function MonthlyPayslipPage() {
             holidayHours: 16,
             sickLeaveHours: 0,
             publicHolidayHours: 0,
-            fd: 74.25, // Déductions (matches Excel 2024)
+            fd: 0, // Default to 0 - user can add manually
             ac: 0,
             ffo: 0,
             fds: 0,
