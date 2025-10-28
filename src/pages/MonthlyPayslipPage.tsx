@@ -621,7 +621,9 @@ export default function MonthlyPayslipPage() {
     // STEP 4: Total Cotisation
     const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-    // STEP 5: Calculate Total Imposable (subtract cotisations and deductions)
+    // STEP 5: Calculate Total Imposable (subtract ONLY tax-deductible cotisations and deductions)
+    // NOTE: Assurance Dépendance is NOT deducted here (not tax-deductible in Luxembourg)
+    // Formula: Total Brut - Assurance Maladie - Majoration Espèce - Assurance Pension - FD - AC - FFO - FDS
     const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
       (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
 
@@ -731,10 +733,11 @@ export default function MonthlyPayslipPage() {
       ? payslipData.manualTotalCotisation
       : assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
+    // Total Imposable: Only tax-deductible items are subtracted (Assurance Dépendance is NOT deductible)
     const totalImposable = payslipData.manualTotalImposable !== undefined
       ? payslipData.manualTotalImposable
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
-        payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
+        (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
 
     // Calculate tax using the stored tax rate percentage (immutable per payslip)
     const taxRateToUse = payslipData.taxRatePercentage || 21;
