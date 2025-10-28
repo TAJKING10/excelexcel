@@ -15,7 +15,7 @@ export const LUXEMBOURG_RATES = {
   },
   // Additional employee charges
   cis: 50, // Fixed CIS amount
-  cissm: 70, // Fixed CISSM amount (can vary)
+  cissm: 81, // Fixed CISSM amount (can vary) - matches Excel formula
 };
 
 /**
@@ -419,7 +419,8 @@ export function calculateMonthlyWithTaxRate(
 
   // STEP 4: Calculate tax credits - Updated to match Excel 2024
   // These are TAX CREDITS that reduce the tax amount, not deductions from gross
-  const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 70 : grossSalary >= 3600 ? 0 : 70 / 600 * (3600 - grossSalary);
+  // CISSM formula from Excel: IF(D20<1800,0,IF(D20<3000,81,IF(D20>3600,0,81/600*(3600-D20))))
+  const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 81 : grossSalary >= 3600 ? 0 : 81 / 600 * (3600 - grossSalary);
   const cisCipCim = grossSalary < 78 ? 0 : grossSalary < 936 ? ((300 + (grossSalary * 12 - 936) * 0.029) / 12) : grossSalary < 3333.33 ? 50 : grossSalary > 6666.5 ? 0 : ((600 - (grossSalary * 12 - 40000) * 0.015) / 12);
   const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 14 : grossSalary < 6667 ? (14 - (grossSalary - 3333.33) * 0.0042) : 0;
 

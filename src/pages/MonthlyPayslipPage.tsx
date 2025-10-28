@@ -334,7 +334,7 @@ export default function MonthlyPayslipPage() {
           const taxRateToUse = tempData.taxRatePercentage || 5.7;
           const calculatedImpot = totalImposable * (taxRateToUse / 100);
 
-          const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
+          const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
           const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
           const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
           const net = totalImposable - tempData.impot + cissm - cisCipCim - ciCo2;
@@ -452,6 +452,10 @@ export default function MonthlyPayslipPage() {
   useEffect(() => {
     if (!autoCalculate || !isEditMode) return; // Only auto-calculate in edit mode with auto-calculate ON
 
+    // IMPORTANT: Only run calculations when a field actually changed (lastChangedField is set)
+    // This prevents recalculation when just entering edit mode or toggling auto-calculate
+    if (!lastChangedField) return;
+
     // REVERSE CALCULATION: If user changed Total Cotisation, recalculate Total Brut
     if (lastChangedField === 'manualTotalCotisation' && payslipData.manualTotalCotisation !== undefined) {
       const targetTotalCotisation = payslipData.manualTotalCotisation;
@@ -476,11 +480,12 @@ export default function MonthlyPayslipPage() {
         ...prev,
         manualTotalBrut: totalBrut,
       }));
-      setLastChangedField('manualTotalBrut'); // Chain to recalculate inputs
+      setLastChangedField(null); // Clear to stop chain reaction
       return;
     }
 
-    // REVERSE CALCULATION: If user changed a calculated field (like Total Brut), recalculate inputs
+    // REVERSE CALCULATION: If user manually changed Total Brut field, recalculate inputs
+    // NOTE: Only do this if the user EXPLICITLY changed manualTotalBrut, not during auto-calculation
     if (lastChangedField === 'manualTotalBrut' && payslipData.manualTotalBrut !== undefined) {
       const newTotalBrut = payslipData.manualTotalBrut;
       const hoursWorked = payslipData.hoursWorked || 0;
@@ -497,7 +502,7 @@ export default function MonthlyPayslipPage() {
           hourlyRate: newHourlyRate,
         }));
       }
-      setLastChangedField(null); // Clear after processing
+      setLastChangedField(null); // Clear after processing to stop the chain
       return;
     }
 
@@ -514,7 +519,7 @@ export default function MonthlyPayslipPage() {
         ...prev,
         manualNet: newNet,
       }));
-      setLastChangedField('manualNet'); // Chain to next calculation
+      setLastChangedField(null); // Clear to stop chain reaction
       return;
     }
 
@@ -526,7 +531,7 @@ export default function MonthlyPayslipPage() {
       // Estimate totalBrut through iteration (since credits depend on totalBrut)
       let totalBrut = targetNet; // Initial guess
       for (let i = 0; i < 10; i++) {
-        const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
+        const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
         const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
         const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
 
@@ -536,9 +541,8 @@ export default function MonthlyPayslipPage() {
         const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
         const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-        // Calculate imposable for iteration
-        const iterImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension;
-        const calculatedNet = iterImposable - impot + cissm - cisCipCim - ciCo2;
+        // Calculate NET using Excel formula: BRUT - Total Cotisation - IMPÔT + Credits
+        const calculatedNet = totalBrut - totalCotisation - impot + cissm + cisCipCim + ciCo2;
         const diff = targetNet - calculatedNet;
 
         if (Math.abs(diff) < 0.01) break; // Close enough
@@ -549,7 +553,7 @@ export default function MonthlyPayslipPage() {
         ...prev,
         manualTotalBrut: totalBrut,
       }));
-      setLastChangedField('manualTotalBrut'); // Chain to recalculate inputs
+      setLastChangedField(null); // Clear to stop chain reaction
       return;
     }
 
@@ -567,7 +571,9 @@ export default function MonthlyPayslipPage() {
     const maladie = sickLeaveHours * hourlyRate;
 
     // STEP 2: Calculate Total Brut
-    const totalBrut = appointement + joursFeries + conges + maladie;
+    // NOTE: Matches calculatePayslip function - only appointement + joursFeries
+    // Congés and Maladie hours are tracked separately for leave balance, not added to salary
+    const totalBrut = appointement + joursFeries;
 
     // STEP 3: Calculate Cotisations (Social contributions)
     const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
@@ -579,23 +585,25 @@ export default function MonthlyPayslipPage() {
     const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
     // STEP 5: Calculate Tax Credits FIRST (needed for IMPOSABLE calculation)
-    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
+    // CISSM formula from Excel: IF(D20<1800,0,IF(D20<3000,81,IF(D20>3600,0,81/600*(3600-D20))))
+    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
     const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
     const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
 
-    // STEP 6: Calculate Total Imposable (Excel 2024 formula)
-    // IMPOSABLE = BRUT - MALADIE - PENSION - DÉDUCTIONS (CI-CO2 NOT subtracted here)
-    const totalImposable = totalBrut - assuranceMaladie - assurancePension -
-      (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
+    // STEP 6: Calculate Total Imposable
+    // Based on actual Excel output: 2790.18 = 3128 - 87.58 - 250.24
+    // IMPOSABLE = BRUT - MALADIE - PENSION (FD and Majoration are NOT subtracted here)
+    const totalImposable = totalBrut - assuranceMaladie - assurancePension;
 
-    // STEP 7: Calculate Tax (IMPÔT) using 5.7% rate
+    // STEP 7: Calculate Tax (IMPÔT) using tax rate percentage
     const taxRateToUse = payslipData.taxRatePercentage || 5.7;
     const calculatedImpot = totalImposable * (taxRateToUse / 100);
-    // STEP 7: Calculate NET (Excel 2024 formula)
-    // NET = Imposable - Impôt + CISSM - CIS - CI-CO2
-    const net = totalImposable - (payslipData.impot || 0) + cissm - cisCipCim - ciCo2;
 
-    // STEP 8: Calculate NET À PAYER (NET - other deductions)
+    // STEP 8: Calculate NET (Excel formula: D20 - D27 - D37 + D38 + D39 + D40)
+    // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2
+    const net = totalBrut - totalCotisation - (payslipData.impot || 0) + cissm + cisCipCim + ciCo2;
+
+    // STEP 9: Calculate NET À PAYER (NET - Chèque Repas - Avance Salaire)
     const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
 
     // Update ALL manual fields with calculated values
@@ -623,27 +631,9 @@ export default function MonthlyPayslipPage() {
     autoCalculate,
     isEditMode,
     lastChangedField,
-    // Watch ALL input fields that affect calculations
-    payslipData.hoursWorked,
-    payslipData.hourlyRate,
-    payslipData.publicHolidayHours,
-    payslipData.holidayHours,
-    payslipData.sickLeaveHours,
-    payslipData.fd,
-    payslipData.ac,
-    payslipData.ffo,
-    payslipData.fds,
-    payslipData.impot,
-    payslipData.chequeRepas,
-    payslipData.avanceSalaire,
-    payslipData.taxRatePercentage, // IMPORTANT: Watch tax rate to recalculate when it changes
-    // Also watch manual fields if user edits them directly
-    payslipData.manualAppointement,
-    payslipData.manualJoursFeries,
-    payslipData.manualTotalBrut,
-    payslipData.manualTotalCotisation,
-    payslipData.manualNet,
-    payslipData.manualNetAPayer,
+    // CRITICAL: DO NOT watch any payslipData fields here!
+    // Only react when lastChangedField is explicitly set by handleInputChange
+    // This prevents recalculation on every keystroke
   ]);
 
   const calculatePayslip = () => {
@@ -682,18 +672,17 @@ export default function MonthlyPayslipPage() {
       ? payslipData.manualTotalCotisation
       : assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-    // IMPOSABLE = BRUT - (MALADIE + PENSION + DÉDUCTIONS)
+    // IMPOSABLE = BRUT - MALADIE - PENSION (actual Excel behavior, no FD or Majoration)
     const totalImposable = payslipData.manualTotalImposable !== undefined
       ? payslipData.manualTotalImposable
-      : totalBrut - assuranceMaladie - assurancePension -
-        payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
+      : totalBrut - assuranceMaladie - assurancePension;
 
     // Calculate tax using the stored tax rate percentage (immutable per payslip)
     const taxRateToUse = payslipData.taxRatePercentage || 5.7;
     const calculatedImpot = totalImposable * (taxRateToUse / 100);
     const cissm = payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
-      : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 70 : totalBrut >= 3600 ? 0 : 70 / 600 * (3600 - totalBrut);
+      : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
 
     const cisCipCim = payslipData.manualCisCipCim !== undefined
       ? payslipData.manualCisCipCim
@@ -703,9 +692,10 @@ export default function MonthlyPayslipPage() {
       ? payslipData.manualCiCo2
       : totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
 
+    // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 (Excel formula)
     const net = payslipData.manualNet !== undefined
       ? payslipData.manualNet
-      : totalImposable - (payslipData.impot || 0) + cissm - cisCipCim - ciCo2;
+      : totalBrut - totalCotisation - (payslipData.impot || 0) + cissm + cisCipCim + ciCo2;
 
     const netAPayer = payslipData.manualNetAPayer !== undefined
       ? payslipData.manualNetAPayer
