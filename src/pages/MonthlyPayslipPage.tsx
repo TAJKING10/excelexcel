@@ -1620,14 +1620,48 @@ export default function MonthlyPayslipPage() {
                     <TableCell className="text-right text-muted-foreground">-</TableCell>
                     <TableCell className="text-right text-muted-foreground">-</TableCell>
                     <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
-                      <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} step="0.01" />
+                      {isEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={(payslipData[field as keyof PayslipData] as number).toFixed(2)}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            handleInputChange(field as keyof PayslipData, val);
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="h-9 w-full px-2 text-right font-medium"
+                        />
+                      ) : (
+                        <span>{(payslipData[field as keyof PayslipData] as number).toFixed(2)} €</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <EditableM1Value manualField={m1Field as keyof PayslipData} defaultValue={0} />
                     </TableCell>
                     <TableCell className="text-right bg-green-50/50 dark:bg-green-950/30">
                       {isEditMode ? (
-                        <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} step="0.01" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={(payslipData[field as keyof PayslipData] as number).toFixed(2)}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            handleInputChange(field as keyof PayslipData, val);
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="h-9 w-full px-2 text-right font-medium"
+                        />
                       ) : (
                         <span>{(payslipData[field as keyof PayslipData] as number).toFixed(2)} €</span>
                       )}
@@ -1661,14 +1695,48 @@ export default function MonthlyPayslipPage() {
                   <TableCell className="text-right text-muted-foreground">-</TableCell>
                   <TableCell className="text-right text-muted-foreground">-</TableCell>
                   <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
-                    <EditableInput field="impot" value={payslipData.impot} step="0.01" />
+                    {isEditMode ? (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={payslipData.impot.toFixed(2)}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          handleInputChange('impot', val);
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        className="h-9 w-full px-2 text-right font-medium"
+                      />
+                    ) : (
+                      <span>{payslipData.impot.toFixed(2)} €</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <EditableM1Value manualField="m1Impot" defaultValue={0} />
                   </TableCell>
                   <TableCell className="text-right bg-green-50/50 dark:bg-green-950/30">
                     {isEditMode ? (
-                      <EditableInput field="impot" value={payslipData.impot} step="0.01" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={payslipData.impot.toFixed(2)}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          handleInputChange('impot', val);
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        className="h-9 w-full px-2 text-right font-medium"
+                      />
                     ) : (
                       <span>{payslipData.impot.toFixed(2)} €</span>
                     )}
@@ -1724,7 +1792,26 @@ export default function MonthlyPayslipPage() {
                     <TableCell className="text-right py-2 px-2 text-muted-foreground">-</TableCell>
                     <TableCell className="text-right py-2 px-2 text-muted-foreground">-</TableCell>
                     <TableCell className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
-                      <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as number} step="0.01" className="h-6 w-20 text-right text-xs" />
+                      {isEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={(payslipData[field as keyof PayslipData] as number).toFixed(2)}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            handleInputChange(field as keyof PayslipData, val);
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="h-6 w-20 text-right text-xs"
+                        />
+                      ) : (
+                        <span>{(payslipData[field as keyof PayslipData] as number).toFixed(2)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right py-2 px-2">
                       {isEditMode ? (
