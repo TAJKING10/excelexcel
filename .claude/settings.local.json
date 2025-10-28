@@ -34,7 +34,8 @@
       "Bash(curl:*)",
       "Bash(dir:*)",
       "Bash(powershell -Command:*)",
-      "Bash(move remove-console.js remove-console.cjs)"
+      "Bash(move remove-console.js remove-console.cjs)",
+      "Bash(timeout 10 python:*)"
     ],
     "deny": [],
     "ask": []

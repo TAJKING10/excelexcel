@@ -20,6 +20,7 @@ import { TaxRateSelector } from '@/components/tax/TaxRateSelector';
 import { useTaxRatesStore } from '@/store/taxRatesStore';
 import { recordPayslipEdit } from '@/services/payslipEditHistory';
 import { PayslipHistoryButton } from '@/components/payslips/PayslipHistoryButton';
+import { calculateIncomeTax } from '@/lib/luxembourgPayroll';
 
 const MONTHS = [
   { value: 1, label: 'Janvier' },
@@ -331,8 +332,8 @@ export default function MonthlyPayslipPage() {
 
           // IMPOSABLE = BRUT - (MALADIE + PENSION + DÉDUCTIONS)
           const totalImposable = totalBrut - assuranceMaladie - assurancePension;
-          const taxRateToUse = tempData.taxRatePercentage || 5.7;
-          const calculatedImpot = totalImposable * (taxRateToUse / 100);
+          // Use Luxembourg 2025 barème based on employee's tax class
+          const calculatedImpot = calculateIncomeTax(totalImposable, employee?.taxClass || '1');
 
           const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
           const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
@@ -597,9 +598,12 @@ export default function MonthlyPayslipPage() {
     const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
       (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
 
-    // STEP 7: Calculate Tax (IMPÔT) using tax rate percentage
-    const taxRateToUse = payslipData.taxRatePercentage || 5.7;
-    const calculatedImpot = totalImposable * (taxRateToUse / 100);
+    // STEP 7: Calculate Tax (IMPÔT) using Luxembourg 2025 barème based on employee's tax class
+    const taxClassToUse = employee?.taxClass || '1';
+    console.log('[Auto-Calc] Using tax class:', taxClassToUse, 'for employee:', employee?.firstName, employee?.lastName);
+    console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
+    const calculatedImpot = calculateIncomeTax(totalImposable, taxClassToUse);
+    console.log('[Auto-Calc] Calculated IMPÔT:', calculatedImpot.toFixed(2));
 
     // STEP 8: Calculate NET (Excel formula: D20 - D27 - D37 + D38 + D39 + D40)
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2
@@ -611,8 +615,8 @@ export default function MonthlyPayslipPage() {
     // Update ALL manual fields with calculated values
     setPayslipData(prev => ({
       ...prev,
-      // Don't overwrite manual impot - user can set this manually to match Excel
-      // impot: calculatedImpot,
+      // Update IMPÔT using Luxembourg 2025 barème based on tax class
+      impot: calculatedImpot,
       manualAppointement: appointement,
       manualJoursFeries: joursFeries,
       manualTotalBrut: totalBrut,
@@ -680,9 +684,8 @@ export default function MonthlyPayslipPage() {
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
-    // Calculate tax using the stored tax rate percentage (immutable per payslip)
-    const taxRateToUse = payslipData.taxRatePercentage || 5.7;
-    const calculatedImpot = totalImposable * (taxRateToUse / 100);
+    // Calculate tax using Luxembourg 2025 barème based on employee's tax class
+    const calculatedImpot = calculateIncomeTax(totalImposable, employee?.taxClass || '1');
     const cissm = payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
       : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
@@ -1807,8 +1810,8 @@ export default function MonthlyPayslipPage() {
               ['Salaire mensuel', `${calculated.totalBrut.toFixed(2)} €`],
               ['Heures', payslipData.hoursWorked.toString()],
               ['Salaire horaire', `${payslipData.hourlyRate.toFixed(4)} €`],
-              ['N° de carte', 'D608388-2022'],
-              ['Classe', '1'],
+              ['N° de carte', person?.identityNumber || 'D608388-2022'],
+              ['Classe d\'impôt', employee?.taxClass || '1'],
               ['Taux', '-'],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">

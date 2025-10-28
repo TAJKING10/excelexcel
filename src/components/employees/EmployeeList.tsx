@@ -60,6 +60,7 @@ export function EmployeeList() {
     lastName: '',
     email: '',
     class: '',
+    taxClass: '1', // Tax class for Luxembourg payroll (1, 1A, or 2)
     hireDate: '',
     terminationDate: '',
     baseSalary: '',
@@ -126,6 +127,7 @@ export function EmployeeList() {
       lastName: '',
       email: '',
       class: '',
+      taxClass: '1',
       hireDate: '',
       terminationDate: '',
       baseSalary: '',
@@ -157,7 +159,7 @@ export function EmployeeList() {
         email: formData.email,
         matricule: '', // Add default or make it required
         class: formData.class,
-        taxClass: '2', // Add default
+        taxClass: formData.taxClass, // Use tax class from form
         hireDate: formData.hireDate,
         terminationDate: formData.terminationDate || null,
         baseSalary: parseFloat(formData.baseSalary),
@@ -188,6 +190,7 @@ export function EmployeeList() {
       lastName: employee.lastName,
       email: employee.email,
       class: employee.class,
+      taxClass: employee.taxClass || '1', // Default to Class 1 if not set
       hireDate: employee.hireDate,
       terminationDate: employee.terminationDate || '',
       baseSalary: employee.baseSalary.toString(),
@@ -219,6 +222,7 @@ export function EmployeeList() {
         lastName: formData.lastName,
         email: formData.email,
         class: formData.class,
+        taxClass: formData.taxClass,
         hireDate: formData.hireDate,
         terminationDate: formData.terminationDate || null,
         baseSalary: parseFloat(formData.baseSalary),
@@ -545,6 +549,22 @@ export function EmployeeList() {
                 onChange={(e) => setFormData({ ...formData, class: e.target.value })}
                 placeholder={t('employees.classPlaceholder')}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-taxClass">Tax Class (Luxembourg) *</Label>
+              <Select
+                value={formData.taxClass}
+                onValueChange={(value) => setFormData({ ...formData, taxClass: value })}
+              >
+                <SelectTrigger id="add-taxClass">
+                  <SelectValue placeholder="Select tax class" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Class 1 - Single</SelectItem>
+                  <SelectItem value="1A">Class 1A - Single with children</SelectItem>
+                  <SelectItem value="2">Class 2 - Married/Partnership</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="add-baseSalary">{t('employees.baseSalary')} *</Label>

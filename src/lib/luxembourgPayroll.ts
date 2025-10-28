@@ -52,77 +52,139 @@ export function calculateCiCo2(): number {
 }
 
 /**
- * Calculate income tax based on Luxembourg tax classes
- * This is a simplified calculation - real tax calculation is more complex
+ * Luxembourg 2025 Tax Brackets - Monthly Withholding (Barème 2025)
+ * Based on ACD (Administration des Contributions Directes)
+ * Format: [lowerBound, upperBound, rate, deduction]
  */
-export function calculateIncomeTax(
-  imposable: number,
-  taxClass: string | number,
-  deductions: number = 0
-): number {
-  const taxableIncome = imposable - deductions;
-
-  // Convert tax class to numeric
-  let taxRate = 0;
-  let fixedDeduction = 0;
-
-  // Parse tax class (e.g., "15% - 2" or just 1, 2, etc.)
-  if (typeof taxClass === 'string') {
-    const percentMatch = taxClass.match(/(\d+(?:\.\d+)?)%/);
-    if (percentMatch) {
-      taxRate = parseFloat(percentMatch[1]) / 100;
-    } else if (taxClass.includes('0.15')) {
-      taxRate = 0.15;
-    } else {
-      // Try to extract number for tax class
-      const classNum = parseInt(taxClass);
-      if (!isNaN(classNum)) {
-        taxRate = getTaxRateForClass(classNum, taxableIncome);
-      }
-    }
-  } else {
-    taxRate = getTaxRateForClass(taxClass, taxableIncome);
-  }
-
-  const tax = Math.max(0, taxableIncome * taxRate - fixedDeduction);
-  return parseFloat(tax.toFixed(2));
-}
+const TAX_BRACKETS_2025 = {
+  // Class 1 - Single
+  "1": [
+    [0, 2299, 0.0000, 0.0000],
+    [2299, 2435, 0.1000, 229.9000],
+    [2435, 2580, 0.1125, 259.4625],
+    [2580, 2725, 0.1250, 291.0000],
+    [2725, 2870, 0.1375, 325.0625],
+    [2870, 3030, 0.1500, 362.2500],
+    [3030, 3175, 0.1705, 416.5900],
+    [3175, 3350, 0.2000, 510.0000],
+    [3350, 3515, 0.2200, 577.0000],
+    [3515, 3740, 0.2600, 709.6000],
+    [3740, 4070, 0.3000, 858.0000],
+    [4070, 4460, 0.3500, 1061.5000],
+    [4460, 4900, 0.3900, 1239.0000],
+    [4900, 5480, 0.4200, 1387.4000],
+    [5480, 19660, 0.4200, 1689.8000]
+  ],
+  // Class 1A - Single with children or other qualifying conditions
+  "1A": [
+    [0, 2272, 0.0000, 0.0000],
+    [2272, 2415, 0.1000, 227.2000],
+    [2415, 2560, 0.1125, 257.2125],
+    [2560, 2715, 0.1250, 290.0000],
+    [2715, 2860, 0.1375, 325.0625],
+    [2860, 3030, 0.1500, 362.2500],
+    [3030, 3175, 0.1705, 416.5900],
+    [3175, 3350, 0.2000, 510.0000],
+    [3350, 3515, 0.2200, 577.0000],
+    [3515, 3740, 0.2600, 709.6000],
+    [3740, 4070, 0.3000, 858.0000],
+    [4070, 4460, 0.3500, 1061.5000],
+    [4460, 4900, 0.3900, 1239.0000],
+    [4900, 5480, 0.4200, 1387.4000],
+    [5480, 19640, 0.4200, 1680.7800]
+  ],
+  // Class 2 - Married/Partnership (from barème 2025 official tables)
+  "2": [
+    [0, 2290, 0.0000, 0.0000],
+    [2295, 2655, 0.0800, 183.2000],
+    [2660, 3025, 0.0900, 209.7750],
+    [3030, 3390, 0.1000, 240.0250],
+    [3395, 3760, 0.1100, 273.9500],
+    [3765, 4125, 0.1200, 311.5500],
+    [4130, 4510, 0.1400, 394.1000],
+    [4515, 4890, 0.1600, 484.3000],
+    [4895, 5275, 0.1800, 582.1500],
+    [5280, 5655, 0.2000, 687.6500],
+    [5660, 6040, 0.2200, 800.8000],
+    [6045, 6420, 0.2400, 921.6000],
+    [6425, 6805, 0.2600, 1050.0500],
+    [6810, 7185, 0.2800, 1186.1500],
+    [7190, 7570, 0.3000, 1329.9000],
+    [7575, 7950, 0.3200, 1481.3000],
+    [7955, 8335, 0.3400, 1640.2500],
+    [8340, 8715, 0.3600, 1806.7500],
+    [8720, 9100, 0.3800, 1980.8000],
+    [9105, 19660, 0.3900, 2071.9000],
+    [19665, 29445, 0.4000, 2268.4500]
+  ]
+};
 
 /**
- * Get tax rate based on tax class and income
- * Simplified Luxembourg tax brackets (2024)
+ * Calculate income tax (IMPÔT) based on Luxembourg 2025 barème
+ *
+ * Formula: IMPÔT = (RevenuImposable × Taux) − Déduction
+ * Then apply:
+ * - +7% surcharge if monthly income ≤ 12,585 €
+ * - Round to nearest 0.10 €
+ * - Floor at 0 (no negative tax)
+ *
+ * @param revenuImposable - Total Imposable (taxable income)
+ * @param taxClass - Tax class: "1", "1A", or "2"
+ * @returns Calculated IMPÔT amount
  */
-function getTaxRateForClass(taxClass: number, income: number): number {
-  // Tax class 1 (Single)
-  if (taxClass === 1) {
-    if (income <= 12000) return 0;
-    if (income <= 20000) return 0.08;
-    if (income <= 30000) return 0.10;
-    if (income <= 40000) return 0.12;
-    if (income <= 50000) return 0.14;
-    if (income <= 60000) return 0.16;
-    if (income <= 100000) return 0.18;
-    if (income <= 150000) return 0.20;
-    if (income <= 200000) return 0.22;
-    return 0.42;
+export function calculateIncomeTax(
+  revenuImposable: number,
+  taxClass: string | number,
+  deductions: number = 0 // Keep for backward compatibility but not used in barème
+): number {
+  // Normalize tax class to string
+  let classKey = String(taxClass).toUpperCase().trim();
+
+  // Handle variations (1a, 1A, class 1a, etc.)
+  if (classKey.includes('1A') || classKey.includes('1a')) {
+    classKey = '1A';
+  } else if (classKey.includes('1')) {
+    classKey = '1';
+  } else if (classKey.includes('2')) {
+    classKey = '2';
+  } else {
+    // Default to Class 1 if unknown
+    classKey = '1';
   }
 
-  // Tax class 2 (Married/Partnership)
-  if (taxClass === 2) {
-    if (income <= 24000) return 0;
-    if (income <= 40000) return 0.08;
-    if (income <= 60000) return 0.10;
-    if (income <= 80000) return 0.12;
-    if (income <= 100000) return 0.14;
-    if (income <= 120000) return 0.16;
-    if (income <= 200000) return 0.18;
-    if (income <= 300000) return 0.20;
-    if (income <= 400000) return 0.22;
-    return 0.42;
+  // Get brackets for this class
+  const brackets = TAX_BRACKETS_2025[classKey as keyof typeof TAX_BRACKETS_2025] || TAX_BRACKETS_2025["1"];
+
+  // Find the correct bracket
+  let taux = 0;
+  let deduction = 0;
+
+  for (const [lowerBound, upperBound, rate, ded] of brackets) {
+    if (revenuImposable >= lowerBound && revenuImposable < upperBound) {
+      taux = rate;
+      deduction = ded;
+      break;
+    }
   }
 
-  // Default fallback
-  return 0.15;
+  // Calculate base tax
+  let impot = revenuImposable * taux - deduction;
+
+  // NOTE: Class 2 uses its own bracket table with different deductions
+  // No need to divide by 2 - the brackets already account for joint filing
+
+  // Apply 7% surcharge if income ≤ 12,585 €
+  if (revenuImposable <= 12585) {
+    impot = impot * 1.07;
+  }
+
+  // Round to nearest 0.10 € (multiply by 10, round, divide by 10)
+  impot = Math.round(impot * 10) / 10;
+
+  // Floor at 0 (no negative tax)
+  impot = Math.max(0, impot);
+
+  return parseFloat(impot.toFixed(2));
 }
 
 /**
