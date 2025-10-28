@@ -336,7 +336,7 @@ export default function MonthlyPayslipPage() {
 
           const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
           const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-          const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
+          const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
           const net = totalImposable - tempData.impot + cissm - cisCipCim - ciCo2;
           const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire;
 
@@ -533,7 +533,7 @@ export default function MonthlyPayslipPage() {
       for (let i = 0; i < 10; i++) {
         const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
         const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-        const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
+        const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
 
         const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
         const majorationEspece = totalBrut * RATES.majoration;
@@ -588,7 +588,7 @@ export default function MonthlyPayslipPage() {
     // CISSM formula from Excel: IF(D20<1800,0,IF(D20<3000,81,IF(D20>3600,0,81/600*(3600-D20))))
     const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
     const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
+    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
 
     // STEP 6: Calculate Total Imposable (Luxembourg formula from your guide)
     // Excel formula: D20-D23-D24-D25-D30-D31-D32-D33

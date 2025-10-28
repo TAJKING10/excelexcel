@@ -422,7 +422,7 @@ export function calculateMonthlyWithTaxRate(
   // CISSM formula from Excel: IF(D20<1800,0,IF(D20<3000,81,IF(D20>3600,0,81/600*(3600-D20))))
   const cissm = grossSalary < 1800 ? 0 : grossSalary <= 3000 ? 81 : grossSalary >= 3600 ? 0 : 81 / 600 * (3600 - grossSalary);
   const cisCipCim = grossSalary < 78 ? 0 : grossSalary < 936 ? ((300 + (grossSalary * 12 - 936) * 0.029) / 12) : grossSalary < 3333.33 ? 50 : grossSalary > 6666.5 ? 0 : ((600 - (grossSalary * 12 - 40000) * 0.015) / 12);
-  const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 14 : grossSalary < 6667 ? (14 - (grossSalary - 3333.33) * 0.0042) : 0;
+  const ciCo2 = grossSalary < 78 ? 0 : grossSalary < 3333.33 ? 16 : grossSalary < 6667 ? (16 - (grossSalary - 3333.33) * 0.0042) : 0;
 
   // STEP 5: Calculate final tax after credits
   const finalTax = Math.max(0, calculatedImpot - cisCipCim - ciCo2 - cissm);
