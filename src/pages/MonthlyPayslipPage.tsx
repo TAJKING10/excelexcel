@@ -963,25 +963,41 @@ export default function MonthlyPayslipPage() {
   }, [hasUnsavedChanges]);
 
   // Component for editable calculated value - ALWAYS editable in edit mode (even with autocalculate ON)
-  const EditableValue = React.useCallback(({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
+  const EditableValue = ({ value, manualField, className = "" }: { value: number; manualField: keyof PayslipData; className?: string }) => {
+    const storedValue = payslipData[manualField] !== undefined ? (payslipData[manualField] as number) : value;
+    const [localValue, setLocalValue] = React.useState<string>(String(storedValue || ''));
+    const [isFocused, setIsFocused] = React.useState(false);
+
+    // Update local value when prop changes, but only if not focused
+    React.useEffect(() => {
+      if (!isFocused) {
+        setLocalValue(String(storedValue || ''));
+      }
+    }, [storedValue, isFocused]);
+
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
       return <span className={className}>{(value || 0).toFixed(2)} €</span>;
     }
 
-    // In edit mode, ALWAYS show as editable input field (autocalculate will handle updates)
-    const storedValue = payslipData[manualField] !== undefined ? (payslipData[manualField] as number) : value;
-
     return (
       <Input
         type="number"
         step="0.01"
-        value={(storedValue || 0).toFixed(2)}
+        value={localValue}
         onChange={(e) => {
-          const val = parseFloat(e.target.value) || 0;
-          handleInputChange(manualField, val);
+          setLocalValue(e.target.value);
         }}
-        onFocus={(e) => e.target.select()}
+        onFocus={(e) => {
+          setIsFocused(true);
+          e.target.select();
+        }}
+        onBlur={(e) => {
+          setIsFocused(false);
+          // Convert to number and save
+          const numVal = parseFloat(e.target.value) || 0;
+          handleInputChange(manualField, numVal);
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.currentTarget.blur();
@@ -990,10 +1006,20 @@ export default function MonthlyPayslipPage() {
         className={`h-9 w-full px-2 text-right font-medium ${className} ${autoCalculate ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700' : ''}`}
       />
     );
-  }, [isEditMode, autoCalculate, payslipData, handleInputChange]);
+  };
 
   // Component for editable input fields (hours, rates)
-  const EditableInput = React.useCallback(({ field, value, type = "number", step = "1", className = "" }: { field: keyof PayslipData; value: number | string; type?: string; step?: string; className?: string }) => {
+  const EditableInput = ({ field, value, type = "number", step = "1", className = "" }: { field: keyof PayslipData; value: number | string; type?: string; step?: string; className?: string }) => {
+    const [localValue, setLocalValue] = React.useState<string>(String(value || ''));
+    const [isFocused, setIsFocused] = React.useState(false);
+
+    // Update local value when prop changes, but only if not focused
+    React.useEffect(() => {
+      if (!isFocused) {
+        setLocalValue(String(value || ''));
+      }
+    }, [value, isFocused]);
+
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
       return <span className="inline-block text-right px-2 py-1 font-medium">{value}</span>;
@@ -1003,12 +1029,24 @@ export default function MonthlyPayslipPage() {
       <Input
         type={type}
         step={step}
-        value={value}
+        value={localValue}
         onChange={(e) => {
-          const val = type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value;
-          handleInputChange(field, val);
+          setLocalValue(e.target.value);
         }}
-        onFocus={(e) => e.target.select()}
+        onFocus={(e) => {
+          setIsFocused(true);
+          e.target.select();
+        }}
+        onBlur={(e) => {
+          setIsFocused(false);
+          // Convert to number and save
+          if (type === "number") {
+            const numVal = parseFloat(e.target.value) || 0;
+            handleInputChange(field, numVal);
+          } else {
+            handleInputChange(field, e.target.value);
+          }
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.currentTarget.blur();
@@ -1017,29 +1055,45 @@ export default function MonthlyPayslipPage() {
         className={`h-9 w-full px-2 text-right font-medium ${className}`}
       />
     );
-  }, [isEditMode, handleInputChange]);
+  };
 
   // Component for editable M-1 (previous month) values
-  const EditableM1Value = React.useCallback(({ manualField, defaultValue = 0, className = "" }: { manualField: keyof PayslipData; defaultValue?: number; className?: string }) => {
+  const EditableM1Value = ({ manualField, defaultValue = 0, className = "" }: { manualField: keyof PayslipData; defaultValue?: number; className?: string }) => {
+    const storedValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
+    const [localValue, setLocalValue] = React.useState<string>(String(storedValue || ''));
+    const [isFocused, setIsFocused] = React.useState(false);
+
+    // Update local value when prop changes, but only if not focused
+    React.useEffect(() => {
+      if (!isFocused) {
+        setLocalValue(String(storedValue || ''));
+      }
+    }, [storedValue, isFocused]);
+
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
       const displayValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
       return <span className={className}>{(displayValue || 0).toFixed(2)} €</span>;
     }
 
-    // In edit mode, show as editable input field
-    const storedValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
-
     return (
       <Input
         type="number"
         step="0.01"
-        value={(storedValue || 0).toFixed(2)}
+        value={localValue}
         onChange={(e) => {
-          const val = parseFloat(e.target.value) || 0;
-          handleInputChange(manualField, val);
+          setLocalValue(e.target.value);
         }}
-        onFocus={(e) => e.target.select()}
+        onFocus={(e) => {
+          setIsFocused(true);
+          e.target.select();
+        }}
+        onBlur={(e) => {
+          setIsFocused(false);
+          // Convert to number and save
+          const numVal = parseFloat(e.target.value) || 0;
+          handleInputChange(manualField, numVal);
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.currentTarget.blur();
@@ -1048,7 +1102,7 @@ export default function MonthlyPayslipPage() {
         className={`h-9 w-full px-2 text-right font-medium ${className}`}
       />
     );
-  }, [isEditMode, autoCalculate, payslipData]);
+  };
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
