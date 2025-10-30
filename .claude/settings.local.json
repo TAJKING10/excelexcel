@@ -36,7 +36,9 @@
       "Bash(powershell -Command:*)",
       "Bash(move remove-console.js remove-console.cjs)",
       "Bash(timeout 10 python:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "WebSearch",
+      "WebFetch(domain:impotsdirects.public.lu)"
     ],
     "deny": [],
     "ask": []
