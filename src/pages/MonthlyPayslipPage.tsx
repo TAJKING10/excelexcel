@@ -796,6 +796,15 @@ export default function MonthlyPayslipPage() {
   const handleSave = async () => {
     if (!personId) return;
 
+    // Force all input fields to blur and save their values before saving
+    // This ensures any focused inputs get their values committed
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    // Give a small delay to ensure blur events complete
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     setIsSaving(true);
     try {
       const isEmployee = !!employeeId;
@@ -807,6 +816,14 @@ export default function MonthlyPayslipPage() {
       } else if (company) {
         companyIdToSave = company.id;
       }
+
+      // Helper function to ensure numeric values
+      const ensureNumber = (val: any): number => {
+        if (typeof val === 'string') {
+          return parseFloat(val) || 0;
+        }
+        return typeof val === 'number' ? val : 0;
+      };
 
       // Prepare the data to save
       const dataToSave = {
@@ -824,53 +841,53 @@ export default function MonthlyPayslipPage() {
         dateEntree: payslipData.dateEntree,
         matriculeAssure: payslipData.matriculeAssure,
         matriculeEmployeur: payslipData.matriculeEmployeur,
-        hoursWorked: payslipData.hoursWorked,
-        hourlyRate: payslipData.hourlyRate,
-        holidayHours: payslipData.holidayHours,
-        sickLeaveHours: payslipData.sickLeaveHours,
-        publicHolidayHours: payslipData.publicHolidayHours,
-        fd: payslipData.fd,
-        ac: payslipData.ac,
-        ffo: payslipData.ffo,
-        fds: payslipData.fds,
-        impot: payslipData.impot,
-        chequeRepas: payslipData.chequeRepas,
-        avanceSalaire: payslipData.avanceSalaire,
-        legalLeave: payslipData.legalLeave,
-        leaveReport: payslipData.leaveReport,
-        leaveTaken: payslipData.leaveTaken,
-        manualAppointement: payslipData.manualAppointement,
-        manualJoursFeries: payslipData.manualJoursFeries,
-        manualTotalBrut: payslipData.manualTotalBrut,
-        manualAssuranceMaladie: payslipData.manualAssuranceMaladie,
-        manualMajoration: payslipData.manualMajoration,
-        manualAssurancePension: payslipData.manualAssurancePension,
-        manualAssuranceDependance: payslipData.manualAssuranceDependance,
-        manualTotalCotisation: payslipData.manualTotalCotisation,
-        manualTotalImposable: payslipData.manualTotalImposable,
-        manualCissm: payslipData.manualCissm,
-        manualCisCipCim: payslipData.manualCisCipCim,
-        manualCiCo2: payslipData.manualCiCo2,
-        manualNet: payslipData.manualNet,
-        manualNetAPayer: payslipData.manualNetAPayer,
-        m1Appointement: payslipData.m1Appointement,
-        m1JoursFeries: payslipData.m1JoursFeries,
-        m1TotalBrut: payslipData.m1TotalBrut,
-        m1AssuranceMaladie: payslipData.m1AssuranceMaladie,
-        m1Majoration: payslipData.m1Majoration,
-        m1AssurancePension: payslipData.m1AssurancePension,
-        m1AssuranceDependance: payslipData.m1AssuranceDependance,
-        m1TotalCotisation: payslipData.m1TotalCotisation,
-        m1Fd: payslipData.m1FD,
-        m1Ac: payslipData.m1AC,
-        m1Ffo: payslipData.m1FFO,
-        m1Fds: payslipData.m1FDS,
-        m1TotalImposable: payslipData.m1TotalImposable,
-        m1Impot: payslipData.m1Impot,
-        m1Cissm: payslipData.m1Cissm,
-        m1CisCipCim: payslipData.m1CisCipCim,
-        m1CiCo2: payslipData.m1CiCo2,
-        m1Net: payslipData.m1Net,
+        hoursWorked: ensureNumber(payslipData.hoursWorked),
+        hourlyRate: ensureNumber(payslipData.hourlyRate),
+        holidayHours: ensureNumber(payslipData.holidayHours),
+        sickLeaveHours: ensureNumber(payslipData.sickLeaveHours),
+        publicHolidayHours: ensureNumber(payslipData.publicHolidayHours),
+        fd: ensureNumber(payslipData.fd),
+        ac: ensureNumber(payslipData.ac),
+        ffo: ensureNumber(payslipData.ffo),
+        fds: ensureNumber(payslipData.fds),
+        impot: ensureNumber(payslipData.impot),
+        chequeRepas: ensureNumber(payslipData.chequeRepas),
+        avanceSalaire: ensureNumber(payslipData.avanceSalaire),
+        legalLeave: ensureNumber(payslipData.legalLeave),
+        leaveReport: ensureNumber(payslipData.leaveReport),
+        leaveTaken: ensureNumber(payslipData.leaveTaken),
+        manualAppointement: payslipData.manualAppointement !== undefined ? ensureNumber(payslipData.manualAppointement) : undefined,
+        manualJoursFeries: payslipData.manualJoursFeries !== undefined ? ensureNumber(payslipData.manualJoursFeries) : undefined,
+        manualTotalBrut: payslipData.manualTotalBrut !== undefined ? ensureNumber(payslipData.manualTotalBrut) : undefined,
+        manualAssuranceMaladie: payslipData.manualAssuranceMaladie !== undefined ? ensureNumber(payslipData.manualAssuranceMaladie) : undefined,
+        manualMajoration: payslipData.manualMajoration !== undefined ? ensureNumber(payslipData.manualMajoration) : undefined,
+        manualAssurancePension: payslipData.manualAssurancePension !== undefined ? ensureNumber(payslipData.manualAssurancePension) : undefined,
+        manualAssuranceDependance: payslipData.manualAssuranceDependance !== undefined ? ensureNumber(payslipData.manualAssuranceDependance) : undefined,
+        manualTotalCotisation: payslipData.manualTotalCotisation !== undefined ? ensureNumber(payslipData.manualTotalCotisation) : undefined,
+        manualTotalImposable: payslipData.manualTotalImposable !== undefined ? ensureNumber(payslipData.manualTotalImposable) : undefined,
+        manualCissm: payslipData.manualCissm !== undefined ? ensureNumber(payslipData.manualCissm) : undefined,
+        manualCisCipCim: payslipData.manualCisCipCim !== undefined ? ensureNumber(payslipData.manualCisCipCim) : undefined,
+        manualCiCo2: payslipData.manualCiCo2 !== undefined ? ensureNumber(payslipData.manualCiCo2) : undefined,
+        manualNet: payslipData.manualNet !== undefined ? ensureNumber(payslipData.manualNet) : undefined,
+        manualNetAPayer: payslipData.manualNetAPayer !== undefined ? ensureNumber(payslipData.manualNetAPayer) : undefined,
+        m1Appointement: payslipData.m1Appointement !== undefined ? ensureNumber(payslipData.m1Appointement) : undefined,
+        m1JoursFeries: payslipData.m1JoursFeries !== undefined ? ensureNumber(payslipData.m1JoursFeries) : undefined,
+        m1TotalBrut: payslipData.m1TotalBrut !== undefined ? ensureNumber(payslipData.m1TotalBrut) : undefined,
+        m1AssuranceMaladie: payslipData.m1AssuranceMaladie !== undefined ? ensureNumber(payslipData.m1AssuranceMaladie) : undefined,
+        m1Majoration: payslipData.m1Majoration !== undefined ? ensureNumber(payslipData.m1Majoration) : undefined,
+        m1AssurancePension: payslipData.m1AssurancePension !== undefined ? ensureNumber(payslipData.m1AssurancePension) : undefined,
+        m1AssuranceDependance: payslipData.m1AssuranceDependance !== undefined ? ensureNumber(payslipData.m1AssuranceDependance) : undefined,
+        m1TotalCotisation: payslipData.m1TotalCotisation !== undefined ? ensureNumber(payslipData.m1TotalCotisation) : undefined,
+        m1Fd: payslipData.m1FD !== undefined ? ensureNumber(payslipData.m1FD) : undefined,
+        m1Ac: payslipData.m1AC !== undefined ? ensureNumber(payslipData.m1AC) : undefined,
+        m1Ffo: payslipData.m1FFO !== undefined ? ensureNumber(payslipData.m1FFO) : undefined,
+        m1Fds: payslipData.m1FDS !== undefined ? ensureNumber(payslipData.m1FDS) : undefined,
+        m1TotalImposable: payslipData.m1TotalImposable !== undefined ? ensureNumber(payslipData.m1TotalImposable) : undefined,
+        m1Impot: payslipData.m1Impot !== undefined ? ensureNumber(payslipData.m1Impot) : undefined,
+        m1Cissm: payslipData.m1Cissm !== undefined ? ensureNumber(payslipData.m1Cissm) : undefined,
+        m1CisCipCim: payslipData.m1CisCipCim !== undefined ? ensureNumber(payslipData.m1CisCipCim) : undefined,
+        m1CiCo2: payslipData.m1CiCo2 !== undefined ? ensureNumber(payslipData.m1CiCo2) : undefined,
+        m1Net: payslipData.m1Net !== undefined ? ensureNumber(payslipData.m1Net) : undefined,
       };
       // Save to Supabase
       const savedPayslip = await monthlyPayslipService.save(dataToSave);
