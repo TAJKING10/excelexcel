@@ -530,6 +530,58 @@ export default function MonthlyPayslipPage() {
       return;
     }
 
+    // FORWARD CALCULATION: If user manually changed chequeRepas or avanceSalaire, only recalculate NET À PAYER
+    if (lastChangedField === 'chequeRepas' || lastChangedField === 'avanceSalaire') {
+      const net = payslipData.manualNet !== undefined
+        ? payslipData.manualNet
+        : calculated.net;
+
+      const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
+
+      setPayslipData(prev => ({
+        ...prev,
+        manualNetAPayer: netAPayer,
+      }));
+      setLastChangedField(null);
+      return;
+    }
+
+    // FORWARD CALCULATION: If user manually changed IMPÔT, recalculate NET and NET À PAYER
+    if (lastChangedField === 'impot') {
+      const hoursWorked = payslipData.hoursWorked || 0;
+      const hourlyRate = payslipData.hourlyRate || 0;
+      const publicHolidayHours = payslipData.publicHolidayHours || 0;
+
+      const appointement = hoursWorked * hourlyRate;
+      const joursFeries = publicHolidayHours * hourlyRate;
+      const totalBrut = appointement + joursFeries;
+
+      const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+      const majorationEspece = totalBrut * RATES.majoration;
+      const assurancePension = totalBrut * RATES.assurancePension;
+      const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+      const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
+
+      const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+      const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
+      const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+
+      // Use the manually entered impot value
+      const manualImpot = payslipData.impot || 0;
+
+      // Calculate NET using the manual IMPÔT
+      const net = totalBrut - totalCotisation - manualImpot + cissm + cisCipCim + ciCo2;
+      const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
+
+      setPayslipData(prev => ({
+        ...prev,
+        manualNet: net,
+        manualNetAPayer: netAPayer,
+      }));
+      setLastChangedField(null); // Clear to stop chain reaction
+      return;
+    }
+
     // REVERSE CALCULATION: If user changed NET, work backward to Total Brut
     if (lastChangedField === 'manualNet' && payslipData.manualNet !== undefined) {
       const targetNet = payslipData.manualNet;
