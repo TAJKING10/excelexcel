@@ -287,6 +287,15 @@ export function CreateAnnualPayslip() {
       [field]: numValue,
     };
 
+    // If deductions, maladie, or pension change, recalculate imposable
+    if (field === 'deductions' || field === 'maladie' || field === 'pension') {
+      const month = newMonthsData[monthIndex];
+      // Imposable = Cotisable - Maladie - Pension - Deductions
+      // Note: CI-CO2 is NOT deducted from imposable
+      const newImposable = month.cotisable - month.maladie - month.pension - month.deductions;
+      newMonthsData[monthIndex].imposable = parseFloat(newImposable.toFixed(2));
+    }
+
     // If auto-calc is on and remuneration base, gross, or tax class changes, recalculate everything
     if (autoCalc && (field === 'remunerationBase' || field === 'taxClass' || field === 'grossMonthly')) {
       const remunerationBase = field === 'remunerationBase' ? numValue : newMonthsData[monthIndex].remunerationBase;

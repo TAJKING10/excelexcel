@@ -33,8 +33,8 @@ export function calculateMaladie(cotisable: number, customFormula?: string): num
       // Fall back to default
     }
   }
-  // Default: use a percentage (this should be configured per employee)
-  return parseFloat((cotisable * 0.03).toFixed(2));
+  // Default: Assurance Maladie (2.80%) + Majoration Espèce (0.25%) = 3.05%
+  return parseFloat((cotisable * 0.0305).toFixed(2));
 }
 
 /**
@@ -571,8 +571,9 @@ export function calculateMonthlyWithTaxClass(
   const ciCo2 = calculateCiCo2();
 
   // STEP 2: Calculate imposable (taxable income)
-  // IMPOSABLE = COTISABLE - MALADIE - PENSION - CI-CO2 - DEDUCTIONS
-  const imposable = grossSalary - maladie - pension - ciCo2 - additionalDeductions;
+  // IMPOSABLE = COTISABLE - MALADIE - PENSION - DEDUCTIONS
+  // Note: CI-CO2 is NOT deducted from imposable
+  const imposable = grossSalary - maladie - pension - additionalDeductions;
 
   // STEP 3: Calculate earnings with proper imposable
   const earnings: Earnings = {
