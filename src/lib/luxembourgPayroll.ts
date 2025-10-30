@@ -229,8 +229,8 @@ export function calculateEmployeeContributions(
   const cissm = LUXEMBOURG_RATES.cissm;
   const deductions = additionalDeductions;
 
-  const imposable = earnings.imposable - maladie - pension - ciCo2 - deductions;
-  const incomeTax = calculateIncomeTax(imposable, taxClass, deductions);
+  // Use the already calculated imposable from earnings (which already has deductions subtracted)
+  const incomeTax = calculateIncomeTax(earnings.imposable, taxClass, deductions);
 
   const total = maladie + pension + ciCo2 + cis + cissm + deductions + incomeTax;
 
@@ -481,6 +481,7 @@ const RATES = {
 /**
  * Calculate monthly payslip with date-based tax rate
  * This matches the logic in MonthlyPayslipPage.tsx
+ * @deprecated Use calculateMonthlyWithTaxClass instead for proper tax calculation
  */
 export function calculateMonthlyWithTaxRate(
   grossSalary: number,
@@ -555,6 +556,49 @@ export function calculateMonthlyWithTaxRate(
   };
 }
 
+/**
+ * Calculate monthly payslip with proper tax class calculation
+ * Uses Luxembourg 2025 tax brackets for accurate tax calculation
+ */
+export function calculateMonthlyWithTaxClass(
+  grossSalary: number,
+  taxClass: string | number,
+  additionalDeductions: number = 0
+): PayslipCalculationResult {
+  // STEP 1: Calculate social contributions first
+  const maladie = calculateMaladie(grossSalary);
+  const pension = calculatePension(grossSalary);
+  const ciCo2 = calculateCiCo2();
+
+  // STEP 2: Calculate imposable (taxable income)
+  // IMPOSABLE = COTISABLE - MALADIE - PENSION - CI-CO2 - DEDUCTIONS
+  const imposable = grossSalary - maladie - pension - ciCo2 - additionalDeductions;
+
+  // STEP 3: Calculate earnings with proper imposable
+  const earnings: Earnings = {
+    remunerationBase: grossSalary,
+    grossMonthly: grossSalary,
+    cotisable: grossSalary,
+    imposable: imposable,
+  };
+
+  // STEP 4: Calculate employee contributions (includes proper tax calculation)
+  const employeeContrib = calculateEmployeeContributions(earnings, taxClass, additionalDeductions);
+
+  // STEP 5: Calculate employer contributions
+  const employerContrib = calculateEmployerContributions(earnings.cotisable, employeeContrib.maladie);
+
+  // STEP 6: Calculate net pay
+  const netPay = calculateNetPay(earnings.grossMonthly, employeeContrib);
+
+  return {
+    earnings,
+    employeeContrib,
+    employerContrib,
+    netPay,
+  };
+}
+
 export function generateAnnualPayslip(
   input: GenerateAnnualPayslipInput,
   employee: Employee,
@@ -579,24 +623,12 @@ export function generateAnnualPayslip(
 
   // Generate payslip for each month (1-12)
   for (let month = 1; month <= 12; month++) {
-    // Get date-based tax rate for this month
-    const payslipDate = new Date(input.year, month - 1, 1).toISOString();
-    const applicableTaxRate = getTaxRateForDate ? getTaxRateForDate(payslipDate) : undefined;
-
-    // Use Excel-matching tax rates if no tax rate found in database
-    // January: 6.137603% (135.80/2212.59), Feb-Dec: 5.744399% (127.10/2212.59)
-    let taxRatePercentage = applicableTaxRate?.rate || 21; // Default to 21% if not found
-
-    // Override with exact Excel tax rates for 2024 and 2025 if no tax rate found
-    if ((input.year === 2024 || input.year === 2025) && !applicableTaxRate) {
-      taxRatePercentage = month === 1 ? 6.137603 : 5.744399;
-    }
-
-    const payslip = calculateMonthlyWithTaxRate(
+    // Use proper tax class calculation (no hardcoded deductions, auto-calculates based on Luxembourg 2025 barème)
+    const additionalDeductions = input.additionalDeductions || 0; // Default to 0 if not provided
+    const payslip = calculateMonthlyWithTaxClass(
       input.baseSalary,
-      taxRatePercentage,
-      month,
-      input.year
+      input.taxClass,
+      additionalDeductions
     );
 
     const monthData: MonthlyPayslipData = {
