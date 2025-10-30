@@ -1155,33 +1155,121 @@ export default function MonthlyPayslipPage() {
   const handleExportPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = 15;
 
-    doc.setFontSize(16);
-    doc.text(t('payslips.monthlyPayslip.title'), pageWidth / 2, 15, { align: 'center' });
+    // ===== HEADER =====
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text(t('payslips.monthlyPayslip.title'), pageWidth / 2, yPos, { align: 'center' });
 
+    yPos += 3;
+    doc.setFontSize(12);
+    doc.text(`${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, pageWidth / 2, yPos, { align: 'center' });
+
+    // ===== COMPANY & EMPLOYEE INFO =====
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+
+    // Left column - Employee info
+    doc.text(t('payslips.monthlyPayslip.employeeInfo'), 14, yPos);
+    doc.setFont(undefined, 'normal');
     doc.setFontSize(9);
-    doc.text(`N° Salarié: ${payslipData.employeeNumber}`, 14, 30);
-    doc.text(`${company?.name || 'Groupe Advensys Luxembourg S.A'}`, pageWidth - 14, 30, { align: 'right' });
-    doc.text(`Emploi: ${payslipData.emploi}`, 14, 35);
-    doc.text(`${person?.firstName} ${person?.lastName}`, pageWidth - 14, 35, { align: 'right' });
-    doc.text(`Période: ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, 14, 40);
+    doc.text(`${person?.firstName} ${person?.lastName}`, 14, yPos + 5);
+    doc.text(`N° Salarié: ${payslipData.employeeNumber}`, 14, yPos + 10);
+    doc.text(`Emploi: ${payslipData.emploi}`, 14, yPos + 15);
+    doc.text(`Indice: ${payslipData.indice}`, 14, yPos + 20);
+    doc.text(`Matricule assuré: ${payslipData.matriculeAssure}`, 14, yPos + 25);
+    doc.text(`Date d'entrée: ${new Date(payslipData.dateEntree).toLocaleDateString('fr-LU')}`, 14, yPos + 30);
 
+    // Right column - Company info
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(10);
+    doc.text(t('payslips.monthlyPayslip.companyInfo'), pageWidth - 14, yPos, { align: 'right' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    doc.text(`${company?.name || 'Groupe Advensys Luxembourg S.A'}`, pageWidth - 14, yPos + 5, { align: 'right' });
+    doc.text(`${company?.address || 'Luxembourg'}`, pageWidth - 14, yPos + 10, { align: 'right' });
+    doc.text(`Matricule employeur: ${payslipData.matriculeEmployeur}`, pageWidth - 14, yPos + 15, { align: 'right' });
+
+    yPos += 40;
+
+    // ===== EARNINGS SECTION =====
     autoTable(doc, {
-      startY: 50,
-      head: [[t('payslips.monthlyPayslip.designation'), t('payslips.monthlyPayslip.quantity'), t('payslips.monthlyPayslip.value'), t('payslips.monthlyPayslip.total')]],
+      startY: yPos,
+      head: [[{ content: 'RÉMUNÉRATION', colSpan: 4, styles: { halign: 'center', fillColor: [66, 139, 202], fontStyle: 'bold' } }]],
       body: [
-        [t('payslips.monthlyPayslip.salary'), payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(2), calculated.appointement.toFixed(2)],
-        [t('payslips.monthlyPayslip.grossTotal'), '', '', calculated.totalBrut.toFixed(2)],
-        [t('payslips.monthlyPayslip.healthInsurance'), RATES.assuranceMaladie.toString(), '', calculated.assuranceMaladie.toFixed(2)],
-        [t('payslips.monthlyPayslip.totalContributions'), '', '', calculated.totalCotisation.toFixed(2)],
-        [t('payslips.monthlyPayslip.taxableTotal'), '', '', calculated.totalImposable.toFixed(2)],
-        [t('payslips.monthlyPayslip.tax'), '', '', payslipData.impot.toFixed(2)],
-        [t('payslips.monthlyPayslip.net'), '', '', calculated.net.toFixed(2)],
-        [t('payslips.monthlyPayslip.netToPay'), '', '', calculated.netAPayer.toFixed(2)],
+        [t('payslips.monthlyPayslip.designation'), t('payslips.monthlyPayslip.quantity'), t('payslips.monthlyPayslip.value') + ' (€)', t('payslips.monthlyPayslip.total') + ' (€)'],
+        [t('payslips.monthlyPayslip.salary'), payslipData.hoursWorked.toFixed(2) + ' h', payslipData.hourlyRate.toFixed(4), calculated.appointement.toFixed(2)],
+        ...(payslipData.publicHolidayHours > 0 ? [[t('payslips.monthlyPayslip.publicHolidays'), payslipData.publicHolidayHours.toFixed(2) + ' h', payslipData.hourlyRate.toFixed(4), calculated.joursFeries.toFixed(2)]] : []),
+        ...(payslipData.holidayHours > 0 ? [[t('payslips.monthlyPayslip.holidays'), payslipData.holidayHours.toFixed(2) + ' h', '', '']] : []),
+        ...(payslipData.sickLeaveHours > 0 ? [[t('payslips.monthlyPayslip.sickLeave'), payslipData.sickLeaveHours.toFixed(2) + ' h', '', '']] : []),
+        [{ content: t('payslips.monthlyPayslip.grossTotal'), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, '', '', { content: calculated.totalBrut.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
       ],
-      theme: 'striped',
-      styles: { fontSize: 8 },
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
     });
+
+    yPos = (doc as any).lastAutoTable.finalY + 8;
+
+    // ===== CONTRIBUTIONS SECTION =====
+    autoTable(doc, {
+      startY: yPos,
+      head: [[{ content: 'COTISATIONS SOCIALES', colSpan: 2, styles: { halign: 'center', fillColor: [66, 139, 202], fontStyle: 'bold' } }]],
+      body: [
+        ['Désignation', 'Montant (€)'],
+        [t('payslips.monthlyPayslip.healthInsurance') + ' (2.80%)', calculated.assuranceMaladie.toFixed(2)],
+        [t('payslips.monthlyPayslip.cashAllowance') + ' (0.25%)', calculated.majorationEspece.toFixed(2)],
+        [t('payslips.monthlyPayslip.pensionInsurance') + ' (8.00%)', calculated.assurancePension.toFixed(2)],
+        [t('payslips.monthlyPayslip.dependencyInsurance') + ' (1.40%)', calculated.assuranceDependance.toFixed(2)],
+        [{ content: t('payslips.monthlyPayslip.totalContributions'), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: calculated.totalCotisation.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+      ],
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 120 },
+        1: { halign: 'right' },
+      },
+    });
+
+    yPos = (doc as any).lastAutoTable.finalY + 8;
+
+    // ===== TAX & NET CALCULATION =====
+    autoTable(doc, {
+      startY: yPos,
+      head: [[{ content: 'DÉDUCTIONS & NET', colSpan: 2, styles: { halign: 'center', fillColor: [66, 139, 202], fontStyle: 'bold' } }]],
+      body: [
+        ['Désignation', 'Montant (€)'],
+        [{ content: t('payslips.monthlyPayslip.taxableTotal'), styles: { fontStyle: 'bold' } }, { content: calculated.totalImposable.toFixed(2), styles: { fontStyle: 'bold' } }],
+        [t('payslips.monthlyPayslip.tax') + (employee?.taxClass ? ` (Classe ${employee.taxClass})` : ''), '-' + payslipData.impot.toFixed(2)],
+        [t('payslips.monthlyPayslip.energyCredit') + ' (CI-CO2)', '+' + calculated.ciCo2.toFixed(2)],
+        [t('payslips.monthlyPayslip.taxCreditCIS') + ' (CIS/CIP/CIM)', '+' + calculated.cisCipCim.toFixed(2)],
+        ['CISSM', '+' + calculated.cissm.toFixed(2)],
+        [{ content: t('payslips.monthlyPayslip.net'), styles: { fontStyle: 'bold', fillColor: [220, 240, 220] } }, { content: calculated.net.toFixed(2), styles: { fontStyle: 'bold', fillColor: [220, 240, 220] } }],
+        ...(payslipData.chequeRepas > 0 ? [[t('payslips.monthlyPayslip.mealVouchers'), '-' + payslipData.chequeRepas.toFixed(2)]] : []),
+        ...(payslipData.avanceSalaire > 0 ? [[t('payslips.monthlyPayslip.advance'), '-' + payslipData.avanceSalaire.toFixed(2)]] : []),
+        ...(payslipData.customExpense1Amount ? [[payslipData.customExpense1Label || 'Autre déduction 1', '-' + payslipData.customExpense1Amount.toFixed(2)]] : []),
+        ...(payslipData.customExpense2Amount ? [[payslipData.customExpense2Label || 'Autre déduction 2', '-' + payslipData.customExpense2Amount.toFixed(2)]] : []),
+        ...(payslipData.customExpense3Amount ? [[payslipData.customExpense3Label || 'Autre déduction 3', '-' + payslipData.customExpense3Amount.toFixed(2)]] : []),
+        [{ content: t('payslips.monthlyPayslip.netToPay'), styles: { fontStyle: 'bold', fontSize: 11, fillColor: [66, 139, 202], textColor: [255, 255, 255] } }, { content: calculated.netAPayer.toFixed(2) + ' €', styles: { fontStyle: 'bold', fontSize: 11, fillColor: [66, 139, 202], textColor: [255, 255, 255] } }],
+      ],
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 120 },
+        1: { halign: 'right' },
+      },
+    });
+
+    // ===== FOOTER =====
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Document généré le ${new Date().toLocaleDateString('fr-LU')} à ${new Date().toLocaleTimeString('fr-LU')}`, pageWidth / 2, finalY, { align: 'center' });
+    doc.text(`Montants en Euros (€) - ${t('payslips.monthlyPayslip.amountsInEuros')}`, pageWidth / 2, finalY + 4, { align: 'center' });
 
     doc.save(`Bulletin_Salaire_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
   };
