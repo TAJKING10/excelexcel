@@ -38,7 +38,9 @@
       "Bash(timeout 10 python:*)",
       "Bash(timeout:*)",
       "WebSearch",
-      "WebFetch(domain:impotsdirects.public.lu)"
+      "WebFetch(domain:impotsdirects.public.lu)",
+      "WebFetch(domain:saturn.etat.lu)",
+      "WebFetch(domain:www.lalux.lu)"
     ],
     "deny": [],
     "ask": []
