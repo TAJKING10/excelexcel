@@ -1186,7 +1186,10 @@ export default function MonthlyPayslipPage() {
     doc.save(`Bulletin_Salaire_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
   };
 
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  // Generate years from 2020 to 2050 for flexibility
+  const startYear = 2020;
+  const endYear = 2050;
+  const years = Array.from({ length: endYear - startYear + 1 }, (_, i) => endYear - i);
 
   if (!personId || !person) {
     return (
