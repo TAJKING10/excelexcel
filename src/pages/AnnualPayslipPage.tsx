@@ -221,7 +221,7 @@ export default function AnnualPayslipPage() {
           <CardContent>
             <p>employeeId: {employeeId || 'undefined'}</p>
             <p>individualId: {individualId || 'undefined'}</p>
-            <Button onClick={() => navigate(-1)}>Go Back</Button>
+            <Button onClick={() => navigate(-1)}>{t('common.back', 'Retour')}</Button>
           </CardContent>
         </Card>
       </div>
@@ -261,7 +261,7 @@ export default function AnnualPayslipPage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading annual payslip...</p>
+            <p className="text-muted-foreground">{t('common.loading', 'Chargement...')}</p>
           </div>
         </div>
       </div>
@@ -284,10 +284,10 @@ export default function AnnualPayslipPage() {
           <CardContent className="space-y-4">
             <div className="text-center">
               <p className="text-muted-foreground mb-4">
-                No annual payslip found for {person?.firstName} {person?.lastName} ({selectedYear})
+                {t('payslips.noPayslipsFound', 'Aucune fiche de paie trouvée')} - {person?.firstName} {person?.lastName} ({selectedYear})
               </p>
               <p className="text-sm text-muted-foreground mb-2">
-                {isIndividual ? 'Individual' : 'Employee'} ID: {personId} | Year: {selectedYear}
+                {isIndividual ? t('common.individual', 'Individu') : t('common.employee', 'Employé')} ID: {personId} | {t('payslips.year', 'Année')}: {selectedYear}
               </p>
               <div className="mt-6 flex gap-4 justify-center">
                 <Button
@@ -299,20 +299,20 @@ export default function AnnualPayslipPage() {
                         : await generateEmployeeAnnualPayslip(personId, selectedYear);
                       setAnnualPayslip(payslip);
                     } catch (error: any) {
-                      alert(`Error: ${error.message}`);
+                      alert(`${t('common.error', 'Erreur')}: ${error.message}`);
                     } finally {
                       setLoading(false);
                     }
                   }}
                   className="bg-primary"
                 >
-                  Generate Annual Payslip
+                  {t('payslips.createAnnual', 'Créer Fiche de Paie Annuelle')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => navigate(-1)}
                 >
-                  Go Back
+                  {t('common.back', 'Retour')}
                 </Button>
               </div>
             </div>
