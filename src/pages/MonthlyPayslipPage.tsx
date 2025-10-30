@@ -69,6 +69,12 @@ interface PayslipData {
   impot: number;
   chequeRepas: number;
   avanceSalaire: number;
+  customExpense1Label?: string;
+  customExpense1Amount?: number;
+  customExpense2Label?: string;
+  customExpense2Amount?: number;
+  customExpense3Label?: string;
+  customExpense3Amount?: number;
   legalLeave: number;
   leaveReport: number;
   leaveTaken: number;
@@ -186,6 +192,12 @@ export default function MonthlyPayslipPage() {
     impot: 127, // ~5.7% of Total Imposable (matches Excel 2024)
     chequeRepas: 56,
     avanceSalaire: 600,
+    customExpense1Label: '',
+    customExpense1Amount: 0,
+    customExpense2Label: '',
+    customExpense2Amount: 0,
+    customExpense3Label: '',
+    customExpense3Amount: 0,
     legalLeave: 208,
     leaveReport: -4,
     leaveTaken: 16,
@@ -339,7 +351,8 @@ export default function MonthlyPayslipPage() {
           const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
           const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
           const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
-          const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire;
+          const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire
+            - (tempData.customExpense1Amount || 0) - (tempData.customExpense2Amount || 0) - (tempData.customExpense3Amount || 0);
 
           const calculations = {
             appointement,
@@ -518,9 +531,10 @@ export default function MonthlyPayslipPage() {
       const targetNetAPayer = payslipData.manualNetAPayer;
       const chequeRepas = payslipData.chequeRepas || 0;
       const avanceSalaire = payslipData.avanceSalaire || 0;
+      const customExpenses = (payslipData.customExpense1Amount || 0) + (payslipData.customExpense2Amount || 0) + (payslipData.customExpense3Amount || 0);
 
-      // Work backward: NET = NET À PAYER + chequeRepas + avanceSalaire
-      const newNet = targetNetAPayer + chequeRepas + avanceSalaire;
+      // Work backward: NET = NET À PAYER + chequeRepas + avanceSalaire + customExpenses
+      const newNet = targetNetAPayer + chequeRepas + avanceSalaire + customExpenses;
 
       setPayslipData(prev => ({
         ...prev,
@@ -530,13 +544,15 @@ export default function MonthlyPayslipPage() {
       return;
     }
 
-    // FORWARD CALCULATION: If user manually changed chequeRepas or avanceSalaire, only recalculate NET À PAYER
-    if (lastChangedField === 'chequeRepas' || lastChangedField === 'avanceSalaire') {
+    // FORWARD CALCULATION: If user manually changed chequeRepas, avanceSalaire, or custom expenses, only recalculate NET À PAYER
+    if (lastChangedField === 'chequeRepas' || lastChangedField === 'avanceSalaire' ||
+        lastChangedField === 'customExpense1Amount' || lastChangedField === 'customExpense2Amount' || lastChangedField === 'customExpense3Amount') {
       const net = payslipData.manualNet !== undefined
         ? payslipData.manualNet
         : calculated.net;
 
-      const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
+      const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
+        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0);
 
       setPayslipData(prev => ({
         ...prev,
@@ -571,7 +587,8 @@ export default function MonthlyPayslipPage() {
 
       // Calculate NET using the manual IMPÔT
       const net = totalBrut - totalCotisation - manualImpot + cissm + cisCipCim + ciCo2;
-      const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
+      const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
+        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0);
 
       setPayslipData(prev => ({
         ...prev,
@@ -667,8 +684,9 @@ export default function MonthlyPayslipPage() {
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2
     const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
 
-    // STEP 9: Calculate NET À PAYER (NET - Chèque Repas - Avance Salaire)
-    const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0);
+    // STEP 9: Calculate NET À PAYER (NET - Chèque Repas - Avance Salaire - Custom Expenses)
+    const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
+      - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0);
 
     // Update ALL manual fields with calculated values
     setPayslipData(prev => ({
@@ -763,7 +781,8 @@ export default function MonthlyPayslipPage() {
 
     const netAPayer = payslipData.manualNetAPayer !== undefined
       ? payslipData.manualNetAPayer
-      : net - payslipData.chequeRepas - payslipData.avanceSalaire;
+      : net - payslipData.chequeRepas - payslipData.avanceSalaire
+        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0);
 
     const leaveSolde = (payslipData.legalLeave + payslipData.leaveReport) - payslipData.leaveTaken;
 
@@ -853,6 +872,12 @@ export default function MonthlyPayslipPage() {
         impot: ensureNumber(payslipData.impot),
         chequeRepas: ensureNumber(payslipData.chequeRepas),
         avanceSalaire: ensureNumber(payslipData.avanceSalaire),
+        customExpense1Label: payslipData.customExpense1Label || '',
+        customExpense1Amount: ensureNumber(payslipData.customExpense1Amount || 0),
+        customExpense2Label: payslipData.customExpense2Label || '',
+        customExpense2Amount: ensureNumber(payslipData.customExpense2Amount || 0),
+        customExpense3Label: payslipData.customExpense3Label || '',
+        customExpense3Amount: ensureNumber(payslipData.customExpense3Amount || 0),
         legalLeave: ensureNumber(payslipData.legalLeave),
         leaveReport: ensureNumber(payslipData.leaveReport),
         leaveTaken: ensureNumber(payslipData.leaveTaken),
@@ -1879,6 +1904,47 @@ export default function MonthlyPayslipPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+
+                {/* Custom Expenses - Always show all 3 rows */}
+                {[1, 2, 3].map((num) => {
+                  const labelField = `customExpense${num}Label` as keyof PayslipData;
+                  const amountField = `customExpense${num}Amount` as keyof PayslipData;
+                  const label = payslipData[labelField] as string || '';
+                  const amount = payslipData[amountField] as number || 0;
+
+                  return (
+                    <TableRow key={`custom${num}`} className="border-b border-border hover:bg-muted/30">
+                      <TableCell className="py-2 px-2">
+                        {isEditMode ? (
+                          <Input
+                            type="text"
+                            value={label}
+                            placeholder={`Autres dépenses ${num}`}
+                            onChange={(e) => handleInputChange(labelField, e.target.value)}
+                            className="h-7 w-full text-xs"
+                          />
+                        ) : (
+                          <span>{label || `Autres dépenses ${num}`}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right py-2 px-2 text-muted-foreground">-</TableCell>
+                      <TableCell className="text-right py-2 px-2 text-muted-foreground">-</TableCell>
+                      <TableCell className="text-right py-2 px-2 bg-blue-500/15 dark:bg-blue-500/25">
+                        {isEditMode ? (
+                          <EditableInput field={amountField} value={amount} step="0.01" className="h-6 w-20 text-right text-xs" />
+                        ) : (
+                          <span>{amount > 0 ? amount.toFixed(2) : '0'}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right py-2 px-2">
+                        <span>-</span>
+                      </TableCell>
+                      <TableCell className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25">
+                        <span>-</span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
 
                 {/* NET TO PAY */}
                 <TableRow className="border-t-2 border-border bg-green-600/30 dark:bg-green-600/40">

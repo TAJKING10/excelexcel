@@ -1834,6 +1834,12 @@ export interface MonthlyPayslipData {
   impot?: number;
   chequeRepas?: number;
   avanceSalaire?: number;
+  customExpense1Label?: string;
+  customExpense1Amount?: number;
+  customExpense2Label?: string;
+  customExpense2Amount?: number;
+  customExpense3Label?: string;
+  customExpense3Amount?: number;
   legalLeave?: number;
   leaveReport?: number;
   leaveTaken?: number;
