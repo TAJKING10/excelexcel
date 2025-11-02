@@ -21,6 +21,7 @@ import { useTaxRatesStore } from '@/store/taxRatesStore';
 import { recordPayslipEdit } from '@/services/payslipEditHistory';
 import { PayslipHistoryButton } from '@/components/payslips/PayslipHistoryButton';
 import { calculateIncomeTax } from '@/lib/luxembourgPayroll';
+import { PageTransition } from '@/components/ui/page-transition';
 
 const MONTHS = [
   { value: 1, label: 'Janvier' },
@@ -1387,18 +1388,8 @@ export default function MonthlyPayslipPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6 relative">
-      {/* Loading Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-              <p className="text-lg font-semibold">{t('payslips.loadingData')}</p>
-            </div>
-          </Card>
-        </div>
-      )}
+    <PageTransition>
+      <div className="container mx-auto p-4 md:p-6 space-y-6 relative">
       {/* Enhanced Header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -2267,5 +2258,6 @@ export default function MonthlyPayslipPage() {
         </CardContent>
       </Card>
     </div>
+    </PageTransition>
   );
 }
