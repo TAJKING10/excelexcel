@@ -1840,6 +1840,12 @@ export interface MonthlyPayslipData {
   customExpense2Amount?: number;
   customExpense3Label?: string;
   customExpense3Amount?: number;
+  customExpense4Label?: string;
+  customExpense4Amount?: number;
+  customExpense5Label?: string;
+  customExpense5Amount?: number;
+  customExpense6Label?: string;
+  customExpense6Amount?: number;
   legalLeave?: number;
   leaveReport?: number;
   leaveTaken?: number;
@@ -1961,6 +1967,12 @@ export const monthlyPayslipService = {
           customExpense2Amount: mostRecent.custom_expense_2_amount || 0,
           customExpense3Label: mostRecent.custom_expense_3_label || '',
           customExpense3Amount: mostRecent.custom_expense_3_amount || 0,
+          customExpense4Label: mostRecent.custom_expense_4_label || '',
+          customExpense4Amount: mostRecent.custom_expense_4_amount || 0,
+          customExpense5Label: mostRecent.custom_expense_5_label || '',
+          customExpense5Amount: mostRecent.custom_expense_5_amount || 0,
+          customExpense6Label: mostRecent.custom_expense_6_label || '',
+          customExpense6Amount: mostRecent.custom_expense_6_amount || 0,
           legalLeave: mostRecent.legal_leave,
           leaveReport: mostRecent.leave_report,
           leaveTaken: mostRecent.leave_taken,
@@ -2037,6 +2049,12 @@ export const monthlyPayslipService = {
       customExpense2Amount: data.custom_expense_2_amount ? parseFloat(data.custom_expense_2_amount) : 0,
       customExpense3Label: data.custom_expense_3_label || '',
       customExpense3Amount: data.custom_expense_3_amount ? parseFloat(data.custom_expense_3_amount) : 0,
+      customExpense4Label: data.custom_expense_4_label || '',
+      customExpense4Amount: data.custom_expense_4_amount ? parseFloat(data.custom_expense_4_amount) : 0,
+      customExpense5Label: data.custom_expense_5_label || '',
+      customExpense5Amount: data.custom_expense_5_amount ? parseFloat(data.custom_expense_5_amount) : 0,
+      customExpense6Label: data.custom_expense_6_label || '',
+      customExpense6Amount: data.custom_expense_6_amount ? parseFloat(data.custom_expense_6_amount) : 0,
       legalLeave: data.legal_leave ? parseFloat(data.legal_leave) : 0,
       leaveReport: data.leave_report ? parseFloat(data.leave_report) : 0,
       leaveTaken: data.leave_taken ? parseFloat(data.leave_taken) : 0,
@@ -2112,6 +2130,12 @@ export const monthlyPayslipService = {
       custom_expense_2_amount: payslipData.customExpense2Amount || 0,
       custom_expense_3_label: payslipData.customExpense3Label || '',
       custom_expense_3_amount: payslipData.customExpense3Amount || 0,
+      custom_expense_4_label: payslipData.customExpense4Label || '',
+      custom_expense_4_amount: payslipData.customExpense4Amount || 0,
+      custom_expense_5_label: payslipData.customExpense5Label || '',
+      custom_expense_5_amount: payslipData.customExpense5Amount || 0,
+      custom_expense_6_label: payslipData.customExpense6Label || '',
+      custom_expense_6_amount: payslipData.customExpense6Amount || 0,
       legal_leave: payslipData.legalLeave,
       leave_report: payslipData.leaveReport,
       leave_taken: payslipData.leaveTaken,
@@ -2206,6 +2230,12 @@ export const monthlyPayslipService = {
       customExpense2Amount: data.custom_expense_2_amount ? parseFloat(data.custom_expense_2_amount) : 0,
       customExpense3Label: data.custom_expense_3_label || '',
       customExpense3Amount: data.custom_expense_3_amount ? parseFloat(data.custom_expense_3_amount) : 0,
+      customExpense4Label: data.custom_expense_4_label || '',
+      customExpense4Amount: data.custom_expense_4_amount ? parseFloat(data.custom_expense_4_amount) : 0,
+      customExpense5Label: data.custom_expense_5_label || '',
+      customExpense5Amount: data.custom_expense_5_amount ? parseFloat(data.custom_expense_5_amount) : 0,
+      customExpense6Label: data.custom_expense_6_label || '',
+      customExpense6Amount: data.custom_expense_6_amount ? parseFloat(data.custom_expense_6_amount) : 0,
       legalLeave: data.legal_leave ? parseFloat(data.legal_leave) : 0,
       leaveReport: data.leave_report ? parseFloat(data.leave_report) : 0,
       leaveTaken: data.leave_taken ? parseFloat(data.leave_taken) : 0,
