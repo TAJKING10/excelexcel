@@ -382,11 +382,18 @@ export const useDataStore = create<DataState>((set, get) => ({
   individuals: [],
   activityLogs: [],
   payrollTemplates: {},
-  isLoading: true,
+  isLoading: false, // Start as false - will only be true during initial data fetch
   error: null,
 
   // Initialize data from Supabase
   initializeData: async () => {
+    // Only fetch if we don't have data yet (prevents re-fetching on navigation)
+    const state = get();
+    if (state.companies.length > 0 || state.employees.length > 0) {
+      // Data already loaded, skip re-fetching
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
       const [companies, employees, individuals, annualPayslips] = await Promise.all([
@@ -409,180 +416,168 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   // Company CRUD with Supabase
   addCompany: async (company) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const newCompany = await companyService.create(company);
       set((state) => ({
-        companies: [...state.companies, newCompany],
-        isLoading: false
+        companies: [...state.companies, newCompany]
       }));
       return newCompany;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   updateCompany: async (id, updates) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const updatedCompany = await companyService.update(id, updates);
       set((state) => ({
-        companies: state.companies.map((c) => (c.id === id ? updatedCompany : c)),
-        isLoading: false
+        companies: state.companies.map((c) => (c.id === id ? updatedCompany : c))
       }));
       return updatedCompany;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   deleteCompany: async (id) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       await companyService.delete(id);
       set((state) => ({
-        companies: state.companies.filter((c) => c.id !== id),
-        isLoading: false
+        companies: state.companies.filter((c) => c.id !== id)
       }));
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   // Employee CRUD with Supabase
   addEmployee: async (employee) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const newEmployee = await employeeService.create(employee);
       set((state) => ({
-        employees: [...state.employees, newEmployee],
-        isLoading: false
+        employees: [...state.employees, newEmployee]
       }));
       return newEmployee;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   updateEmployee: async (id, updates) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const updatedEmployee = await employeeService.update(id, updates);
       set((state) => ({
-        employees: state.employees.map((e) => (e.id === id ? updatedEmployee : e)),
-        isLoading: false
+        employees: state.employees.map((e) => (e.id === id ? updatedEmployee : e))
       }));
       return updatedEmployee;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   deleteEmployee: async (id) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       await employeeService.delete(id);
       set((state) => ({
-        employees: state.employees.filter((e) => e.id !== id),
-        isLoading: false
+        employees: state.employees.filter((e) => e.id !== id)
       }));
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   // Individual CRUD with Supabase
   addIndividual: async (individual) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const newIndividual = await individualService.create(individual);
       set((state) => ({
-        individuals: [...state.individuals, newIndividual],
-        isLoading: false
+        individuals: [...state.individuals, newIndividual]
       }));
       return newIndividual;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   updateIndividual: async (id, updates) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const updatedIndividual = await individualService.update(id, updates);
       set((state) => ({
-        individuals: state.individuals.map((i) => (i.id === id ? updatedIndividual : i)),
-        isLoading: false
+        individuals: state.individuals.map((i) => (i.id === id ? updatedIndividual : i))
       }));
       return updatedIndividual;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   deleteIndividual: async (id) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       await individualService.delete(id);
       set((state) => ({
-        individuals: state.individuals.filter((i) => i.id !== id),
-        isLoading: false
+        individuals: state.individuals.filter((i) => i.id !== id)
       }));
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   // Payslip CRUD with Supabase
   addPayslip: async (payslip) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const newPayslip = await payslipService.create(payslip);
       set((state) => ({
-        payslips: [...state.payslips, newPayslip],
-        isLoading: false
+        payslips: [...state.payslips, newPayslip]
       }));
       return newPayslip;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   updatePayslip: async (id, updates) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const updatedPayslip = await payslipService.update(id, updates);
       set((state) => ({
-        payslips: state.payslips.map((p) => (p.id === id ? updatedPayslip : p)),
-        isLoading: false
+        payslips: state.payslips.map((p) => (p.id === id ? updatedPayslip : p))
       }));
       return updatedPayslip;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   deletePayslip: async (id) => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       await payslipService.delete(id);
       set((state) => ({
-        payslips: state.payslips.filter((p) => p.id !== id),
-        isLoading: false
+        payslips: state.payslips.filter((p) => p.id !== id)
       }));
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
@@ -798,7 +793,7 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   // Annual payslip methods with Supabase
   generateEmployeeAnnualPayslip: async (employeeId: string, year: number): Promise<AnnualPayslip> => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const state = get();
       const employee = state.employees.find((e) => e.id === employeeId);
@@ -814,7 +809,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       // Check if already exists in Supabase
       const existing = await annualPayslipService.getByEmployeeAndYear(employeeId, year);
       if (existing) {
-        set({ isLoading: false });
         return existing;
       }
 
@@ -845,20 +839,19 @@ export const useDataStore = create<DataState>((set, get) => ({
         return {
           annualPayslips: alreadyExists
             ? state.annualPayslips
-            : [...state.annualPayslips, savedPayslip],
-          isLoading: false
+            : [...state.annualPayslips, savedPayslip]
         };
       });
 
       return savedPayslip;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   generateIndividualAnnualPayslip: async (individualId: string, year: number): Promise<AnnualPayslip> => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       const state = get();
       const individual = state.individuals.find((i) => i.id === individualId);
@@ -869,7 +862,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       // Check if already exists in Supabase
       const existing = await individualAnnualPayslipService.getByIndividualAndYear(individualId, year);
       if (existing) {
-        set({ isLoading: false });
         return existing;
       }
 
@@ -1100,7 +1092,7 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   // Update annual payslip
   updateAnnualPayslip: async (id: string, updates: Partial<Pick<AnnualPayslip, 'monthlyData' | 'annualTotals' | 'recapitulation'>>): Promise<AnnualPayslip> => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       // Find the payslip in local state to determine if it's for an individual or employee
       const state = get();
@@ -1130,19 +1122,18 @@ export const useDataStore = create<DataState>((set, get) => ({
       }
 
       set((state) => ({
-        annualPayslips: state.annualPayslips.map((p) => (p.id === id ? updatedPayslip : p)),
-        isLoading: false
+        annualPayslips: state.annualPayslips.map((p) => (p.id === id ? updatedPayslip : p))
       }));
       return updatedPayslip;
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
 
   // Delete annual payslip
   deleteAnnualPayslip: async (id: string): Promise<void> => {
-    set({ isLoading: true, error: null });
+    set({ error: null });
     try {
       // Find the payslip in local state to determine if it's for an individual or employee
       const state = get();
@@ -1157,11 +1148,10 @@ export const useDataStore = create<DataState>((set, get) => ({
       }
 
       set((state) => ({
-        annualPayslips: state.annualPayslips.filter((p) => p.id !== id),
-        isLoading: false
+        annualPayslips: state.annualPayslips.filter((p) => p.id !== id)
       }));
     } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.message });
       throw error;
     }
   },
