@@ -54,7 +54,8 @@ function AppRoutes() {
     if (user) {
       initializeData();
     }
-  }, [user, initializeData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Only re-run when user changes, not when initializeData changes
 
   const defaultRoute = user ? getDefaultRoute(user.role) : '/login';
 

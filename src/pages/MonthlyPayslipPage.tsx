@@ -181,7 +181,7 @@ export default function MonthlyPayslipPage() {
 
   const [payslipData, setPayslipData] = useState<PayslipData>({
     employeeNumber: '2',
-    indice: '21',
+    indice: '968.04', // Current Luxembourg salary index (updated automatically based on cost of living)
     emploi: person?.class || 'Comptable',
     dateEntree: person?.hireDate || '',
     matriculeAssure: person?.matricule || '',
@@ -248,7 +248,7 @@ export default function MonthlyPayslipPage() {
             taxRateId: savedPayslip.taxRateId,
             taxRatePercentage: savedPayslip.taxRatePercentage,
             employeeNumber: savedPayslip.employeeNumber || '2',
-            indice: savedPayslip.indice || '21',
+            indice: savedPayslip.indice || '968.04', // Current Luxembourg salary index
             emploi: savedPayslip.emploi || person?.class || 'Comptable',
             dateEntree: savedPayslip.dateEntree || person?.hireDate || '',
             matriculeAssure: savedPayslip.matriculeAssure || person?.matricule || '',
@@ -325,7 +325,7 @@ export default function MonthlyPayslipPage() {
             taxRateId: applicableTaxRate?.id,
             taxRatePercentage: applicableTaxRate?.rate,
             employeeNumber: '2',
-            indice: '21',
+            indice: '968.04', // Current Luxembourg salary index (cost of living adjustment)
             emploi: person?.class || 'Comptable',
             dateEntree: person?.hireDate || '',
             matriculeAssure: person?.matricule || '',
@@ -1662,7 +1662,12 @@ export default function MonthlyPayslipPage() {
               [t('payslips.monthlyPayslip.employerNumber'), 'matriculeEmployeur', 'text'],
             ].map(([label, field, type]) => (
               <div key={field} className="grid grid-cols-2 gap-3 items-center">
-                <Label className="text-xs font-semibold text-muted-foreground">{label}:</Label>
+                <Label className="text-xs font-semibold text-muted-foreground">
+                  {label}:
+                  {field === 'indice' && (
+                    <span className="ml-1 text-blue-600 dark:text-blue-400 cursor-help" title="Indice de salaire Luxembourg - Coefficient national d'ajustement au coût de la vie (968.04 = indice actuel)">ℹ️</span>
+                  )}
+                </Label>
                 <EditableInput field={field as keyof PayslipData} value={payslipData[field as keyof PayslipData] as string} type={type as string} className="h-8 text-xs" />
               </div>
             ))}

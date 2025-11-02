@@ -72,7 +72,8 @@ export function CompanyDetail() {
     }
 
     loadAnnualPayslips();
-  }, [companyId, company, companyEmployees.length, getEmployeeAnnualPayslip, isLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId, companyEmployees.length, isLoading]); // Removed getEmployeeAnnualPayslip and company to prevent infinite loop
 
   // NOW we can do early returns AFTER all hooks have been called
   if (!companyId) {
