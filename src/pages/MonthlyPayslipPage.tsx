@@ -75,6 +75,12 @@ interface PayslipData {
   customExpense2Amount?: number;
   customExpense3Label?: string;
   customExpense3Amount?: number;
+  customExpense4Label?: string;
+  customExpense4Amount?: number;
+  customExpense5Label?: string;
+  customExpense5Amount?: number;
+  customExpense6Label?: string;
+  customExpense6Amount?: number;
   legalLeave: number;
   leaveReport: number;
   leaveTaken: number;
@@ -198,6 +204,12 @@ export default function MonthlyPayslipPage() {
     customExpense2Amount: 0,
     customExpense3Label: '',
     customExpense3Amount: 0,
+    customExpense4Label: '',
+    customExpense4Amount: 0,
+    customExpense5Label: '',
+    customExpense5Amount: 0,
+    customExpense6Label: '',
+    customExpense6Amount: 0,
     legalLeave: 208,
     leaveReport: -4,
     leaveTaken: 16,
@@ -259,6 +271,12 @@ export default function MonthlyPayslipPage() {
             customExpense2Amount: savedPayslip.customExpense2Amount || 0,
             customExpense3Label: savedPayslip.customExpense3Label || '',
             customExpense3Amount: savedPayslip.customExpense3Amount || 0,
+            customExpense4Label: savedPayslip.customExpense4Label || '',
+            customExpense4Amount: savedPayslip.customExpense4Amount || 0,
+            customExpense5Label: savedPayslip.customExpense5Label || '',
+            customExpense5Amount: savedPayslip.customExpense5Amount || 0,
+            customExpense6Label: savedPayslip.customExpense6Label || '',
+            customExpense6Amount: savedPayslip.customExpense6Amount || 0,
             legalLeave: savedPayslip.legalLeave || 208,
             leaveReport: savedPayslip.leaveReport || -4,
             leaveTaken: savedPayslip.leaveTaken || 0,
@@ -358,7 +376,8 @@ export default function MonthlyPayslipPage() {
           const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
           const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
           const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire
-            - (tempData.customExpense1Amount || 0) - (tempData.customExpense2Amount || 0) - (tempData.customExpense3Amount || 0);
+            - (tempData.customExpense1Amount || 0) - (tempData.customExpense2Amount || 0) - (tempData.customExpense3Amount || 0)
+            + (tempData.customExpense4Amount || 0) + (tempData.customExpense5Amount || 0) + (tempData.customExpense6Amount || 0);
 
           const calculations = {
             appointement,
@@ -537,10 +556,11 @@ export default function MonthlyPayslipPage() {
       const targetNetAPayer = payslipData.manualNetAPayer;
       const chequeRepas = payslipData.chequeRepas || 0;
       const avanceSalaire = payslipData.avanceSalaire || 0;
-      const customExpenses = (payslipData.customExpense1Amount || 0) + (payslipData.customExpense2Amount || 0) + (payslipData.customExpense3Amount || 0);
+      const customExpensesSubtract = (payslipData.customExpense1Amount || 0) + (payslipData.customExpense2Amount || 0) + (payslipData.customExpense3Amount || 0);
+      const customExpensesAdd = (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0);
 
-      // Work backward: NET = NET À PAYER + chequeRepas + avanceSalaire + customExpenses
-      const newNet = targetNetAPayer + chequeRepas + avanceSalaire + customExpenses;
+      // Work backward: NET = NET À PAYER + chequeRepas + avanceSalaire + customExpensesSubtract - customExpensesAdd
+      const newNet = targetNetAPayer + chequeRepas + avanceSalaire + customExpensesSubtract - customExpensesAdd;
 
       setPayslipData(prev => ({
         ...prev,
@@ -552,13 +572,15 @@ export default function MonthlyPayslipPage() {
 
     // FORWARD CALCULATION: If user manually changed chequeRepas, avanceSalaire, or custom expenses, only recalculate NET À PAYER
     if (lastChangedField === 'chequeRepas' || lastChangedField === 'avanceSalaire' ||
-        lastChangedField === 'customExpense1Amount' || lastChangedField === 'customExpense2Amount' || lastChangedField === 'customExpense3Amount') {
+        lastChangedField === 'customExpense1Amount' || lastChangedField === 'customExpense2Amount' || lastChangedField === 'customExpense3Amount' ||
+        lastChangedField === 'customExpense4Amount' || lastChangedField === 'customExpense5Amount' || lastChangedField === 'customExpense6Amount') {
       const net = payslipData.manualNet !== undefined
         ? payslipData.manualNet
         : calculated.net;
 
       const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
-        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0);
+        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0)
+        + (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0);
 
       setPayslipData(prev => ({
         ...prev,
@@ -594,7 +616,8 @@ export default function MonthlyPayslipPage() {
       // Calculate NET using the manual IMPÔT
       const net = totalBrut - totalCotisation - manualImpot + cissm + cisCipCim + ciCo2;
       const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
-        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0);
+        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0)
+        + (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0);
 
       setPayslipData(prev => ({
         ...prev,
@@ -690,9 +713,10 @@ export default function MonthlyPayslipPage() {
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2
     const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
 
-    // STEP 9: Calculate NET À PAYER (NET - Chèque Repas - Avance Salaire - Custom Expenses)
+    // STEP 9: Calculate NET À PAYER (NET - Chèque Repas - Avance Salaire - Custom Expenses 1-3 + Custom Expenses 4-6)
     const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
-      - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0);
+      - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0)
+      + (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0);
 
     // Update ALL manual fields with calculated values
     setPayslipData(prev => ({
@@ -788,7 +812,8 @@ export default function MonthlyPayslipPage() {
     const netAPayer = payslipData.manualNetAPayer !== undefined
       ? payslipData.manualNetAPayer
       : net - payslipData.chequeRepas - payslipData.avanceSalaire
-        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0);
+        - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0)
+        + (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0);
 
     const leaveSolde = (payslipData.legalLeave + payslipData.leaveReport) - payslipData.leaveTaken;
 
@@ -884,6 +909,12 @@ export default function MonthlyPayslipPage() {
         customExpense2Amount: ensureNumber(payslipData.customExpense2Amount || 0),
         customExpense3Label: payslipData.customExpense3Label || '',
         customExpense3Amount: ensureNumber(payslipData.customExpense3Amount || 0),
+        customExpense4Label: payslipData.customExpense4Label || '',
+        customExpense4Amount: ensureNumber(payslipData.customExpense4Amount || 0),
+        customExpense5Label: payslipData.customExpense5Label || '',
+        customExpense5Amount: ensureNumber(payslipData.customExpense5Amount || 0),
+        customExpense6Label: payslipData.customExpense6Label || '',
+        customExpense6Amount: ensureNumber(payslipData.customExpense6Amount || 0),
         legalLeave: ensureNumber(payslipData.legalLeave),
         leaveReport: ensureNumber(payslipData.leaveReport),
         leaveTaken: ensureNumber(payslipData.leaveTaken),
@@ -1155,121 +1186,187 @@ export default function MonthlyPayslipPage() {
   const handleExportPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    let yPos = 15;
+    let yPos = 10;
 
-    // ===== HEADER =====
-    doc.setFontSize(18);
+    // ===== TITLE - Centered "DECOMPTE SALAIRE/TRAITEMENT" =====
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
-    doc.text(t('payslips.monthlyPayslip.title'), pageWidth / 2, yPos, { align: 'center' });
+    doc.text('DECOMPTE SALAIRE/TRAITEMENT', pageWidth / 2, yPos, { align: 'center' });
 
-    yPos += 3;
-    doc.setFontSize(12);
-    doc.text(`${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, pageWidth / 2, yPos, { align: 'center' });
-
-    // ===== COMPANY & EMPLOYEE INFO =====
     yPos += 10;
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
 
-    // Left column - Employee info
-    doc.text(t('payslips.monthlyPayslip.employeeInfo'), 14, yPos);
-    doc.setFont(undefined, 'normal');
+    // ===== EMPLOYEE & COMPANY INFO SECTION =====
     doc.setFontSize(9);
-    doc.text(`${person?.firstName} ${person?.lastName}`, 14, yPos + 5);
-    doc.text(`N° Salarié: ${payslipData.employeeNumber}`, 14, yPos + 10);
-    doc.text(`Emploi: ${payslipData.emploi}`, 14, yPos + 15);
-    doc.text(`Indice: ${payslipData.indice}`, 14, yPos + 20);
-    doc.text(`Matricule assuré: ${payslipData.matriculeAssure}`, 14, yPos + 25);
-    doc.text(`Date d'entrée: ${new Date(payslipData.dateEntree).toLocaleDateString('fr-LU')}`, 14, yPos + 30);
-
-    // Right column - Company info
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(10);
-    doc.text(t('payslips.monthlyPayslip.companyInfo'), pageWidth - 14, yPos, { align: 'right' });
     doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-    doc.text(`${company?.name || 'Groupe Advensys Luxembourg S.A'}`, pageWidth - 14, yPos + 5, { align: 'right' });
-    doc.text(`${company?.address || 'Luxembourg'}`, pageWidth - 14, yPos + 10, { align: 'right' });
-    doc.text(`Matricule employeur: ${payslipData.matriculeEmployeur}`, pageWidth - 14, yPos + 15, { align: 'right' });
 
-    yPos += 40;
+    // Left side - Employee info
+    doc.text(`N° Salarié : ${payslipData.employeeNumber}`, 14, yPos);
+    doc.text(`Indice : ${payslipData.indice}`, 14, yPos + 5);
+    doc.text(`Emploi : ${payslipData.emploi}`, 14, yPos + 10);
+    doc.text(`Date d'entrée : ${new Date(payslipData.dateEntree).toLocaleDateString('fr-LU')}`, 14, yPos + 15);
+    doc.text(`Matricule assuré : ${payslipData.matriculeAssure}`, 14, yPos + 20);
+    doc.text(`Matricule employeur : ${payslipData.matriculeEmployeur}`, 14, yPos + 25);
+    doc.text(`Période : ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, 14, yPos + 30);
 
-    // ===== EARNINGS SECTION =====
-    autoTable(doc, {
-      startY: yPos,
-      head: [[{ content: 'RÉMUNÉRATION', colSpan: 4, styles: { halign: 'center', fillColor: [66, 139, 202], fontStyle: 'bold' } }]],
-      body: [
-        [t('payslips.monthlyPayslip.designation'), t('payslips.monthlyPayslip.quantity'), t('payslips.monthlyPayslip.value') + ' (€)', t('payslips.monthlyPayslip.total') + ' (€)'],
-        [t('payslips.monthlyPayslip.salary'), payslipData.hoursWorked.toFixed(2) + ' h', payslipData.hourlyRate.toFixed(4), calculated.appointement.toFixed(2)],
-        ...(payslipData.publicHolidayHours > 0 ? [[t('payslips.monthlyPayslip.publicHolidays'), payslipData.publicHolidayHours.toFixed(2) + ' h', payslipData.hourlyRate.toFixed(4), calculated.joursFeries.toFixed(2)]] : []),
-        ...(payslipData.holidayHours > 0 ? [[t('payslips.monthlyPayslip.holidays'), payslipData.holidayHours.toFixed(2) + ' h', '', '']] : []),
-        ...(payslipData.sickLeaveHours > 0 ? [[t('payslips.monthlyPayslip.sickLeave'), payslipData.sickLeaveHours.toFixed(2) + ' h', '', '']] : []),
-        [{ content: t('payslips.monthlyPayslip.grossTotal'), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, '', '', { content: calculated.totalBrut.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
-      ],
-      theme: 'grid',
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
-    });
+    // Right side - Company and Employee name
+    doc.text(`${company?.name || 'Groupe Advensys Luxembourg S.A'}`, pageWidth - 14, yPos, { align: 'right' });
+    doc.text(`${company?.address || 'Duarrefstrooss 49'}`, pageWidth - 14, yPos + 5, { align: 'right' });
+    doc.text(`${company?.city || 'L-9964 Huldange'}`, pageWidth - 14, yPos + 10, { align: 'right' });
+    doc.text(`${person?.firstName} ${person?.lastName}`, pageWidth - 14, yPos + 20, { align: 'right' });
+    if (person?.address) {
+      doc.text(`${person.address}`, pageWidth - 14, yPos + 25, { align: 'right' });
+    }
 
-    yPos = (doc as any).lastAutoTable.finalY + 8;
+    yPos += 37;
 
-    // ===== CONTRIBUTIONS SECTION =====
-    autoTable(doc, {
-      startY: yPos,
-      head: [[{ content: 'COTISATIONS SOCIALES', colSpan: 2, styles: { halign: 'center', fillColor: [66, 139, 202], fontStyle: 'bold' } }]],
-      body: [
-        ['Désignation', 'Montant (€)'],
-        [t('payslips.monthlyPayslip.healthInsurance') + ' (2.80%)', calculated.assuranceMaladie.toFixed(2)],
-        [t('payslips.monthlyPayslip.cashAllowance') + ' (0.25%)', calculated.majorationEspece.toFixed(2)],
-        [t('payslips.monthlyPayslip.pensionInsurance') + ' (8.00%)', calculated.assurancePension.toFixed(2)],
-        [t('payslips.monthlyPayslip.dependencyInsurance') + ' (1.40%)', calculated.assuranceDependance.toFixed(2)],
-        [{ content: t('payslips.monthlyPayslip.totalContributions'), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: calculated.totalCotisation.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
-      ],
-      theme: 'grid',
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
-      columnStyles: {
-        0: { cellWidth: 120 },
-        1: { halign: 'right' },
-      },
-    });
-
-    yPos = (doc as any).lastAutoTable.finalY + 8;
-
-    // ===== TAX & NET CALCULATION =====
-    autoTable(doc, {
-      startY: yPos,
-      head: [[{ content: 'DÉDUCTIONS & NET', colSpan: 2, styles: { halign: 'center', fillColor: [66, 139, 202], fontStyle: 'bold' } }]],
-      body: [
-        ['Désignation', 'Montant (€)'],
-        [{ content: t('payslips.monthlyPayslip.taxableTotal'), styles: { fontStyle: 'bold' } }, { content: calculated.totalImposable.toFixed(2), styles: { fontStyle: 'bold' } }],
-        [t('payslips.monthlyPayslip.tax') + (employee?.taxClass ? ` (Classe ${employee.taxClass})` : ''), '-' + payslipData.impot.toFixed(2)],
-        [t('payslips.monthlyPayslip.energyCredit') + ' (CI-CO2)', '+' + calculated.ciCo2.toFixed(2)],
-        [t('payslips.monthlyPayslip.taxCreditCIS') + ' (CIS/CIP/CIM)', '+' + calculated.cisCipCim.toFixed(2)],
-        ['CISSM', '+' + calculated.cissm.toFixed(2)],
-        [{ content: t('payslips.monthlyPayslip.net'), styles: { fontStyle: 'bold', fillColor: [220, 240, 220] } }, { content: calculated.net.toFixed(2), styles: { fontStyle: 'bold', fillColor: [220, 240, 220] } }],
-        ...(payslipData.chequeRepas > 0 ? [[t('payslips.monthlyPayslip.mealVouchers'), '-' + payslipData.chequeRepas.toFixed(2)]] : []),
-        ...(payslipData.avanceSalaire > 0 ? [[t('payslips.monthlyPayslip.advance'), '-' + payslipData.avanceSalaire.toFixed(2)]] : []),
-        ...(payslipData.customExpense1Amount ? [[payslipData.customExpense1Label || 'Autre déduction 1', '-' + payslipData.customExpense1Amount.toFixed(2)]] : []),
-        ...(payslipData.customExpense2Amount ? [[payslipData.customExpense2Label || 'Autre déduction 2', '-' + payslipData.customExpense2Amount.toFixed(2)]] : []),
-        ...(payslipData.customExpense3Amount ? [[payslipData.customExpense3Label || 'Autre déduction 3', '-' + payslipData.customExpense3Amount.toFixed(2)]] : []),
-        [{ content: t('payslips.monthlyPayslip.netToPay'), styles: { fontStyle: 'bold', fontSize: 11, fillColor: [66, 139, 202], textColor: [255, 255, 255] } }, { content: calculated.netAPayer.toFixed(2) + ' €', styles: { fontStyle: 'bold', fontSize: 11, fillColor: [66, 139, 202], textColor: [255, 255, 255] } }],
-      ],
-      theme: 'grid',
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
-      columnStyles: {
-        0: { cellWidth: 120 },
-        1: { halign: 'right' },
-      },
-    });
-
-    // ===== FOOTER =====
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    // Amounts in Euros note
     doc.setFontSize(8);
+    doc.text('Les montants sont exprimées en Euros.', 14, yPos);
+    yPos += 8;
+
+    // ===== MAIN TABLE WITH CUMULATIVE COLUMNS =====
+    const cumulM1TotalBrut = payslipData.m1TotalBrut || 0;
+    const cumulM1AssuranceMaladie = payslipData.m1AssuranceMaladie || 0;
+    const cumulM1Majoration = payslipData.m1Majoration || 0;
+    const cumulM1AssurancePension = payslipData.m1AssurancePension || 0;
+    const cumulM1AssuranceDependance = payslipData.m1AssuranceDependance || 0;
+    const cumulM1TotalCotisation = payslipData.m1TotalCotisation || 0;
+    const cumulM1TotalImposable = payslipData.m1TotalImposable || 0;
+    const cumulM1Impot = payslipData.m1Impot || 0;
+    const cumulM1Cissm = payslipData.m1Cissm || 0;
+    const cumulM1CisCipCim = payslipData.m1CisCipCim || 0;
+    const cumulM1CiCo2 = payslipData.m1CiCo2 || 0;
+    const cumulM1Net = payslipData.m1Net || 0;
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [
+        [
+          { content: 'Désignation', styles: { halign: 'left', fontStyle: 'bold' } },
+          { content: 'Quantité (heures)', styles: { halign: 'center', fontStyle: 'bold' } },
+          { content: 'Valeur', styles: { halign: 'center', fontStyle: 'bold' } },
+          { content: 'Total', styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: '', styles: { fillColor: [255, 255, 255] } },
+          { content: 'Cumuls M-1', styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: 'Total', styles: { halign: 'right', fontStyle: 'bold' } },
+        ]
+      ],
+      body: [
+        // Empty row for spacing
+        ['', '', '', '', '', '', ''],
+        // Earnings section
+        ['Appointement', payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(4), calculated.appointement.toFixed(2), '', '', ''],
+        ['Jours fériée', payslipData.publicHolidayHours.toFixed(0), payslipData.publicHolidayHours > 0 ? payslipData.hourlyRate.toFixed(4) : '0', calculated.joursFeries.toFixed(2), '', '', ''],
+        ['Congés (H)', payslipData.holidayHours.toFixed(0), '0', '0', '', '', ''],
+        ['Absences Maladie (H)', payslipData.sickLeaveHours.toFixed(0), '0', '0', '', '', ''],
+        [{ content: 'Total brut', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalBrut.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalBrut.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalBrut + cumulM1TotalBrut).toFixed(2), styles: { fontStyle: 'bold' } }],
+        // Empty row
+        ['', '', '', '', '', '', ''],
+        // Contributions section
+        [{ content: 'Cotisation', styles: { fontStyle: 'bold' } }, '', '', '', '', '', ''],
+        ['Assurance Maladie', RATES.assuranceMaladie.toFixed(4), '', calculated.assuranceMaladie.toFixed(2), '', cumulM1AssuranceMaladie.toFixed(2), (calculated.assuranceMaladie + cumulM1AssuranceMaladie).toFixed(2)],
+        ['A-M Majoration espèce', RATES.majoration.toFixed(4), '', calculated.majorationEspece.toFixed(2), '', cumulM1Majoration.toFixed(2), (calculated.majorationEspece + cumulM1Majoration).toFixed(2)],
+        ['Assurance Pension', RATES.assurancePension.toFixed(4), '', calculated.assurancePension.toFixed(2), '', cumulM1AssurancePension.toFixed(2), (calculated.assurancePension + cumulM1AssurancePension).toFixed(2)],
+        ['Assurance dépendance', RATES.assuranceDependance.toFixed(4), '', calculated.assuranceDependance.toFixed(2), '', cumulM1AssuranceDependance.toFixed(2), (calculated.assuranceDependance + cumulM1AssuranceDependance).toFixed(2)],
+        [{ content: 'Total Cotisation', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalCotisation.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalCotisation.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalCotisation + cumulM1TotalCotisation).toFixed(2), styles: { fontStyle: 'bold' } }],
+        // Empty row
+        ['', '', '', '', '', '', ''],
+        // Deductions section
+        [{ content: 'Deduction', styles: { fontStyle: 'bold' } }, '', '', '', '', '', ''],
+        ['FD', '', '', payslipData.fd.toFixed(2), '', '0', payslipData.fd.toFixed(2)],
+        ['AC', '', '', payslipData.ac.toFixed(2), '', '0', payslipData.ac.toFixed(2)],
+        ['FFO', '', '', payslipData.ffo.toFixed(2), '', '0', payslipData.ffo.toFixed(2)],
+        ['FDS', '', '', payslipData.fds.toFixed(2), '', '0', payslipData.fds.toFixed(2)],
+        // Empty row
+        ['', '', '', '', '', '', ''],
+        [{ content: 'Total Imposable', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalImposable.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalImposable.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalImposable + cumulM1TotalImposable).toFixed(2), styles: { fontStyle: 'bold' } }],
+        // Empty row
+        ['', '', '', '', '', '', ''],
+        ['IMPOT', '', '', payslipData.impot.toFixed(2), '', cumulM1Impot.toFixed(2), (payslipData.impot + cumulM1Impot).toFixed(2)],
+        ['CISSM', '', '', calculated.cissm.toFixed(2), '', cumulM1Cissm.toFixed(2), (calculated.cissm + cumulM1Cissm).toFixed(2)],
+        ['CIS-CIP-CIM', '', '', calculated.cisCipCim.toFixed(2), '', cumulM1CisCipCim.toFixed(2), (calculated.cisCipCim + cumulM1CisCipCim).toFixed(2)],
+        ['CI-CO2', '', '', calculated.ciCo2.toFixed(2), '', cumulM1CiCo2.toFixed(2), (calculated.ciCo2 + cumulM1CiCo2).toFixed(2)],
+        // Empty row
+        ['', '', '', '', '', '', ''],
+        [{ content: 'NET', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, '', '', { content: calculated.net.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, '', { content: cumulM1Net.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: (calculated.net + cumulM1Net).toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+        ...(payslipData.chequeRepas > 0 ? [['Chéque repas', '', '', payslipData.chequeRepas.toFixed(2), '', '', '']] : []),
+        ...(payslipData.avanceSalaire > 0 ? [['Avance sur salaire', '', '', payslipData.avanceSalaire.toFixed(2), '', '', '']] : []),
+        ...(payslipData.customExpense1Amount ? [[payslipData.customExpense1Label || 'Autre déduction 1', '', '', payslipData.customExpense1Amount.toFixed(2), '', '', '']] : []),
+        ...(payslipData.customExpense2Amount ? [[payslipData.customExpense2Label || 'Autre déduction 2', '', '', payslipData.customExpense2Amount.toFixed(2), '', '', '']] : []),
+        ...(payslipData.customExpense3Amount ? [[payslipData.customExpense3Label || 'Autre déduction 3', '', '', payslipData.customExpense3Amount.toFixed(2), '', '', '']] : []),
+        ...(payslipData.customExpense4Amount ? [[payslipData.customExpense4Label || 'Autre ajout 4', '', '', '', '', payslipData.customExpense4Amount.toFixed(2)]] : []),
+        ...(payslipData.customExpense5Amount ? [[payslipData.customExpense5Label || 'Autre ajout 5', '', '', '', '', payslipData.customExpense5Amount.toFixed(2)]] : []),
+        ...(payslipData.customExpense6Amount ? [[payslipData.customExpense6Label || 'Autre ajout 6', '', '', '', '', payslipData.customExpense6Amount.toFixed(2)]] : []),
+      ],
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.1 },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 48 },
+        1: { cellWidth: 22, halign: 'center' },
+        2: { cellWidth: 22, halign: 'center' },
+        3: { cellWidth: 24, halign: 'right' },
+        4: { cellWidth: 6 },
+        5: { cellWidth: 24, halign: 'right' },
+        6: { cellWidth: 24, halign: 'right' },
+      },
+    });
+
+    // ===== NET A PAYER - Positioned separately like Excel =====
+    const tableEndY = (doc as any).lastAutoTable.finalY;
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.setFillColor(66, 139, 202);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(pageWidth - 14 - 50, tableEndY - 8, 50, 8, 'F');
+    doc.text('NET A PAYER', pageWidth - 14 - 25, tableEndY - 3, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(calculated.netAPayer.toFixed(2), pageWidth - 14 - 25, tableEndY + 3, { align: 'center' });
+
+    // ===== FOOTER SECTION =====
+    let footerY = tableEndY + 12;
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+
+    // Leave information
+    doc.text('Congés (H)', 14, footerY);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Légaux: ${payslipData.legalLeave}`, 14, footerY + 5);
+    doc.text(`Report: ${payslipData.leaveReport}`, 14, footerY + 10);
+    doc.text(`Pris: ${payslipData.leaveTaken}`, 14, footerY + 15);
+    doc.text(`Solde: ${payslipData.legalLeave + payslipData.leaveReport - payslipData.leaveTaken}`, 14, footerY + 20);
+
+    // Remuneration information
+    doc.setFont(undefined, 'bold');
+    doc.text('Rémunération', 80, footerY);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Salaire mensuel: ${calculated.appointement.toFixed(2)}`, 80, footerY + 5);
+    doc.text(`Heures: ${payslipData.hoursWorked}`, 80, footerY + 10);
+    doc.text(`Salaire horaire: ${payslipData.hourlyRate.toFixed(4)}`, 80, footerY + 15);
+
+    // Tax card information
+    doc.setFont(undefined, 'bold');
+    doc.text('Fiche d\'impôts', pageWidth - 70, footerY);
+    doc.setFont(undefined, 'normal');
+    if (employee?.taxCardNumber) {
+      doc.text(`N° de carte: ${employee.taxCardNumber}`, pageWidth - 70, footerY + 5);
+    }
+    if (employee?.taxClass) {
+      doc.text(`Classe: ${employee.taxClass}`, pageWidth - 70, footerY + 10);
+    }
+    if (payslipData.taxRatePercentage) {
+      doc.text(`Taux: ${payslipData.taxRatePercentage}%`, pageWidth - 70, footerY + 15);
+    } else {
+      doc.text('Taux: -', pageWidth - 70, footerY + 15);
+    }
+
+    footerY += 28;
+    doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Document généré le ${new Date().toLocaleDateString('fr-LU')} à ${new Date().toLocaleTimeString('fr-LU')}`, pageWidth / 2, finalY, { align: 'center' });
-    doc.text(`Montants en Euros (€) - ${t('payslips.monthlyPayslip.amountsInEuros')}`, pageWidth / 2, finalY + 4, { align: 'center' });
+    doc.text(`Document généré le ${new Date().toLocaleDateString('fr-LU')} à ${new Date().toLocaleTimeString('fr-LU')}`, pageWidth / 2, footerY, { align: 'center' });
 
     doc.save(`Bulletin_Salaire_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
   };
@@ -2002,7 +2099,7 @@ export default function MonthlyPayslipPage() {
                   </TableRow>
                 ))}
 
-                {/* Custom Expenses - Always show all 3 rows */}
+                {/* Custom Expenses 1-3 (subtracted from total) */}
                 {[1, 2, 3].map((num) => {
                   const labelField = `customExpense${num}Label` as keyof PayslipData;
                   const amountField = `customExpense${num}Amount` as keyof PayslipData;
@@ -2038,6 +2135,45 @@ export default function MonthlyPayslipPage() {
                       </TableCell>
                       <TableCell className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25">
                         <span>-</span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+
+                {/* Custom Expenses 4-6 (added to net salary) */}
+                {[4, 5, 6].map((num) => {
+                  const labelField = `customExpense${num}Label` as keyof PayslipData;
+                  const amountField = `customExpense${num}Amount` as keyof PayslipData;
+                  const label = payslipData[labelField] as string || '';
+                  const amount = payslipData[amountField] as number || 0;
+
+                  return (
+                    <TableRow key={`custom${num}`} className="border-b border-border hover:bg-muted/30">
+                      <TableCell className="py-2 px-2">
+                        {isEditMode ? (
+                          <Input
+                            type="text"
+                            value={label}
+                            placeholder={`Autres dépenses ${num}`}
+                            onChange={(e) => handleInputChange(labelField, e.target.value)}
+                            className="h-7 w-full text-xs"
+                          />
+                        ) : (
+                          <span>{label || `Autres dépenses ${num}`}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right py-2 px-2 text-muted-foreground">-</TableCell>
+                      <TableCell className="text-right py-2 px-2 text-muted-foreground">-</TableCell>
+                      <TableCell className="text-right py-2 px-2">
+                        <span>-</span>
+                      </TableCell>
+                      <TableCell className="text-right py-2 px-2 text-muted-foreground">-</TableCell>
+                      <TableCell className="text-right py-2 px-2 bg-green-500/15 dark:bg-green-500/25">
+                        {isEditMode ? (
+                          <EditableInput field={amountField} value={amount} step="0.01" className="h-6 w-20 text-right text-xs" />
+                        ) : (
+                          <span>{amount > 0 ? amount.toFixed(2) : '0'}</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
