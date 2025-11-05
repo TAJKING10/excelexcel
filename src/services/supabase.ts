@@ -1827,6 +1827,9 @@ export interface MonthlyPayslipData {
   holidayHours?: number;
   sickLeaveHours?: number;
   publicHolidayHours?: number;
+  overtimeHours?: number;
+  avantageVehicule?: number;
+  travailTache?: number;
   fd?: number;
   ac?: number;
   ffo?: number;
@@ -1881,6 +1884,10 @@ export interface MonthlyPayslipData {
   m1CisCipCim?: number;
   m1CiCo2?: number;
   m1Net?: number;
+  m1OvertimeHours?: number;
+  m1OvertimePremium?: number;
+  m1AvantageVehicule?: number;
+  m1TravailTache?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -1955,6 +1962,8 @@ export const monthlyPayslipService = {
           sickLeaveHours: mostRecent.sick_leave_hours,
           publicHolidayHours: mostRecent.public_holiday_hours,
           overtimeHours: mostRecent.overtime_hours || 0,
+          avantageVehicule: mostRecent.avantage_vehicule || 0,
+          travailTache: mostRecent.travail_tache || 0,
           fd: mostRecent.fd,
           ac: mostRecent.ac,
           ffo: mostRecent.ffo,
@@ -2011,6 +2020,8 @@ export const monthlyPayslipService = {
           m1Net: mostRecent.m1_net,
           m1OvertimeHours: mostRecent.m1_overtime_hours,
           m1OvertimePremium: mostRecent.m1_overtime_premium,
+          m1AvantageVehicule: mostRecent.m1_avantage_vehicule,
+          m1TravailTache: mostRecent.m1_travail_tache,
         };
       }
       throw error;
@@ -2040,6 +2051,8 @@ export const monthlyPayslipService = {
       sickLeaveHours: data.sick_leave_hours ? parseFloat(data.sick_leave_hours) : 0,
       publicHolidayHours: data.public_holiday_hours ? parseFloat(data.public_holiday_hours) : 0,
       overtimeHours: data.overtime_hours ? parseFloat(data.overtime_hours) : 0,
+      avantageVehicule: data.avantage_vehicule ? parseFloat(data.avantage_vehicule) : 0,
+      travailTache: data.travail_tache ? parseFloat(data.travail_tache) : 0,
       fd: data.fd ? parseFloat(data.fd) : 0,
       ac: data.ac ? parseFloat(data.ac) : 0,
       ffo: data.ffo ? parseFloat(data.ffo) : 0,
@@ -2096,6 +2109,8 @@ export const monthlyPayslipService = {
       m1Net: data.m1_net ? parseFloat(data.m1_net) : undefined,
       m1OvertimeHours: data.m1_overtime_hours ? parseFloat(data.m1_overtime_hours) : undefined,
       m1OvertimePremium: data.m1_overtime_premium ? parseFloat(data.m1_overtime_premium) : undefined,
+      m1AvantageVehicule: data.m1_avantage_vehicule ? parseFloat(data.m1_avantage_vehicule) : undefined,
+      m1TravailTache: data.m1_travail_tache ? parseFloat(data.m1_travail_tache) : undefined,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };
@@ -2124,6 +2139,8 @@ export const monthlyPayslipService = {
       sick_leave_hours: payslipData.sickLeaveHours,
       public_holiday_hours: payslipData.publicHolidayHours,
       overtime_hours: payslipData.overtimeHours || 0,
+      avantage_vehicule: payslipData.avantageVehicule || 0,
+      travail_tache: payslipData.travailTache || 0,
       fd: payslipData.fd,
       ac: payslipData.ac,
       ffo: payslipData.ffo,
@@ -2180,6 +2197,8 @@ export const monthlyPayslipService = {
       m1_net: payslipData.m1Net,
       m1_overtime_hours: payslipData.m1OvertimeHours,
       m1_overtime_premium: payslipData.m1OvertimePremium,
+      m1_avantage_vehicule: payslipData.m1AvantageVehicule,
+      m1_travail_tache: payslipData.m1TravailTache,
       created_by: user?.id,
       updated_at: new Date().toISOString()
     };
@@ -2227,6 +2246,8 @@ export const monthlyPayslipService = {
       sickLeaveHours: data.sick_leave_hours ? parseFloat(data.sick_leave_hours) : 0,
       publicHolidayHours: data.public_holiday_hours ? parseFloat(data.public_holiday_hours) : 0,
       overtimeHours: data.overtime_hours ? parseFloat(data.overtime_hours) : 0,
+      avantageVehicule: data.avantage_vehicule ? parseFloat(data.avantage_vehicule) : 0,
+      travailTache: data.travail_tache ? parseFloat(data.travail_tache) : 0,
       fd: data.fd ? parseFloat(data.fd) : 0,
       ac: data.ac ? parseFloat(data.ac) : 0,
       ffo: data.ffo ? parseFloat(data.ffo) : 0,
@@ -2283,6 +2304,8 @@ export const monthlyPayslipService = {
       m1Net: data.m1_net ? parseFloat(data.m1_net) : undefined,
       m1OvertimeHours: data.m1_overtime_hours ? parseFloat(data.m1_overtime_hours) : undefined,
       m1OvertimePremium: data.m1_overtime_premium ? parseFloat(data.m1_overtime_premium) : undefined,
+      m1AvantageVehicule: data.m1_avantage_vehicule ? parseFloat(data.m1_avantage_vehicule) : undefined,
+      m1TravailTache: data.m1_travail_tache ? parseFloat(data.m1_travail_tache) : undefined,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };

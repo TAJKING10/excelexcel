@@ -42,7 +42,9 @@
       "WebFetch(domain:saturn.etat.lu)",
       "WebFetch(domain:www.lalux.lu)",
       "Bash(mkdir:*)",
-      "Bash(xcopy:*)"
+      "Bash(xcopy:*)",
+      "Bash(Out-Null)",
+      "Bash($matches)"
     ],
     "deny": [],
     "ask": []

@@ -64,6 +64,8 @@ interface PayslipData {
   sickLeaveHours: number;
   publicHolidayHours: number;
   overtimeHours: number;
+  avantageVehicule: number;
+  travailTache: number;
   fd: number;
   ac: number;
   ffo: number;
@@ -106,6 +108,8 @@ interface PayslipData {
   m1JoursFeries?: number;
   m1OvertimeHours?: number;
   m1OvertimePremium?: number;
+  m1AvantageVehicule?: number;
+  m1TravailTache?: number;
   m1TotalBrut?: number;
   m1AssuranceMaladie?: number;
   m1Majoration?: number;
@@ -196,11 +200,13 @@ export default function MonthlyPayslipPage() {
     sickLeaveHours: 0,
     publicHolidayHours: 0,
     overtimeHours: 0,
+    avantageVehicule: 0,
+    travailTache: 0,
     fd: 0, // Default to 0 - user can add manually
     ac: 0,
     ffo: 0,
     fds: 0,
-    impot: 6.8, // Manual IMPOT value from previous month
+    impot: 0, // Will be auto-calculated on load
     chequeRepas: 56,
     avanceSalaire: 600,
     customExpense1Label: '',
@@ -264,11 +270,13 @@ export default function MonthlyPayslipPage() {
             sickLeaveHours: savedPayslip.sickLeaveHours || 0,
             publicHolidayHours: savedPayslip.publicHolidayHours || 0,
             overtimeHours: savedPayslip.overtimeHours || 0,
+            avantageVehicule: savedPayslip.avantageVehicule || 0,
+            travailTache: savedPayslip.travailTache || 0,
             fd: savedPayslip.fd || 0,
             ac: savedPayslip.ac || 0,
             ffo: savedPayslip.ffo || 0,
             fds: savedPayslip.fds || 0,
-            impot: savedPayslip.impot || 6.8,
+            impot: savedPayslip.impot || 0,
             chequeRepas: savedPayslip.chequeRepas || 56,
             avanceSalaire: savedPayslip.avanceSalaire || 0,
             customExpense1Label: savedPayslip.customExpense1Label || '',
@@ -304,6 +312,8 @@ export default function MonthlyPayslipPage() {
             m1JoursFeries: savedPayslip.m1JoursFeries,
             m1OvertimeHours: savedPayslip.m1OvertimeHours,
             m1OvertimePremium: savedPayslip.m1OvertimePremium,
+            m1AvantageVehicule: savedPayslip.m1AvantageVehicule,
+            m1TravailTache: savedPayslip.m1TravailTache,
             m1TotalBrut: savedPayslip.m1TotalBrut,
             m1AssuranceMaladie: savedPayslip.m1AssuranceMaladie,
             m1Majoration: savedPayslip.m1Majoration,
@@ -370,7 +380,9 @@ export default function MonthlyPayslipPage() {
           const joursFeries = publicHolidayHours * hourlyRate;
           const heuresSuppl = overtimeHours * hourlyRate;
           const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
-          const totalBrut = appointement;
+          const avantageVehicule = tempData.avantageVehicule || 0;
+          const travailTache = tempData.travailTache || 0;
+          const totalBrut = appointement + avantageVehicule + travailTache;
           const baseForCotisations = heuresSuppl + totalBrut;
 
           const assuranceMaladie = baseForCotisations * RATES.assuranceMaladie;
@@ -614,7 +626,9 @@ export default function MonthlyPayslipPage() {
       const joursFeries = publicHolidayHours * hourlyRate;
       const heuresSuppl = overtimeHours * hourlyRate;
       const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
-      const totalBrut = appointement;
+      const avantageVehicule = payslipData.avantageVehicule || 0;
+      const travailTache = payslipData.travailTache || 0;
+      const totalBrut = appointement + avantageVehicule + travailTache;
       const baseForCotisations = heuresSuppl + totalBrut;
 
       const assuranceMaladie = baseForCotisations * RATES.assuranceMaladie;
@@ -697,10 +711,11 @@ export default function MonthlyPayslipPage() {
     const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
 
     // STEP 2: Calculate Total Brut
-    // NOTE: Total Brut displayed = Appointement only (D16 = 2703.75)
-    // But Excel formulas use D19 (Heures Suppl only, not the 40% premium) + D22 (Total Brut)
+    // Excel formula: =D16+D19 (Appointement + Avantage Véhic + Travail à la tâche)
     // Congés and Maladie hours are tracked separately for leave balance, not added to salary
-    const totalBrut = appointement;
+    const avantageVehicule = payslipData.avantageVehicule || 0;
+    const travailTache = payslipData.travailTache || 0;
+    const totalBrut = appointement + avantageVehicule + travailTache;
 
     // For cotisations: D19 (Heures Suppl without premium) + D22 (Total Brut)
     // This matches Excel: (687.66 + 2703.75) = 3391.41
@@ -794,9 +809,11 @@ export default function MonthlyPayslipPage() {
     const heuresSuppl = (overtimeHours || 0) * hourlyRate;
     const heuresSupplPremium = (overtimeHours || 0) * hourlyRate * 0.40;
 
+    const avantageVehicule = payslipData.avantageVehicule || 0;
+    const travailTache = payslipData.travailTache || 0;
     const totalBrut = payslipData.manualTotalBrut !== undefined
       ? payslipData.manualTotalBrut
-      : appointement;
+      : appointement + avantageVehicule + travailTache;
 
     // Base for cotisations: Heures Suppl (without premium) + Total Brut
     const baseForCotisations = heuresSuppl + totalBrut;
@@ -934,6 +951,8 @@ export default function MonthlyPayslipPage() {
         sickLeaveHours: ensureNumber(payslipData.sickLeaveHours),
         publicHolidayHours: ensureNumber(payslipData.publicHolidayHours),
         overtimeHours: ensureNumber(payslipData.overtimeHours),
+        avantageVehicule: ensureNumber(payslipData.avantageVehicule),
+        travailTache: ensureNumber(payslipData.travailTache),
         fd: ensureNumber(payslipData.fd),
         ac: ensureNumber(payslipData.ac),
         ffo: ensureNumber(payslipData.ffo),
@@ -974,6 +993,8 @@ export default function MonthlyPayslipPage() {
         m1JoursFeries: payslipData.m1JoursFeries !== undefined ? ensureNumber(payslipData.m1JoursFeries) : undefined,
         m1OvertimeHours: payslipData.m1OvertimeHours !== undefined ? ensureNumber(payslipData.m1OvertimeHours) : undefined,
         m1OvertimePremium: payslipData.m1OvertimePremium !== undefined ? ensureNumber(payslipData.m1OvertimePremium) : undefined,
+        m1AvantageVehicule: payslipData.m1AvantageVehicule !== undefined ? ensureNumber(payslipData.m1AvantageVehicule) : undefined,
+        m1TravailTache: payslipData.m1TravailTache !== undefined ? ensureNumber(payslipData.m1TravailTache) : undefined,
         m1TotalBrut: payslipData.m1TotalBrut !== undefined ? ensureNumber(payslipData.m1TotalBrut) : undefined,
         m1AssuranceMaladie: payslipData.m1AssuranceMaladie !== undefined ? ensureNumber(payslipData.m1AssuranceMaladie) : undefined,
         m1Majoration: payslipData.m1Majoration !== undefined ? ensureNumber(payslipData.m1Majoration) : undefined,
@@ -1298,6 +1319,8 @@ export default function MonthlyPayslipPage() {
         ['Appointement', payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(4), calculated.appointement.toFixed(2), '', '', ''],
         ['Jours fériée', payslipData.publicHolidayHours.toFixed(0), payslipData.publicHolidayHours > 0 ? payslipData.hourlyRate.toFixed(4) : '0', calculated.joursFeries.toFixed(2), '', '', ''],
         ['Congés (H)', payslipData.holidayHours.toFixed(0), '0', '0', '', '', ''],
+        ['Avantage N (Véhic)', '1', '0', (payslipData.avantageVehicule || 0).toFixed(2), '', (payslipData.m1AvantageVehicule || 0).toFixed(2), ((payslipData.avantageVehicule || 0) + (payslipData.m1AvantageVehicule || 0)).toFixed(2)],
+        ['Travail à la tâche', '1', '0', (payslipData.travailTache || 0).toFixed(2), '', (payslipData.m1TravailTache || 0).toFixed(2), ((payslipData.travailTache || 0) + (payslipData.m1TravailTache || 0)).toFixed(2)],
         ['Heures Suppl. (H)', payslipData.overtimeHours.toFixed(0), payslipData.overtimeHours > 0 ? payslipData.hourlyRate.toFixed(4) : '0', calculated.heuresSuppl.toFixed(2), '', (payslipData.m1OvertimeHours || 0).toFixed(2), ((calculated.heuresSuppl + calculated.heuresSupplPremium) + (payslipData.m1OvertimeHours || 0) + (payslipData.m1OvertimePremium || 0)).toFixed(2)],
         ['H-S part majorée 40% (H)', payslipData.overtimeHours.toFixed(0), payslipData.overtimeHours > 0 ? (payslipData.hourlyRate * 0.40).toFixed(4) : '0', calculated.heuresSupplPremium.toFixed(2), '', '', ''],
         ['Absences Maladie (H)', payslipData.sickLeaveHours.toFixed(0), '0', '0', '', '', ''],
@@ -1875,6 +1898,54 @@ export default function MonthlyPayslipPage() {
                     ) : (
                       <span>0.00 €</span>
                     )}
+                  </TableCell>
+                </TableRow>
+
+                {/* Avantage N (Véhic) - Non-cash vehicle benefit */}
+                <TableRow>
+                  <TableCell>Avantage N (Véhic)</TableCell>
+                  <TableCell className="text-right">
+                    1
+                  </TableCell>
+                  <TableCell className="text-right">
+                    0
+                  </TableCell>
+                  <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
+                    <EditableInput field="avantageVehicule" value={(payslipData.avantageVehicule || 0).toFixed(2)} step="0.01" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isEditMode ? (
+                      <EditableM1Value manualField="m1AvantageVehicule" defaultValue={0} />
+                    ) : (
+                      <span>{(payslipData.m1AvantageVehicule || 0).toFixed(2)} €</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right bg-green-50/50 dark:bg-green-950/30">
+                    {((payslipData.avantageVehicule || 0) + (payslipData.m1AvantageVehicule || 0)).toFixed(2)} €
+                  </TableCell>
+                </TableRow>
+
+                {/* Travail à la tâche - Task work */}
+                <TableRow>
+                  <TableCell>Travail à la tâche</TableCell>
+                  <TableCell className="text-right">
+                    1
+                  </TableCell>
+                  <TableCell className="text-right">
+                    0
+                  </TableCell>
+                  <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
+                    <EditableInput field="travailTache" value={(payslipData.travailTache || 0).toFixed(2)} step="0.01" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isEditMode ? (
+                      <EditableM1Value manualField="m1TravailTache" defaultValue={0} />
+                    ) : (
+                      <span>{(payslipData.m1TravailTache || 0).toFixed(2)} €</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right bg-green-50/50 dark:bg-green-950/30">
+                    {((payslipData.travailTache || 0) + (payslipData.m1TravailTache || 0)).toFixed(2)} €
                   </TableCell>
                 </TableRow>
 
