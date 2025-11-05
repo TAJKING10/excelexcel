@@ -63,6 +63,7 @@ interface PayslipData {
   holidayHours: number;
   sickLeaveHours: number;
   publicHolidayHours: number;
+  overtimeHours: number;
   fd: number;
   ac: number;
   ffo: number;
@@ -103,6 +104,8 @@ interface PayslipData {
   // M-1 (previous month) values
   m1Appointement?: number;
   m1JoursFeries?: number;
+  m1OvertimeHours?: number;
+  m1OvertimePremium?: number;
   m1TotalBrut?: number;
   m1AssuranceMaladie?: number;
   m1Majoration?: number;
@@ -192,11 +195,12 @@ export default function MonthlyPayslipPage() {
     holidayHours: 16,
     sickLeaveHours: 0,
     publicHolidayHours: 0,
+    overtimeHours: 0,
     fd: 0, // Default to 0 - user can add manually
     ac: 0,
     ffo: 0,
     fds: 0,
-    impot: 127, // ~5.7% of Total Imposable (matches Excel 2024)
+    impot: 6.8, // Manual IMPOT value from previous month
     chequeRepas: 56,
     avanceSalaire: 600,
     customExpense1Label: '',
@@ -259,11 +263,12 @@ export default function MonthlyPayslipPage() {
             holidayHours: savedPayslip.holidayHours || 0,
             sickLeaveHours: savedPayslip.sickLeaveHours || 0,
             publicHolidayHours: savedPayslip.publicHolidayHours || 0,
+            overtimeHours: savedPayslip.overtimeHours || 0,
             fd: savedPayslip.fd || 0,
             ac: savedPayslip.ac || 0,
             ffo: savedPayslip.ffo || 0,
             fds: savedPayslip.fds || 0,
-            impot: savedPayslip.impot || 127,
+            impot: savedPayslip.impot || 6.8,
             chequeRepas: savedPayslip.chequeRepas || 56,
             avanceSalaire: savedPayslip.avanceSalaire || 0,
             customExpense1Label: savedPayslip.customExpense1Label || '',
@@ -297,6 +302,8 @@ export default function MonthlyPayslipPage() {
             manualNetAPayer: savedPayslip.manualNetAPayer,
             m1Appointement: savedPayslip.m1Appointement,
             m1JoursFeries: savedPayslip.m1JoursFeries,
+            m1OvertimeHours: savedPayslip.m1OvertimeHours,
+            m1OvertimePremium: savedPayslip.m1OvertimePremium,
             m1TotalBrut: savedPayslip.m1TotalBrut,
             m1AssuranceMaladie: savedPayslip.m1AssuranceMaladie,
             m1Majoration: savedPayslip.m1Majoration,
@@ -336,11 +343,12 @@ export default function MonthlyPayslipPage() {
             holidayHours: 16,
             sickLeaveHours: 0,
             publicHolidayHours: 0,
+            overtimeHours: 0,
             fd: 0, // Default to 0 - user can add manually
             ac: 0,
             ffo: 0,
             fds: 0,
-            impot: 127, // ~5.7% of Total Imposable (matches Excel 2024)
+            impot: 6.8, // Manual IMPOT value from previous month
             chequeRepas: 56,
             avanceSalaire: 600,
             legalLeave: 208,
@@ -356,15 +364,19 @@ export default function MonthlyPayslipPage() {
           const hoursWorked = tempData.hoursWorked;
           const hourlyRate = tempData.hourlyRate;
           const publicHolidayHours = tempData.publicHolidayHours;
+          const overtimeHours = tempData.overtimeHours || 0;
 
-          const appointement = (hoursWorked + publicHolidayHours) * hourlyRate;
+          const appointement = hoursWorked * hourlyRate;
           const joursFeries = publicHolidayHours * hourlyRate;
+          const heuresSuppl = overtimeHours * hourlyRate;
+          const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
           const totalBrut = appointement;
+          const baseForCotisations = heuresSuppl + totalBrut;
 
-          const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+          const assuranceMaladie = baseForCotisations * RATES.assuranceMaladie;
           const majorationEspece = totalBrut * RATES.majoration;
           const assurancePension = totalBrut * RATES.assurancePension;
-          const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+          const assuranceDependance = Math.max(0, (baseForCotisations - RATES.dependanceThreshold) * RATES.assuranceDependance);
           const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
           // IMPOSABLE = BRUT - (MALADIE + PENSION + DÉDUCTIONS)
@@ -596,15 +608,19 @@ export default function MonthlyPayslipPage() {
       const hoursWorked = payslipData.hoursWorked || 0;
       const hourlyRate = payslipData.hourlyRate || 0;
       const publicHolidayHours = payslipData.publicHolidayHours || 0;
+      const overtimeHours = payslipData.overtimeHours || 0;
 
       const appointement = hoursWorked * hourlyRate;
       const joursFeries = publicHolidayHours * hourlyRate;
-      const totalBrut = appointement + joursFeries;
+      const heuresSuppl = overtimeHours * hourlyRate;
+      const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
+      const totalBrut = appointement;
+      const baseForCotisations = heuresSuppl + totalBrut;
 
-      const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+      const assuranceMaladie = baseForCotisations * RATES.assuranceMaladie;
       const majorationEspece = totalBrut * RATES.majoration;
       const assurancePension = totalBrut * RATES.assurancePension;
-      const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+      const assuranceDependance = Math.max(0, (baseForCotisations - RATES.dependanceThreshold) * RATES.assuranceDependance);
       const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
       const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
@@ -669,23 +685,36 @@ export default function MonthlyPayslipPage() {
     const publicHolidayHours = payslipData.publicHolidayHours || 0;
     const holidayHours = payslipData.holidayHours || 0;
     const sickLeaveHours = payslipData.sickLeaveHours || 0;
+    const overtimeHours = payslipData.overtimeHours || 0;
 
     // STEP 1: Calculate base amounts
     const appointement = hoursWorked * hourlyRate;
     const joursFeries = publicHolidayHours * hourlyRate;
     const conges = holidayHours * hourlyRate;
     const maladie = sickLeaveHours * hourlyRate;
+    // Overtime: base pay + 40% premium
+    const heuresSuppl = overtimeHours * hourlyRate;
+    const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
 
     // STEP 2: Calculate Total Brut
-    // NOTE: Matches calculatePayslip function - only appointement + joursFeries
+    // NOTE: Total Brut displayed = Appointement only (D16 = 2703.75)
+    // But Excel formulas use D19 (Heures Suppl only, not the 40% premium) + D22 (Total Brut)
     // Congés and Maladie hours are tracked separately for leave balance, not added to salary
-    const totalBrut = appointement + joursFeries;
+    const totalBrut = appointement;
+
+    // For cotisations: D19 (Heures Suppl without premium) + D22 (Total Brut)
+    // This matches Excel: (687.66 + 2703.75) = 3391.41
+    const baseForCotisations = heuresSuppl + totalBrut;
 
     // STEP 3: Calculate Cotisations (Social contributions)
-    const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+    // Assurance Maladie: =(D19+D22)*B25 = (687.66 + 2703.75) * 2.8% = 94.96
+    const assuranceMaladie = baseForCotisations * RATES.assuranceMaladie;
+    // A-M Majoration: =B26*D22 = 0.25% * 2703.75 = 6.76
     const majorationEspece = totalBrut * RATES.majoration;
+    // Assurance Pension: =B27*D22 = 8% * 2703.75 = 216.30
     const assurancePension = totalBrut * RATES.assurancePension;
-    const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+    // Assurance Dépendance: =B28*(D19+D22-675.93) = 1.4% * (687.66 + 2703.75 - 675.93) = 38.02
+    const assuranceDependance = Math.max(0, (baseForCotisations - RATES.dependanceThreshold) * RATES.assuranceDependance);
 
     // STEP 4: Total Cotisation
     const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
@@ -750,7 +779,7 @@ export default function MonthlyPayslipPage() {
   ]);
 
   const calculatePayslip = () => {
-    const { hoursWorked, hourlyRate, publicHolidayHours } = payslipData;
+    const { hoursWorked, hourlyRate, publicHolidayHours, overtimeHours } = payslipData;
 
     // Use manual values if set, otherwise calculate
     const appointement = payslipData.manualAppointement !== undefined
@@ -761,13 +790,20 @@ export default function MonthlyPayslipPage() {
       ? payslipData.manualJoursFeries
       : publicHolidayHours * hourlyRate;
 
+    // Overtime calculations: base overtime pay + 40% premium
+    const heuresSuppl = (overtimeHours || 0) * hourlyRate;
+    const heuresSupplPremium = (overtimeHours || 0) * hourlyRate * 0.40;
+
     const totalBrut = payslipData.manualTotalBrut !== undefined
       ? payslipData.manualTotalBrut
-      : appointement + joursFeries;
+      : appointement;
+
+    // Base for cotisations: Heures Suppl (without premium) + Total Brut
+    const baseForCotisations = heuresSuppl + totalBrut;
 
     const assuranceMaladie = payslipData.manualAssuranceMaladie !== undefined
       ? payslipData.manualAssuranceMaladie
-      : totalBrut * RATES.assuranceMaladie;
+      : baseForCotisations * RATES.assuranceMaladie;
 
     const majorationEspece = payslipData.manualMajoration !== undefined
       ? payslipData.manualMajoration
@@ -779,7 +815,7 @@ export default function MonthlyPayslipPage() {
 
     const assuranceDependance = payslipData.manualAssuranceDependance !== undefined
       ? payslipData.manualAssuranceDependance
-      : Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+      : Math.max(0, (baseForCotisations - RATES.dependanceThreshold) * RATES.assuranceDependance);
 
     const totalCotisation = payslipData.manualTotalCotisation !== undefined
       ? payslipData.manualTotalCotisation
@@ -803,7 +839,7 @@ export default function MonthlyPayslipPage() {
 
     const ciCo2 = payslipData.manualCiCo2 !== undefined
       ? payslipData.manualCiCo2
-      : totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 14 : totalBrut < 6667 ? (14 - (totalBrut - 3333.33) * 0.0042) : 0;
+      : totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
 
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 (Excel formula)
     const net = payslipData.manualNet !== undefined
@@ -819,7 +855,7 @@ export default function MonthlyPayslipPage() {
     const leaveSolde = (payslipData.legalLeave + payslipData.leaveReport) - payslipData.leaveTaken;
 
     return {
-      appointement, joursFeries, totalBrut,
+      appointement, joursFeries, heuresSuppl, heuresSupplPremium, totalBrut,
       assuranceMaladie, majorationEspece, assurancePension, assuranceDependance, totalCotisation,
       totalImposable, calculatedImpot, cissm, cisCipCim, ciCo2, net, netAPayer, leaveSolde
     };
@@ -897,6 +933,7 @@ export default function MonthlyPayslipPage() {
         holidayHours: ensureNumber(payslipData.holidayHours),
         sickLeaveHours: ensureNumber(payslipData.sickLeaveHours),
         publicHolidayHours: ensureNumber(payslipData.publicHolidayHours),
+        overtimeHours: ensureNumber(payslipData.overtimeHours),
         fd: ensureNumber(payslipData.fd),
         ac: ensureNumber(payslipData.ac),
         ffo: ensureNumber(payslipData.ffo),
@@ -935,6 +972,8 @@ export default function MonthlyPayslipPage() {
         manualNetAPayer: payslipData.manualNetAPayer !== undefined ? ensureNumber(payslipData.manualNetAPayer) : undefined,
         m1Appointement: payslipData.m1Appointement !== undefined ? ensureNumber(payslipData.m1Appointement) : undefined,
         m1JoursFeries: payslipData.m1JoursFeries !== undefined ? ensureNumber(payslipData.m1JoursFeries) : undefined,
+        m1OvertimeHours: payslipData.m1OvertimeHours !== undefined ? ensureNumber(payslipData.m1OvertimeHours) : undefined,
+        m1OvertimePremium: payslipData.m1OvertimePremium !== undefined ? ensureNumber(payslipData.m1OvertimePremium) : undefined,
         m1TotalBrut: payslipData.m1TotalBrut !== undefined ? ensureNumber(payslipData.m1TotalBrut) : undefined,
         m1AssuranceMaladie: payslipData.m1AssuranceMaladie !== undefined ? ensureNumber(payslipData.m1AssuranceMaladie) : undefined,
         m1Majoration: payslipData.m1Majoration !== undefined ? ensureNumber(payslipData.m1Majoration) : undefined,
@@ -1259,6 +1298,8 @@ export default function MonthlyPayslipPage() {
         ['Appointement', payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(4), calculated.appointement.toFixed(2), '', '', ''],
         ['Jours fériée', payslipData.publicHolidayHours.toFixed(0), payslipData.publicHolidayHours > 0 ? payslipData.hourlyRate.toFixed(4) : '0', calculated.joursFeries.toFixed(2), '', '', ''],
         ['Congés (H)', payslipData.holidayHours.toFixed(0), '0', '0', '', '', ''],
+        ['Heures Suppl. (H)', payslipData.overtimeHours.toFixed(0), payslipData.overtimeHours > 0 ? payslipData.hourlyRate.toFixed(4) : '0', calculated.heuresSuppl.toFixed(2), '', (payslipData.m1OvertimeHours || 0).toFixed(2), ((calculated.heuresSuppl + calculated.heuresSupplPremium) + (payslipData.m1OvertimeHours || 0) + (payslipData.m1OvertimePremium || 0)).toFixed(2)],
+        ['H-S part majorée 40% (H)', payslipData.overtimeHours.toFixed(0), payslipData.overtimeHours > 0 ? (payslipData.hourlyRate * 0.40).toFixed(4) : '0', calculated.heuresSupplPremium.toFixed(2), '', '', ''],
         ['Absences Maladie (H)', payslipData.sickLeaveHours.toFixed(0), '0', '0', '', '', ''],
         [{ content: 'Total brut', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalBrut.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalBrut.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalBrut + cumulM1TotalBrut).toFixed(2), styles: { fontStyle: 'bold' } }],
         // Empty row
@@ -1834,6 +1875,47 @@ export default function MonthlyPayslipPage() {
                     ) : (
                       <span>0.00 €</span>
                     )}
+                  </TableCell>
+                </TableRow>
+
+                {/* Overtime */}
+                <TableRow>
+                  <TableCell>Heures Suppl. (H)</TableCell>
+                  <TableCell className="text-right">
+                    <EditableInput field="overtimeHours" value={payslipData.overtimeHours} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <EditableInput field="hourlyRate" value={payslipData.hourlyRate.toFixed(4)} step="0.0001" />
+                  </TableCell>
+                  <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
+                    {calculated.heuresSuppl.toFixed(2)} €
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isEditMode ? (
+                      <EditableM1Value manualField="m1OvertimeHours" defaultValue={0} />
+                    ) : (
+                      <span>{(payslipData.m1OvertimeHours || 0).toFixed(2)} €</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right bg-green-50/50 dark:bg-green-950/30">
+                    {((calculated.heuresSuppl + calculated.heuresSupplPremium) + (payslipData.m1OvertimeHours || 0) + (payslipData.m1OvertimePremium || 0)).toFixed(2)} €
+                  </TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell>H-S part majorée 40% (H)</TableCell>
+                  <TableCell className="text-right">
+                    {payslipData.overtimeHours.toFixed(0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {payslipData.overtimeHours > 0 ? (payslipData.hourlyRate * 0.40).toFixed(4) : '0.0000'}
+                  </TableCell>
+                  <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
+                    {calculated.heuresSupplPremium.toFixed(2)} €
+                  </TableCell>
+                  <TableCell className="text-right">
+                  </TableCell>
+                  <TableCell className="text-right bg-green-50/50 dark:bg-green-950/30">
                   </TableCell>
                 </TableRow>
 

@@ -40,7 +40,9 @@
       "WebSearch",
       "WebFetch(domain:impotsdirects.public.lu)",
       "WebFetch(domain:saturn.etat.lu)",
-      "WebFetch(domain:www.lalux.lu)"
+      "WebFetch(domain:www.lalux.lu)",
+      "Bash(mkdir:*)",
+      "Bash(xcopy:*)"
     ],
     "deny": [],
     "ask": []

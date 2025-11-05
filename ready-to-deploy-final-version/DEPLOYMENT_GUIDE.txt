@@ -1,0 +1,142 @@
+========================================
+DEPLOYMENT GUIDE - FINAL VERSION
+========================================
+
+APPLICATION: Anima Payslip Management System
+BUILD DATE: 2025-11-03
+STATUS: READY FOR PRODUCTION
+
+========================================
+CONTENTS OF THIS PACKAGE
+========================================
+
+1. dist/ - Production build files (deploy these files)
+2. .env.example - Environment variables configuration
+3. DEPLOYMENT_GUIDE.txt - This file
+
+========================================
+DEPLOYMENT INSTRUCTIONS
+========================================
+
+OPTION 1: VERCEL (RECOMMENDED)
+-------------------------------
+1. Install Vercel CLI: npm install -g vercel
+2. Navigate to the dist/ folder
+3. Run: vercel --prod
+4. Follow the prompts to deploy
+
+OPTION 2: NETLIFY
+-----------------
+1. Install Netlify CLI: npm install -g netlify-cli
+2. Run: netlify deploy --prod --dir=dist
+3. Follow the prompts to deploy
+
+OPTION 3: GITHUB PAGES
+----------------------
+1. Create a new repository or use existing one
+2. Push the contents of dist/ folder to gh-pages branch
+3. Enable GitHub Pages in repository settings
+
+OPTION 4: ANY STATIC HOSTING (cPanel, AWS S3, Azure, etc.)
+----------------------------------------------------------
+1. Upload all contents from the dist/ folder to your web server
+2. Ensure the root directory contains index.html
+3. Configure your web server to serve index.html for all routes (SPA routing)
+
+========================================
+IMPORTANT: ENVIRONMENT VARIABLES
+========================================
+
+Your hosting platform needs these environment variables configured:
+
+VITE_SUPABASE_URL=https://ozkgkgqahgwuwmohslsr.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96a2drZ3FhaGd3dXdtb2hzbHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0Mjk2NDEsImV4cCI6MjA3NTAwNTY0MX0._AOVNMhgLF9LnNvEqVeRde2do6ToIgNGXAgtOmAPLOo
+
+Note: These are already built into the production files, but you may need to
+configure them in your hosting platform's environment settings.
+
+========================================
+SERVER CONFIGURATION (IMPORTANT!)
+========================================
+
+For Single Page Application (SPA) routing to work correctly:
+
+NGINX Configuration:
+--------------------
+location / {
+    try_files $uri $uri/ /index.html;
+}
+
+APACHE (.htaccess):
+-------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+
+Vercel/Netlify:
+---------------
+These platforms automatically handle SPA routing, no configuration needed.
+
+========================================
+BUILD INFORMATION
+========================================
+
+- Build Tool: Vite 6.3.5
+- Framework: React 18.2.0
+- Total Modules: 3,118
+- Build Time: 21.30s
+- Gzip Enabled: Yes
+- Optimized: Yes
+
+========================================
+POST-DEPLOYMENT CHECKLIST
+========================================
+
+[ ] Upload all files from dist/ folder
+[ ] Configure environment variables (if needed)
+[ ] Set up SPA routing on your server
+[ ] Test the application in production
+[ ] Verify Supabase connection works
+[ ] Check all routes are accessible
+[ ] Test authentication flows
+[ ] Verify PDF generation works
+[ ] Test Excel export functionality
+
+========================================
+SUPPORT & DOCUMENTATION
+========================================
+
+For issues or questions:
+- Check the application logs in browser console
+- Verify Supabase connection
+- Ensure environment variables are set correctly
+- Check server configuration for SPA routing
+
+========================================
+TECHNICAL SPECIFICATIONS
+========================================
+
+- Node Version Used: Latest LTS
+- Package Manager: npm
+- Module Type: ES Modules
+- Browser Support: Modern browsers (ES6+)
+- Mobile Responsive: Yes
+- PWA Ready: No
+
+========================================
+SECURITY NOTES
+========================================
+
+- The anon key in .env.example is public and safe to expose
+- All sensitive operations are protected by Row Level Security (RLS) in Supabase
+- Always use HTTPS in production
+- Ensure Supabase RLS policies are properly configured
+
+========================================
+END OF DEPLOYMENT GUIDE
+========================================

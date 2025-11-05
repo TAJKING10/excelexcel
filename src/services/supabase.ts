@@ -1954,6 +1954,7 @@ export const monthlyPayslipService = {
           holidayHours: mostRecent.holiday_hours,
           sickLeaveHours: mostRecent.sick_leave_hours,
           publicHolidayHours: mostRecent.public_holiday_hours,
+          overtimeHours: mostRecent.overtime_hours || 0,
           fd: mostRecent.fd,
           ac: mostRecent.ac,
           ffo: mostRecent.ffo,
@@ -2008,6 +2009,8 @@ export const monthlyPayslipService = {
           m1CisCipCim: mostRecent.m1_cis_cip_cim,
           m1CiCo2: mostRecent.m1_ci_co2,
           m1Net: mostRecent.m1_net,
+          m1OvertimeHours: mostRecent.m1_overtime_hours,
+          m1OvertimePremium: mostRecent.m1_overtime_premium,
         };
       }
       throw error;
@@ -2036,6 +2039,7 @@ export const monthlyPayslipService = {
       holidayHours: data.holiday_hours ? parseFloat(data.holiday_hours) : 0,
       sickLeaveHours: data.sick_leave_hours ? parseFloat(data.sick_leave_hours) : 0,
       publicHolidayHours: data.public_holiday_hours ? parseFloat(data.public_holiday_hours) : 0,
+      overtimeHours: data.overtime_hours ? parseFloat(data.overtime_hours) : 0,
       fd: data.fd ? parseFloat(data.fd) : 0,
       ac: data.ac ? parseFloat(data.ac) : 0,
       ffo: data.ffo ? parseFloat(data.ffo) : 0,
@@ -2090,6 +2094,8 @@ export const monthlyPayslipService = {
       m1CisCipCim: data.m1_cis_cip_cim ? parseFloat(data.m1_cis_cip_cim) : undefined,
       m1CiCo2: data.m1_ci_co2 ? parseFloat(data.m1_ci_co2) : undefined,
       m1Net: data.m1_net ? parseFloat(data.m1_net) : undefined,
+      m1OvertimeHours: data.m1_overtime_hours ? parseFloat(data.m1_overtime_hours) : undefined,
+      m1OvertimePremium: data.m1_overtime_premium ? parseFloat(data.m1_overtime_premium) : undefined,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };
@@ -2117,6 +2123,7 @@ export const monthlyPayslipService = {
       holiday_hours: payslipData.holidayHours,
       sick_leave_hours: payslipData.sickLeaveHours,
       public_holiday_hours: payslipData.publicHolidayHours,
+      overtime_hours: payslipData.overtimeHours || 0,
       fd: payslipData.fd,
       ac: payslipData.ac,
       ffo: payslipData.ffo,
@@ -2171,6 +2178,8 @@ export const monthlyPayslipService = {
       m1_cis_cip_cim: payslipData.m1CisCipCim,
       m1_ci_co2: payslipData.m1CiCo2,
       m1_net: payslipData.m1Net,
+      m1_overtime_hours: payslipData.m1OvertimeHours,
+      m1_overtime_premium: payslipData.m1OvertimePremium,
       created_by: user?.id,
       updated_at: new Date().toISOString()
     };
@@ -2217,6 +2226,7 @@ export const monthlyPayslipService = {
       holidayHours: data.holiday_hours ? parseFloat(data.holiday_hours) : 0,
       sickLeaveHours: data.sick_leave_hours ? parseFloat(data.sick_leave_hours) : 0,
       publicHolidayHours: data.public_holiday_hours ? parseFloat(data.public_holiday_hours) : 0,
+      overtimeHours: data.overtime_hours ? parseFloat(data.overtime_hours) : 0,
       fd: data.fd ? parseFloat(data.fd) : 0,
       ac: data.ac ? parseFloat(data.ac) : 0,
       ffo: data.ffo ? parseFloat(data.ffo) : 0,
@@ -2271,6 +2281,8 @@ export const monthlyPayslipService = {
       m1CisCipCim: data.m1_cis_cip_cim ? parseFloat(data.m1_cis_cip_cim) : undefined,
       m1CiCo2: data.m1_ci_co2 ? parseFloat(data.m1_ci_co2) : undefined,
       m1Net: data.m1_net ? parseFloat(data.m1_net) : undefined,
+      m1OvertimeHours: data.m1_overtime_hours ? parseFloat(data.m1_overtime_hours) : undefined,
+      m1OvertimePremium: data.m1_overtime_premium ? parseFloat(data.m1_overtime_premium) : undefined,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };
