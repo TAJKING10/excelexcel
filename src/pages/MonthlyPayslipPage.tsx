@@ -154,6 +154,19 @@ export default function MonthlyPayslipPage() {
   const taxRates = useTaxRatesStore((state) => state.taxRates);
   const { getTaxRateForDate, getTaxRateById, loadTaxRates } = useTaxRatesStore();
 
+  // Reset states on component mount and cleanup on unmount
+  useEffect(() => {
+    // Reset loading states on mount to prevent stuck loading
+    setIsLoading(false);
+    setIsSaving(false);
+
+    // Cleanup on unmount
+    return () => {
+      setIsLoading(false);
+      setIsSaving(false);
+    };
+  }, []);
+
   // Load tax rates from Supabase on mount
   useEffect(() => {
     loadTaxRates();
@@ -231,11 +244,16 @@ export default function MonthlyPayslipPage() {
 
   // Load payslip data from Supabase when period changes
   useEffect(() => {
+    let isMounted = true; // Track if component is still mounted
     const loadPayslipData = async () => {
-      if (!personId) return;
+      if (!personId) {
+        setIsLoading(false);
+        return;
+      }
 
       // Wait for tax rates to be loaded first
       if (taxRates.length === 0) {
+        setIsLoading(false);
         return;
       }
 
@@ -331,9 +349,11 @@ export default function MonthlyPayslipPage() {
             m1CiCo2: savedPayslip.m1CiCo2,
             m1Net: savedPayslip.m1Net,
           };
-          setPayslipData(loadedData);
-          setOriginalPayslipData(loadedData); // Store original data for edit history tracking
-          setHasUnsavedChanges(false);
+          if (isMounted) {
+            setPayslipData(loadedData);
+            setOriginalPayslipData(loadedData); // Store original data for edit history tracking
+            setHasUnsavedChanges(false);
+          }
         } else {
           // No saved data - auto-create the payslip record so history tracking works
           // Use the first day of the selected period to determine the correct tax rate
@@ -500,22 +520,33 @@ export default function MonthlyPayslipPage() {
             impot: calculations.calculatedImpot,
           };
 
-          setPayslipData(dataWithCalculatedImpot);
-          setOriginalPayslipData(dataWithCalculatedImpot);
-          setHasUnsavedChanges(false);
+          if (isMounted) {
+            setPayslipData(dataWithCalculatedImpot);
+            setOriginalPayslipData(dataWithCalculatedImpot);
+            setHasUnsavedChanges(false);
+          }
         }
       } catch (error) {
-        toast({
-          title: t('payslips.loadError'),
-          description: error instanceof Error ? error.message : t('payslips.unableToLoad'),
-          variant: "destructive",
-        });
+        if (isMounted) {
+          toast({
+            title: t('payslips.loadError'),
+            description: error instanceof Error ? error.message : t('payslips.unableToLoad'),
+            variant: "destructive",
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadPayslipData();
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
   }, [personId, selectedYear, selectedMonth, employeeId, taxRates]); // Include taxRates to wait for them to load
 
   // Smart bidirectional auto-recalculation
@@ -908,6 +939,18 @@ export default function MonthlyPayslipPage() {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     setIsSaving(true);
+
+    // Add timeout protection to prevent stuck saving state
+    const saveTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast({
+        title: t('payslips.saveError'),
+        description: 'Save operation timed out. Please try again.',
+        variant: "destructive",
+        duration: 5000,
+      });
+    }, 30000); // 30 second timeout
+
     try {
       const isEmployee = !!employeeId;
 
@@ -1061,6 +1104,7 @@ export default function MonthlyPayslipPage() {
         duration: 3000,
       });
     } catch (error: any) {
+      clearTimeout(saveTimeout); // Clear timeout on error
       toast({
         title: t('payslips.saveError'),
         description: error.message || t('payslips.saveErrorDesc'),
@@ -1068,6 +1112,7 @@ export default function MonthlyPayslipPage() {
         duration: 5000,
       });
     } finally {
+      clearTimeout(saveTimeout); // Clear timeout in finally block
       setIsSaving(false);
     }
   };
