@@ -382,13 +382,13 @@ export default function MonthlyPayslipPage() {
           const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
           const avantageVehicule = tempData.avantageVehicule || 0;
           const travailTache = tempData.travailTache || 0;
-          const totalBrut = appointement + avantageVehicule + travailTache;
-          const baseForCotisations = heuresSuppl + totalBrut;
+          const totalBrut = appointement + joursFeries + avantageVehicule + travailTache + heuresSuppl + heuresSupplPremium;
+          const baseForCotisations = totalBrut;
 
-          const assuranceMaladie = baseForCotisations * RATES.assuranceMaladie;
+          const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
           const majorationEspece = totalBrut * RATES.majoration;
           const assurancePension = totalBrut * RATES.assurancePension;
-          const assuranceDependance = Math.max(0, (baseForCotisations - RATES.dependanceThreshold) * RATES.assuranceDependance);
+          const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
           const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
           // IMPOSABLE = BRUT - (MALADIE + PENSION + DÉDUCTIONS)
@@ -628,13 +628,13 @@ export default function MonthlyPayslipPage() {
       const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
       const avantageVehicule = payslipData.avantageVehicule || 0;
       const travailTache = payslipData.travailTache || 0;
-      const totalBrut = appointement + avantageVehicule + travailTache;
-      const baseForCotisations = heuresSuppl + totalBrut;
+      const totalBrut = appointement + joursFeries + avantageVehicule + travailTache + heuresSuppl + heuresSupplPremium;
+      const baseForCotisations = totalBrut;
 
-      const assuranceMaladie = baseForCotisations * RATES.assuranceMaladie;
+      const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
       const majorationEspece = totalBrut * RATES.majoration;
       const assurancePension = totalBrut * RATES.assurancePension;
-      const assuranceDependance = Math.max(0, (baseForCotisations - RATES.dependanceThreshold) * RATES.assuranceDependance);
+      const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
       const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
       const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
@@ -711,25 +711,23 @@ export default function MonthlyPayslipPage() {
     const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
 
     // STEP 2: Calculate Total Brut
-    // Excel formula: =D16+D19 (Appointement + Avantage Véhic + Travail à la tâche)
-    // Congés and Maladie hours are tracked separately for leave balance, not added to salary
+    // Excel formula: Total brut = Appointement + Jours fériée + Congés + Avantage N + Travail à la tâche + Heures Suppl + H-S part majorée
     const avantageVehicule = payslipData.avantageVehicule || 0;
     const travailTache = payslipData.travailTache || 0;
-    const totalBrut = appointement + avantageVehicule + travailTache;
+    const totalBrut = appointement + joursFeries + avantageVehicule + travailTache + heuresSuppl + heuresSupplPremium;
 
-    // For cotisations: D19 (Heures Suppl without premium) + D22 (Total Brut)
-    // This matches Excel: (687.66 + 2703.75) = 3391.41
-    const baseForCotisations = heuresSuppl + totalBrut;
+    // Base for cotisations = Total Brut (which already includes heuresSuppl)
+    const baseForCotisations = totalBrut;
 
     // STEP 3: Calculate Cotisations (Social contributions)
-    // Assurance Maladie: =(D19+D22)*B25 = (687.66 + 2703.75) * 2.8% = 94.96
-    const assuranceMaladie = baseForCotisations * RATES.assuranceMaladie;
-    // A-M Majoration: =B26*D22 = 0.25% * 2703.75 = 6.76
+    // Assurance Maladie: =D20*B23 (Total Brut * rate)
+    const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+    // A-M Majoration: =B24*D20 (rate * Total Brut)
     const majorationEspece = totalBrut * RATES.majoration;
-    // Assurance Pension: =B27*D22 = 8% * 2703.75 = 216.30
+    // Assurance Pension: =B25*D20 (rate * Total Brut)
     const assurancePension = totalBrut * RATES.assurancePension;
-    // Assurance Dépendance: =B28*(D19+D22-675.93) = 1.4% * (687.66 + 2703.75 - 675.93) = 38.02
-    const assuranceDependance = Math.max(0, (baseForCotisations - RATES.dependanceThreshold) * RATES.assuranceDependance);
+    // Assurance Dépendance: =B26*(D20-675.93) (rate * (Total Brut - threshold))
+    const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
 
     // STEP 4: Total Cotisation
     const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
@@ -813,14 +811,14 @@ export default function MonthlyPayslipPage() {
     const travailTache = payslipData.travailTache || 0;
     const totalBrut = payslipData.manualTotalBrut !== undefined
       ? payslipData.manualTotalBrut
-      : appointement + avantageVehicule + travailTache;
+      : appointement + joursFeries + avantageVehicule + travailTache + heuresSuppl + heuresSupplPremium;
 
-    // Base for cotisations: Heures Suppl (without premium) + Total Brut
-    const baseForCotisations = heuresSuppl + totalBrut;
+    // Base for cotisations = Total Brut (which already includes all earnings)
+    const baseForCotisations = totalBrut;
 
     const assuranceMaladie = payslipData.manualAssuranceMaladie !== undefined
       ? payslipData.manualAssuranceMaladie
-      : baseForCotisations * RATES.assuranceMaladie;
+      : totalBrut * RATES.assuranceMaladie;
 
     const majorationEspece = payslipData.manualMajoration !== undefined
       ? payslipData.manualMajoration
@@ -832,7 +830,7 @@ export default function MonthlyPayslipPage() {
 
     const assuranceDependance = payslipData.manualAssuranceDependance !== undefined
       ? payslipData.manualAssuranceDependance
-      : Math.max(0, (baseForCotisations - RATES.dependanceThreshold) * RATES.assuranceDependance);
+      : Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
 
     const totalCotisation = payslipData.manualTotalCotisation !== undefined
       ? payslipData.manualTotalCotisation
