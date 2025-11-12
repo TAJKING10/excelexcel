@@ -1427,8 +1427,9 @@ export default function MonthlyPayslipPage() {
     // ===== NET A PAYER - Positioned separately like Excel =====
     const tableEndY = (doc as any).lastAutoTable.finalY;
 
-    // Add 20 pixels spacing below the table before placing the NET À PAYER box
-    const netPayerYPosition = tableEndY + 20;
+    // Add 5-6 pixels spacing below the table (≈0.4-0.5 cm) for visual separation
+    // This aligns the box horizontally with the NET row while keeping it visually distinct
+    const netPayerYPosition = tableEndY + 5;
 
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
