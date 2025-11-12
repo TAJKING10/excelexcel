@@ -420,10 +420,9 @@ export default function MonthlyPayslipPage() {
           const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
             (tempData.fd || 0) - (tempData.ac || 0) - (tempData.ffo || 0) - (tempData.fds || 0);
 
-          // Calculate IMPÔT: use tax rate percentage if available, otherwise use 5% default
-          const calculatedImpot = (payslipData.taxRatePercentage !== undefined && payslipData.taxRatePercentage > 0)
-            ? Math.max(0, totalImposable - 500) * (payslipData.taxRatePercentage / 100)
-            : Math.max(0, totalImposable - 500) * 0.05; // 5% default to ensure IMPÔT is never 0
+          // Calculate IMPÔT: use Luxembourg 2025 barème based on tax class
+          const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
+          const calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
 
           // Fixed tax credit formulas
           const cissm = totalBrut < 1800 ? 0
@@ -847,31 +846,17 @@ export default function MonthlyPayslipPage() {
       (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0)).toFixed(2));
 
     // STEP 7: Calculate Tax (IMPÔT)
-    // IMPORTANT: IMPÔT should NEVER be 0 for taxable income
-    // Always use personalized tax rate if available, otherwise use a reasonable default
+    // IMPORTANT: Use Luxembourg 2025 barème based on tax class for accurate calculation
+    // This ensures proper tax calculation for Class 1, 1A, and 2
     let calculatedImpot: number;
 
-    if (payslipData.taxRatePercentage !== undefined && payslipData.taxRatePercentage > 0) {
-      // Use personalized tax rate (standard Luxembourg withholding rate)
-      // Formula: (Total Imposable - 500€ exemption) × tax rate %
-      const taxableAfterExemption = Math.max(0, totalImposable - 500);
-      calculatedImpot = parseFloat((taxableAfterExemption * (payslipData.taxRatePercentage / 100)).toFixed(2));
-      console.log('[Auto-Calc] Using tax rate:', payslipData.taxRatePercentage + '%');
-      console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
-      console.log('[Auto-Calc] After 500€ exemption:', taxableAfterExemption.toFixed(2));
-      console.log('[Auto-Calc] Calculated IMPÔT:', calculatedImpot.toFixed(2));
-    } else {
-      // Fallback: Use simplified percentage-based calculation
-      // Standard Luxembourg effective rate for typical income: ~4-6%
-      // Use 5% as a reasonable default to ensure IMPÔT is never 0
-      const defaultRate = 5.0; // 5% default rate
-      const taxableAfterExemption = Math.max(0, totalImposable - 500);
-      calculatedImpot = parseFloat((taxableAfterExemption * (defaultRate / 100)).toFixed(2));
-      console.warn('[Auto-Calc] WARNING: No tax rate percentage set! Using default', defaultRate + '%');
-      console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
-      console.log('[Auto-Calc] After 500€ exemption:', taxableAfterExemption.toFixed(2));
-      console.log('[Auto-Calc] Calculated IMPÔT (default):', calculatedImpot.toFixed(2));
-    }
+    // Always use Luxembourg barème calculation based on tax class
+    const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
+    calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
+
+    console.log('[Auto-Calc] Tax Class:', taxClass);
+    console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
+    console.log('[Auto-Calc] Calculated IMPÔT (barème 2025):', calculatedImpot.toFixed(2));
 
     // STEP 8: Calculate NET (Excel formula: D22-D29-D39+D40+D41+D42+D19+D20)
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 + Heures Suppl + H-S majorée - Avantage N
@@ -963,10 +948,9 @@ export default function MonthlyPayslipPage() {
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
-    // Calculate IMPÔT: use tax rate percentage if available, otherwise use 5% default
-    const calculatedImpot = (payslipData.taxRatePercentage !== undefined && payslipData.taxRatePercentage > 0)
-      ? Math.max(0, totalImposable - 500) * (payslipData.taxRatePercentage / 100)
-      : Math.max(0, totalImposable - 500) * 0.05; // 5% default to ensure IMPÔT is never 0
+    // Calculate IMPÔT: use Luxembourg 2025 barème based on tax class
+    const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
+    const calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
 
     // CISSM (Crédit d'Impôt Salaire Minimum) - Fixed formula
     const cissm = payslipData.manualCissm !== undefined
