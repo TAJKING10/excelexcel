@@ -1250,7 +1250,8 @@ export default function MonthlyPayslipPage() {
 
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
-      return <span className={className}>{(value || 0).toFixed(2)} €</span>;
+      const displayValue = (value !== undefined && value !== null) ? value : 0;
+      return <span className={className}>{displayValue.toFixed(2)} €</span>;
     }
 
     return (
@@ -1347,7 +1348,8 @@ export default function MonthlyPayslipPage() {
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
       const displayValue = payslipData[manualField] !== undefined ? payslipData[manualField] as number : defaultValue;
-      return <span className={className}>{(displayValue || 0).toFixed(2)} €</span>;
+      const safeValue = (displayValue !== undefined && displayValue !== null) ? displayValue : 0;
+      return <span className={className}>{safeValue.toFixed(2)} €</span>;
     }
 
     return (
