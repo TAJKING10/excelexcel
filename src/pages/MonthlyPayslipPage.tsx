@@ -799,46 +799,46 @@ export default function MonthlyPayslipPage() {
     // Base for cotisations = Total Brut (which already includes heuresSuppl)
     const baseForCotisations = totalBrut;
 
-    // STEP 3: Calculate Cotisations (Social contributions)
+    // STEP 3: Calculate Cotisations (Social contributions) - Round to 2 decimals
     // Assurance Maladie: =D20*B23 (Total Brut * rate)
-    const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+    const assuranceMaladie = parseFloat((totalBrut * RATES.assuranceMaladie).toFixed(2));
     // A-M Majoration: =B24*D20 (rate * Total Brut)
-    const majorationEspece = totalBrut * RATES.majoration;
+    const majorationEspece = parseFloat((totalBrut * RATES.majoration).toFixed(2));
     // Assurance Pension: =B25*D20 (rate * Total Brut)
-    const assurancePension = totalBrut * RATES.assurancePension;
+    const assurancePension = parseFloat((totalBrut * RATES.assurancePension).toFixed(2));
     // Assurance Dépendance: =B26*(D20-675.93) (rate * (Total Brut - threshold))
-    const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+    const assuranceDependance = parseFloat((Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance)).toFixed(2));
 
     // STEP 4: Total Cotisation
-    const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
+    const totalCotisation = parseFloat((assuranceMaladie + majorationEspece + assurancePension + assuranceDependance).toFixed(2));
 
-    // STEP 5: Calculate Tax Credits FIRST (needed for IMPOSABLE calculation)
+    // STEP 5: Calculate Tax Credits FIRST (needed for IMPOSABLE calculation) - Round to 2 decimals
     // CISSM formula from Excel: IF(D20<1800,0,IF(D20<3000,81,IF(D20>3600,0,81/600*(3600-D20))))
     // Fixed: Properly handle all ranges
-    const cissm = totalBrut < 1800 ? 0
+    const cissm = parseFloat((totalBrut < 1800 ? 0
                 : totalBrut <= 3000 ? 81
                 : totalBrut < 3600 ? (81 / 600 * (3600 - totalBrut))
-                : 0;
+                : 0).toFixed(2));
 
     // CIS/CIP/CIM formula - Fixed to handle all salary ranges correctly
-    const cisCipCim = totalBrut < 78 ? 0
+    const cisCipCim = parseFloat((totalBrut < 78 ? 0
                     : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12)
                     : totalBrut <= 3333.33 ? 50
                     : totalBrut <= 6666.67 ? ((600 - (totalBrut * 12 - 40000) * 0.015) / 12)
-                    : 0;
+                    : 0).toFixed(2));
 
     // CI-CO2 formula - Fixed to handle all salary ranges correctly
-    const ciCo2 = totalBrut < 78 ? 0
+    const ciCo2 = parseFloat((totalBrut < 78 ? 0
                 : totalBrut <= 3333.33 ? 16
                 : totalBrut <= 6666.67 ? (16 - (totalBrut - 3333.33) * 0.0048)
-                : 0;
+                : 0).toFixed(2));
 
     // STEP 6: Calculate Total Imposable (Luxembourg formula from your guide)
     // Excel formula: D20-D23-D24-D25-D30-D31-D32-D33
     // IMPOSABLE = BRUT - MALADIE - MAJORATION - PENSION - FD - AC - FFO - FDS
     // Note: Assurance Dépendance is NOT deducted per Luxembourg tax law
-    const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
-      (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
+    const totalImposable = parseFloat((totalBrut - assuranceMaladie - majorationEspece - assurancePension -
+      (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0)).toFixed(2));
 
     // STEP 7: Calculate Tax (IMPÔT)
     // IMPORTANT: IMPÔT should NEVER be 0 for taxable income
@@ -849,7 +849,7 @@ export default function MonthlyPayslipPage() {
       // Use personalized tax rate (standard Luxembourg withholding rate)
       // Formula: (Total Imposable - 500€ exemption) × tax rate %
       const taxableAfterExemption = Math.max(0, totalImposable - 500);
-      calculatedImpot = taxableAfterExemption * (payslipData.taxRatePercentage / 100);
+      calculatedImpot = parseFloat((taxableAfterExemption * (payslipData.taxRatePercentage / 100)).toFixed(2));
       console.log('[Auto-Calc] Using tax rate:', payslipData.taxRatePercentage + '%');
       console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
       console.log('[Auto-Calc] After 500€ exemption:', taxableAfterExemption.toFixed(2));
@@ -860,7 +860,7 @@ export default function MonthlyPayslipPage() {
       // Use 5% as a reasonable default to ensure IMPÔT is never 0
       const defaultRate = 5.0; // 5% default rate
       const taxableAfterExemption = Math.max(0, totalImposable - 500);
-      calculatedImpot = taxableAfterExemption * (defaultRate / 100);
+      calculatedImpot = parseFloat((taxableAfterExemption * (defaultRate / 100)).toFixed(2));
       console.warn('[Auto-Calc] WARNING: No tax rate percentage set! Using default', defaultRate + '%');
       console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
       console.log('[Auto-Calc] After 500€ exemption:', taxableAfterExemption.toFixed(2));
@@ -869,12 +869,12 @@ export default function MonthlyPayslipPage() {
 
     // STEP 8: Calculate NET (Excel formula: D20 - D27 - D37 + D38 + D39 + D40 - D19)
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 - Avantage N
-    const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 - avantageVehicule;
+    const net = parseFloat((totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 - avantageVehicule).toFixed(2));
 
     // STEP 9: Calculate NET À PAYER (NET - Chèque Repas - Avance Salaire - Custom Expenses 1-3 + Custom Expenses 4-6)
-    const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
+    const netAPayer = parseFloat((net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
       - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0)
-      + (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0);
+      + (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0)).toFixed(2));
 
     // Update ALL manual fields with calculated values
     setPayslipData(prev => ({
