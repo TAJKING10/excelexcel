@@ -1427,17 +1427,21 @@ export default function MonthlyPayslipPage() {
     // ===== NET A PAYER - Positioned separately like Excel =====
     const tableEndY = (doc as any).lastAutoTable.finalY;
 
+    // Add 20 pixels spacing below the table before placing the NET À PAYER box
+    const netPayerYPosition = tableEndY + 20;
+
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.setFillColor(66, 139, 202);
     doc.setTextColor(255, 255, 255);
-    doc.rect(pageWidth - 14 - 50, tableEndY - 8, 50, 8, 'F');
-    doc.text('NET A PAYER', pageWidth - 14 - 25, tableEndY - 3, { align: 'center' });
+    doc.rect(pageWidth - 14 - 50, netPayerYPosition, 50, 8, 'F');
+    doc.text('NET A PAYER', pageWidth - 14 - 25, netPayerYPosition + 5, { align: 'center' });
     doc.setFontSize(12);
-    doc.text(calculated.netAPayer.toFixed(2), pageWidth - 14 - 25, tableEndY + 3, { align: 'center' });
+    doc.text(calculated.netAPayer.toFixed(2), pageWidth - 14 - 25, netPayerYPosition + 11, { align: 'center' });
 
     // ===== FOOTER SECTION =====
-    let footerY = tableEndY + 12;
+    // Position footer below the NET À PAYER box with proper spacing
+    let footerY = netPayerYPosition + 20;
 
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(9);
