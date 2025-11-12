@@ -406,13 +406,14 @@ export default function MonthlyPayslipPage() {
           const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
           const avantageVehicule = tempData.avantageVehicule || 0;
           const travailTache = tempData.travailTache || 0;
-          const totalBrut = appointement + joursFeries + avantageVehicule + travailTache + heuresSuppl + heuresSupplPremium;
+          const totalBrut = appointement + joursFeries + avantageVehicule + travailTache;
           const baseForCotisations = totalBrut;
+          const baseWithOvertime = totalBrut + heuresSuppl;
 
-          const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+          const assuranceMaladie = baseWithOvertime * RATES.assuranceMaladie;
           const majorationEspece = totalBrut * RATES.majoration;
           const assurancePension = totalBrut * RATES.assurancePension;
-          const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+          const assuranceDependance = Math.max(0, (baseWithOvertime - RATES.dependanceThreshold) * RATES.assuranceDependance);
           const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
           // IMPOSABLE = BRUT - MALADIE - MAJORATION - PENSION - FD - AC - FFO - FDS (Excel: D20-D23-D24-D25-D30-D31-D32-D33)
@@ -440,8 +441,8 @@ export default function MonthlyPayslipPage() {
                       : totalBrut <= 3333.33 ? 16
                       : totalBrut <= 6666.67 ? (16 - (totalBrut - 3333.33) * 0.0048)
                       : 0;
-          // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 - Avantage N (Excel: D20-D27-D37+D38+D39+D40-D19)
-          const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 - avantageVehicule;
+          // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 + Heures Suppl + H-S majorée - Avantage N (Excel: D22-D29-D39+D40+D41+D42+D19+D20)
+          const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 + heuresSuppl + heuresSupplPremium - avantageVehicule;
           const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire
             - (tempData.customExpense1Amount || 0) - (tempData.customExpense2Amount || 0) - (tempData.customExpense3Amount || 0)
             + (tempData.customExpense4Amount || 0) + (tempData.customExpense5Amount || 0) + (tempData.customExpense6Amount || 0);
@@ -681,13 +682,14 @@ export default function MonthlyPayslipPage() {
       const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
       const avantageVehicule = payslipData.avantageVehicule || 0;
       const travailTache = payslipData.travailTache || 0;
-      const totalBrut = appointement + joursFeries + avantageVehicule + travailTache + heuresSuppl + heuresSupplPremium;
+      const totalBrut = appointement + joursFeries + avantageVehicule + travailTache;
       const baseForCotisations = totalBrut;
+      const baseWithOvertime = totalBrut + heuresSuppl;
 
-      const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
+      const assuranceMaladie = baseWithOvertime * RATES.assuranceMaladie;
       const majorationEspece = totalBrut * RATES.majoration;
       const assurancePension = totalBrut * RATES.assurancePension;
-      const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+      const assuranceDependance = Math.max(0, (baseWithOvertime - RATES.dependanceThreshold) * RATES.assuranceDependance);
       const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
       // Fixed tax credit formulas
@@ -710,8 +712,8 @@ export default function MonthlyPayslipPage() {
       // Use the manually entered impot value
       const manualImpot = payslipData.impot || 0;
 
-      // Calculate NET using the manual IMPÔT (Excel: D20-D27-D37+D38+D39+D40-D19)
-      const net = totalBrut - totalCotisation - manualImpot + cissm + cisCipCim + ciCo2 - avantageVehicule;
+      // Calculate NET using the manual IMPÔT (Excel: D22-D29-D39+D40+D41+D42+D19+D20)
+      const net = totalBrut - totalCotisation - manualImpot + cissm + cisCipCim + ciCo2 + heuresSuppl + heuresSupplPremium - avantageVehicule;
       const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
         - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0)
         + (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0);
@@ -791,23 +793,27 @@ export default function MonthlyPayslipPage() {
     const heuresSupplPremium = overtimeHours * hourlyRate * 0.40;
 
     // STEP 2: Calculate Total Brut
-    // Excel formula: Total brut = Appointement + Jours fériée + Congés + Avantage N + Travail à la tâche + Heures Suppl + H-S part majorée
+    // Excel formula: Total brut = Appointement + Jours fériée + Congés + Avantage N + Travail à la tâche
+    // NOTE: Heures Suppl are NOT included in Total Brut - they are added directly to NET
     const avantageVehicule = payslipData.avantageVehicule || 0;
     const travailTache = payslipData.travailTache || 0;
-    const totalBrut = appointement + joursFeries + avantageVehicule + travailTache + heuresSuppl + heuresSupplPremium;
+    const totalBrut = parseFloat((appointement + joursFeries + avantageVehicule + travailTache).toFixed(2));
 
-    // Base for cotisations = Total Brut (which already includes heuresSuppl)
+    // Base for cotisations = Total Brut (WITHOUT overtime)
     const baseForCotisations = totalBrut;
 
     // STEP 3: Calculate Cotisations (Social contributions) - Round to 2 decimals
-    // Assurance Maladie: =D20*B23 (Total Brut * rate)
-    const assuranceMaladie = parseFloat((totalBrut * RATES.assuranceMaladie).toFixed(2));
-    // A-M Majoration: =B24*D20 (rate * Total Brut)
+    // Base including overtime for Maladie and Dépendance (Excel: D19+D22)
+    const baseWithOvertime = totalBrut + heuresSuppl;
+
+    // Assurance Maladie: =(D19+D22)*B25 (includes overtime!)
+    const assuranceMaladie = parseFloat((baseWithOvertime * RATES.assuranceMaladie).toFixed(2));
+    // A-M Majoration: =B26*D22 (just Total Brut, no overtime)
     const majorationEspece = parseFloat((totalBrut * RATES.majoration).toFixed(2));
-    // Assurance Pension: =B25*D20 (rate * Total Brut)
+    // Assurance Pension: =B27*D22 (just Total Brut, no overtime)
     const assurancePension = parseFloat((totalBrut * RATES.assurancePension).toFixed(2));
-    // Assurance Dépendance: =B26*(D20-675.93) (rate * (Total Brut - threshold))
-    const assuranceDependance = parseFloat((Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance)).toFixed(2));
+    // Assurance Dépendance: =B28*(D19+D22-675.93) (includes overtime!)
+    const assuranceDependance = parseFloat((Math.max(0, (baseWithOvertime - RATES.dependanceThreshold) * RATES.assuranceDependance)).toFixed(2));
 
     // STEP 4: Total Cotisation
     const totalCotisation = parseFloat((assuranceMaladie + majorationEspece + assurancePension + assuranceDependance).toFixed(2));
@@ -867,9 +873,9 @@ export default function MonthlyPayslipPage() {
       console.log('[Auto-Calc] Calculated IMPÔT (default):', calculatedImpot.toFixed(2));
     }
 
-    // STEP 8: Calculate NET (Excel formula: D20 - D27 - D37 + D38 + D39 + D40 - D19)
-    // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 - Avantage N
-    const net = parseFloat((totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 - avantageVehicule).toFixed(2));
+    // STEP 8: Calculate NET (Excel formula: D22-D29-D39+D40+D41+D42+D19+D20)
+    // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 + Heures Suppl + H-S majorée - Avantage N
+    const net = parseFloat((totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 + heuresSuppl + heuresSupplPremium - avantageVehicule).toFixed(2));
 
     // STEP 9: Calculate NET À PAYER (NET - Chèque Repas - Avance Salaire - Custom Expenses 1-3 + Custom Expenses 4-6)
     const netAPayer = parseFloat((net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
