@@ -52,6 +52,7 @@ interface PayslipData {
   // Tax rate information (immutable - stored at payslip creation)
   taxRateId?: string;
   taxRatePercentage?: number;
+  taxClass?: string; // Tax class: "1", "1A", or "2"
   employeeNumber: string;
   indice: string;
   emploi: string;
@@ -207,6 +208,7 @@ export default function MonthlyPayslipPage() {
     dateEntree: person?.hireDate || '',
     matriculeAssure: person?.matricule || '',
     matriculeEmployeur: '20152206748',
+    taxClass: employee?.taxClass || '2',
     hoursWorked: 173,
     hourlyRate: person?.baseSalary ? person.baseSalary / 173 : 18.2968,
     holidayHours: 16,
@@ -276,6 +278,7 @@ export default function MonthlyPayslipPage() {
           const loadedData = {
             taxRateId: savedPayslip.taxRateId,
             taxRatePercentage: savedPayslip.taxRatePercentage,
+            taxClass: savedPayslip.taxClass || employee?.taxClass || '2',
             employeeNumber: savedPayslip.employeeNumber || '2',
             indice: savedPayslip.indice || '968.04', // Current Luxembourg salary index
             emploi: savedPayslip.emploi || person?.class || 'Comptable',
@@ -362,6 +365,7 @@ export default function MonthlyPayslipPage() {
           const defaultData = {
             taxRateId: applicableTaxRate?.id,
             taxRatePercentage: applicableTaxRate?.rate,
+            taxClass: employee?.taxClass || '2',
             employeeNumber: '2',
             indice: '968.04', // Current Luxembourg salary index (cost of living adjustment)
             emploi: person?.class || 'Comptable',
@@ -413,8 +417,8 @@ export default function MonthlyPayslipPage() {
 
           // IMPOSABLE = BRUT - (MALADIE + PENSION + DÉDUCTIONS)
           const totalImposable = totalBrut - assuranceMaladie - assurancePension;
-          // Use Luxembourg 2025 barème based on employee's tax class
-          const calculatedImpot = calculateIncomeTax(totalImposable, employee?.taxClass || '1');
+          // Use Luxembourg 2025 barème based on payslip's tax class
+          const calculatedImpot = calculateIncomeTax(totalImposable, payslipData.taxClass || employee?.taxClass || '2');
 
           const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
           const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
@@ -776,8 +780,8 @@ export default function MonthlyPayslipPage() {
     const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
       (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
 
-    // STEP 7: Calculate Tax (IMPÔT) using Luxembourg 2025 barème based on employee's tax class
-    const taxClassToUse = employee?.taxClass || '1';
+    // STEP 7: Calculate Tax (IMPÔT) using Luxembourg 2025 barème based on payslip's tax class
+    const taxClassToUse = payslipData.taxClass || employee?.taxClass || '2';
     console.log('[Auto-Calc] Using tax class:', taxClassToUse, 'for employee:', employee?.firstName, employee?.lastName);
     console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
     const calculatedImpot = calculateIncomeTax(totalImposable, taxClassToUse);
@@ -873,8 +877,8 @@ export default function MonthlyPayslipPage() {
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
-    // Calculate tax using Luxembourg 2025 barème based on employee's tax class
-    const calculatedImpot = calculateIncomeTax(totalImposable, employee?.taxClass || '1');
+    // Calculate tax using Luxembourg 2025 barème based on payslip's tax class
+    const calculatedImpot = calculateIncomeTax(totalImposable, payslipData.taxClass || employee?.taxClass || '2');
     const cissm = payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
       : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
@@ -1797,6 +1801,35 @@ export default function MonthlyPayslipPage() {
                 </div>
               )}
             </div>
+
+            {/* Tax Class Selector */}
+            <div className="pt-3 border-t border-border">
+              <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Classe d'impôt:</Label>
+              {isEditMode ? (
+                <Select
+                  value={payslipData.taxClass || '2'}
+                  onValueChange={(value) => {
+                    handleInputChange('taxClass', value);
+                  }}
+                >
+                  <SelectTrigger className="w-full h-8 text-xs">
+                    <SelectValue placeholder="Sélectionner la classe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Classe 1 - Célibataire</SelectItem>
+                    <SelectItem value="1A">Classe 1A - Célibataire avec enfants</SelectItem>
+                    <SelectItem value="2">Classe 2 - Marié(e)/Partenariat</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="text-sm font-medium">
+                  {payslipData.taxClass === '1' && 'Classe 1 - Célibataire'}
+                  {payslipData.taxClass === '1A' && 'Classe 1A - Célibataire avec enfants'}
+                  {payslipData.taxClass === '2' && 'Classe 2 - Marié(e)/Partenariat'}
+                  {!payslipData.taxClass && (employee?.taxClass || '2')}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -2431,7 +2464,7 @@ export default function MonthlyPayslipPage() {
               ['Heures', payslipData.hoursWorked.toString()],
               ['Salaire horaire', `${payslipData.hourlyRate.toFixed(4)} €`],
               ['N° de carte', person?.identityNumber || 'D608388-2022'],
-              ['Classe d\'impôt', employee?.taxClass || '1'],
+              ['Classe d\'impôt', payslipData.taxClass || employee?.taxClass || '2'],
               ['Taux', '-'],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
