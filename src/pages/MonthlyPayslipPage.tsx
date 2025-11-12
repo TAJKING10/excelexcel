@@ -415,15 +415,33 @@ export default function MonthlyPayslipPage() {
           const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
           const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-          // IMPOSABLE = BRUT - (MALADIE + PENSION + DÉDUCTIONS)
-          const totalImposable = totalBrut - assuranceMaladie - assurancePension;
-          // Use Luxembourg 2025 barème based on payslip's tax class
-          const calculatedImpot = calculateIncomeTax(totalImposable, payslipData.taxClass || employee?.taxClass || '2');
+          // IMPOSABLE = BRUT - MALADIE - MAJORATION - PENSION - FD - AC - FFO - FDS (Excel: D20-D23-D24-D25-D30-D31-D32-D33)
+          const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
+            (tempData.fd || 0) - (tempData.ac || 0) - (tempData.ffo || 0) - (tempData.fds || 0);
 
-          const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
-          const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-          const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
-          const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
+          // Calculate IMPÔT: use tax rate percentage if available, otherwise use 5% default
+          const calculatedImpot = (payslipData.taxRatePercentage !== undefined && payslipData.taxRatePercentage > 0)
+            ? Math.max(0, totalImposable - 500) * (payslipData.taxRatePercentage / 100)
+            : Math.max(0, totalImposable - 500) * 0.05; // 5% default to ensure IMPÔT is never 0
+
+          // Fixed tax credit formulas
+          const cissm = totalBrut < 1800 ? 0
+                      : totalBrut <= 3000 ? 81
+                      : totalBrut < 3600 ? (81 / 600 * (3600 - totalBrut))
+                      : 0;
+
+          const cisCipCim = totalBrut < 78 ? 0
+                          : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12)
+                          : totalBrut <= 3333.33 ? 50
+                          : totalBrut <= 6666.67 ? ((600 - (totalBrut * 12 - 40000) * 0.015) / 12)
+                          : 0;
+
+          const ciCo2 = totalBrut < 78 ? 0
+                      : totalBrut <= 3333.33 ? 16
+                      : totalBrut <= 6666.67 ? (16 - (totalBrut - 3333.33) * 0.0048)
+                      : 0;
+          // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 - Avantage N (Excel: D20-D27-D37+D38+D39+D40-D19)
+          const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 - avantageVehicule;
           const netAPayer = net - tempData.chequeRepas - tempData.avanceSalaire
             - (tempData.customExpense1Amount || 0) - (tempData.customExpense2Amount || 0) - (tempData.customExpense3Amount || 0)
             + (tempData.customExpense4Amount || 0) + (tempData.customExpense5Amount || 0) + (tempData.customExpense6Amount || 0);
@@ -672,15 +690,28 @@ export default function MonthlyPayslipPage() {
       const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
       const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-      const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
-      const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-      const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+      // Fixed tax credit formulas
+      const cissm = totalBrut < 1800 ? 0
+                  : totalBrut <= 3000 ? 81
+                  : totalBrut < 3600 ? (81 / 600 * (3600 - totalBrut))
+                  : 0;
+
+      const cisCipCim = totalBrut < 78 ? 0
+                      : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12)
+                      : totalBrut <= 3333.33 ? 50
+                      : totalBrut <= 6666.67 ? ((600 - (totalBrut * 12 - 40000) * 0.015) / 12)
+                      : 0;
+
+      const ciCo2 = totalBrut < 78 ? 0
+                  : totalBrut <= 3333.33 ? 16
+                  : totalBrut <= 6666.67 ? (16 - (totalBrut - 3333.33) * 0.0048)
+                  : 0;
 
       // Use the manually entered impot value
       const manualImpot = payslipData.impot || 0;
 
-      // Calculate NET using the manual IMPÔT
-      const net = totalBrut - totalCotisation - manualImpot + cissm + cisCipCim + ciCo2;
+      // Calculate NET using the manual IMPÔT (Excel: D20-D27-D37+D38+D39+D40-D19)
+      const net = totalBrut - totalCotisation - manualImpot + cissm + cisCipCim + ciCo2 - avantageVehicule;
       const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
         - (payslipData.customExpense1Amount || 0) - (payslipData.customExpense2Amount || 0) - (payslipData.customExpense3Amount || 0)
         + (payslipData.customExpense4Amount || 0) + (payslipData.customExpense5Amount || 0) + (payslipData.customExpense6Amount || 0);
@@ -698,13 +729,27 @@ export default function MonthlyPayslipPage() {
     if (lastChangedField === 'manualNet' && payslipData.manualNet !== undefined) {
       const targetNet = payslipData.manualNet;
       const impot = payslipData.impot || 0;
+      const avantageVehicule = payslipData.avantageVehicule || 0;
 
       // Estimate totalBrut through iteration (since credits depend on totalBrut)
       let totalBrut = targetNet; // Initial guess
       for (let i = 0; i < 10; i++) {
-        const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
-        const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-        const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+        // Fixed tax credit formulas
+        const cissm = totalBrut < 1800 ? 0
+                    : totalBrut <= 3000 ? 81
+                    : totalBrut < 3600 ? (81 / 600 * (3600 - totalBrut))
+                    : 0;
+
+        const cisCipCim = totalBrut < 78 ? 0
+                        : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12)
+                        : totalBrut <= 3333.33 ? 50
+                        : totalBrut <= 6666.67 ? ((600 - (totalBrut * 12 - 40000) * 0.015) / 12)
+                        : 0;
+
+        const ciCo2 = totalBrut < 78 ? 0
+                    : totalBrut <= 3333.33 ? 16
+                    : totalBrut <= 6666.67 ? (16 - (totalBrut - 3333.33) * 0.0048)
+                    : 0;
 
         const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
         const majorationEspece = totalBrut * RATES.majoration;
@@ -712,8 +757,8 @@ export default function MonthlyPayslipPage() {
         const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
         const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
-        // Calculate NET using Excel formula: BRUT - Total Cotisation - IMPÔT + Credits
-        const calculatedNet = totalBrut - totalCotisation - impot + cissm + cisCipCim + ciCo2;
+        // Calculate NET using Excel formula: BRUT - Total Cotisation - IMPÔT + Credits - Avantage N (D20-D27-D37+D38+D39+D40-D19)
+        const calculatedNet = totalBrut - totalCotisation - impot + cissm + cisCipCim + ciCo2 - avantageVehicule;
         const diff = targetNet - calculatedNet;
 
         if (Math.abs(diff) < 0.01) break; // Close enough
@@ -769,9 +814,24 @@ export default function MonthlyPayslipPage() {
 
     // STEP 5: Calculate Tax Credits FIRST (needed for IMPOSABLE calculation)
     // CISSM formula from Excel: IF(D20<1800,0,IF(D20<3000,81,IF(D20>3600,0,81/600*(3600-D20))))
-    const cissm = totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
-    const cisCipCim = totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
-    const ciCo2 = totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+    // Fixed: Properly handle all ranges
+    const cissm = totalBrut < 1800 ? 0
+                : totalBrut <= 3000 ? 81
+                : totalBrut < 3600 ? (81 / 600 * (3600 - totalBrut))
+                : 0;
+
+    // CIS/CIP/CIM formula - Fixed to handle all salary ranges correctly
+    const cisCipCim = totalBrut < 78 ? 0
+                    : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12)
+                    : totalBrut <= 3333.33 ? 50
+                    : totalBrut <= 6666.67 ? ((600 - (totalBrut * 12 - 40000) * 0.015) / 12)
+                    : 0;
+
+    // CI-CO2 formula - Fixed to handle all salary ranges correctly
+    const ciCo2 = totalBrut < 78 ? 0
+                : totalBrut <= 3333.33 ? 16
+                : totalBrut <= 6666.67 ? (16 - (totalBrut - 3333.33) * 0.0048)
+                : 0;
 
     // STEP 6: Calculate Total Imposable (Luxembourg formula from your guide)
     // Excel formula: D20-D23-D24-D25-D30-D31-D32-D33
@@ -780,16 +840,36 @@ export default function MonthlyPayslipPage() {
     const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
       (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0);
 
-    // STEP 7: Calculate Tax (IMPÔT) using Luxembourg 2025 barème based on payslip's tax class
-    const taxClassToUse = payslipData.taxClass || employee?.taxClass || '2';
-    console.log('[Auto-Calc] Using tax class:', taxClassToUse, 'for employee:', employee?.firstName, employee?.lastName);
-    console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
-    const calculatedImpot = calculateIncomeTax(totalImposable, taxClassToUse);
-    console.log('[Auto-Calc] Calculated IMPÔT:', calculatedImpot.toFixed(2));
+    // STEP 7: Calculate Tax (IMPÔT)
+    // IMPORTANT: IMPÔT should NEVER be 0 for taxable income
+    // Always use personalized tax rate if available, otherwise use a reasonable default
+    let calculatedImpot: number;
 
-    // STEP 8: Calculate NET (Excel formula: D20 - D27 - D37 + D38 + D39 + D40)
-    // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2
-    const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2;
+    if (payslipData.taxRatePercentage !== undefined && payslipData.taxRatePercentage > 0) {
+      // Use personalized tax rate (standard Luxembourg withholding rate)
+      // Formula: (Total Imposable - 500€ exemption) × tax rate %
+      const taxableAfterExemption = Math.max(0, totalImposable - 500);
+      calculatedImpot = taxableAfterExemption * (payslipData.taxRatePercentage / 100);
+      console.log('[Auto-Calc] Using tax rate:', payslipData.taxRatePercentage + '%');
+      console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
+      console.log('[Auto-Calc] After 500€ exemption:', taxableAfterExemption.toFixed(2));
+      console.log('[Auto-Calc] Calculated IMPÔT:', calculatedImpot.toFixed(2));
+    } else {
+      // Fallback: Use simplified percentage-based calculation
+      // Standard Luxembourg effective rate for typical income: ~4-6%
+      // Use 5% as a reasonable default to ensure IMPÔT is never 0
+      const defaultRate = 5.0; // 5% default rate
+      const taxableAfterExemption = Math.max(0, totalImposable - 500);
+      calculatedImpot = taxableAfterExemption * (defaultRate / 100);
+      console.warn('[Auto-Calc] WARNING: No tax rate percentage set! Using default', defaultRate + '%');
+      console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
+      console.log('[Auto-Calc] After 500€ exemption:', taxableAfterExemption.toFixed(2));
+      console.log('[Auto-Calc] Calculated IMPÔT (default):', calculatedImpot.toFixed(2));
+    }
+
+    // STEP 8: Calculate NET (Excel formula: D20 - D27 - D37 + D38 + D39 + D40 - D19)
+    // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 - Avantage N
+    const net = totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 - avantageVehicule;
 
     // STEP 9: Calculate NET À PAYER (NET - Chèque Repas - Avance Salaire - Custom Expenses 1-3 + Custom Expenses 4-6)
     const netAPayer = net - (payslipData.chequeRepas || 0) - (payslipData.avanceSalaire || 0)
@@ -877,19 +957,35 @@ export default function MonthlyPayslipPage() {
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
-    // Calculate tax using Luxembourg 2025 barème based on payslip's tax class
-    const calculatedImpot = calculateIncomeTax(totalImposable, payslipData.taxClass || employee?.taxClass || '2');
+    // Calculate IMPÔT: use tax rate percentage if available, otherwise use 5% default
+    const calculatedImpot = (payslipData.taxRatePercentage !== undefined && payslipData.taxRatePercentage > 0)
+      ? Math.max(0, totalImposable - 500) * (payslipData.taxRatePercentage / 100)
+      : Math.max(0, totalImposable - 500) * 0.05; // 5% default to ensure IMPÔT is never 0
+
+    // CISSM (Crédit d'Impôt Salaire Minimum) - Fixed formula
     const cissm = payslipData.manualCissm !== undefined
       ? payslipData.manualCissm
-      : totalBrut < 1800 ? 0 : totalBrut <= 3000 ? 81 : totalBrut >= 3600 ? 0 : 81 / 600 * (3600 - totalBrut);
+      : totalBrut < 1800 ? 0
+      : totalBrut <= 3000 ? 81
+      : totalBrut < 3600 ? (81 / 600 * (3600 - totalBrut))
+      : 0;
 
+    // CIS/CIP/CIM - Fixed formula
     const cisCipCim = payslipData.manualCisCipCim !== undefined
       ? payslipData.manualCisCipCim
-      : totalBrut < 78 ? 0 : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12) : totalBrut < 3333.33 ? 50 : totalBrut > 6666.5 ? 0 : ((600 - (totalBrut * 12 - 40000) * 0.015) / 12);
+      : totalBrut < 78 ? 0
+      : totalBrut < 936 ? ((300 + (totalBrut * 12 - 936) * 0.029) / 12)
+      : totalBrut <= 3333.33 ? 50
+      : totalBrut <= 6666.67 ? ((600 - (totalBrut * 12 - 40000) * 0.015) / 12)
+      : 0;
 
+    // CI-CO2 - Fixed formula
     const ciCo2 = payslipData.manualCiCo2 !== undefined
       ? payslipData.manualCiCo2
-      : totalBrut < 78 ? 0 : totalBrut < 3333.33 ? 16 : totalBrut < 6667 ? (16 - (totalBrut - 3333.33) * 0.0042) : 0;
+      : totalBrut < 78 ? 0
+      : totalBrut <= 3333.33 ? 16
+      : totalBrut <= 6666.67 ? (16 - (totalBrut - 3333.33) * 0.0048)
+      : 0;
 
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 (Excel formula)
     const net = payslipData.manualNet !== undefined
@@ -1209,7 +1305,8 @@ export default function MonthlyPayslipPage() {
 
     // If not in edit mode, show as read-only text
     if (!isEditMode) {
-      return <span className="inline-block text-right px-2 py-1 font-medium">{value}</span>;
+      const displayValue = type === "number" ? (typeof value === 'number' ? value.toFixed(2) : (parseFloat(String(value)) || 0).toFixed(2)) : value;
+      return <span className="inline-block text-right px-2 py-1 font-medium">{displayValue}</span>;
     }
 
     return (
@@ -1986,10 +2083,18 @@ export default function MonthlyPayslipPage() {
                 <TableRow>
                   <TableCell>Avantage N (Véhic)</TableCell>
                   <TableCell className="text-right">
-                    1
+                    {isEditMode ? (
+                      <span className="inline-block text-right px-2 py-1 font-medium">1</span>
+                    ) : (
+                      <span className="inline-block text-right px-2 py-1 font-medium">1</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
-                    0
+                    {isEditMode ? (
+                      <span className="inline-block text-right px-2 py-1 font-medium">-</span>
+                    ) : (
+                      <span className="inline-block text-right px-2 py-1 font-medium">-</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
                     <EditableInput field="avantageVehicule" value={(payslipData.avantageVehicule || 0).toFixed(2)} step="0.01" />
@@ -2010,10 +2115,18 @@ export default function MonthlyPayslipPage() {
                 <TableRow>
                   <TableCell>Travail à la tâche</TableCell>
                   <TableCell className="text-right">
-                    1
+                    {isEditMode ? (
+                      <span className="inline-block text-right px-2 py-1 font-medium">1</span>
+                    ) : (
+                      <span className="inline-block text-right px-2 py-1 font-medium">1</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
-                    0
+                    {isEditMode ? (
+                      <span className="inline-block text-right px-2 py-1 font-medium">-</span>
+                    ) : (
+                      <span className="inline-block text-right px-2 py-1 font-medium">-</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
                     <EditableInput field="travailTache" value={(payslipData.travailTache || 0).toFixed(2)} step="0.01" />
@@ -2037,7 +2150,7 @@ export default function MonthlyPayslipPage() {
                     <EditableInput field="overtimeHours" value={payslipData.overtimeHours} />
                   </TableCell>
                   <TableCell className="text-right">
-                    <EditableInput field="hourlyRate" value={payslipData.hourlyRate.toFixed(4)} step="0.0001" />
+                    {payslipData.overtimeHours > 0 ? payslipData.hourlyRate.toFixed(4) : '0.0000'}
                   </TableCell>
                   <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
                     {calculated.heuresSuppl.toFixed(2)} €
@@ -2235,16 +2348,16 @@ export default function MonthlyPayslipPage() {
                   <TableCell className="text-right text-muted-foreground">-</TableCell>
                   <TableCell className="text-right text-muted-foreground">-</TableCell>
                   <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30">
-                    <EditableInput field="impot" value={payslipData.impot} step="0.01" />
+                    <EditableInput field="impot" value={payslipData.impot || 0} step="0.01" />
                   </TableCell>
                   <TableCell className="text-right">
                     <EditableM1Value manualField="m1Impot" defaultValue={0} />
                   </TableCell>
                   <TableCell className="text-right bg-green-50/50 dark:bg-green-950/30">
                     {isEditMode ? (
-                      <EditableInput field="impot" value={payslipData.impot} step="0.01" />
+                      <EditableInput field="impot" value={payslipData.impot || 0} step="0.01" />
                     ) : (
-                      <span>{payslipData.impot.toFixed(2)} €</span>
+                      <span>{(payslipData.impot || 0).toFixed(2)} €</span>
                     )}
                   </TableCell>
                 </TableRow>
