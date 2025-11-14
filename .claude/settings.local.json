@@ -45,7 +45,9 @@
       "Bash(xcopy:*)",
       "Bash(Out-Null)",
       "Bash($matches)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(cmd /c dir /b)",
+      "Bash(logo_base64.txt)"
     ],
     "deny": [],
     "ask": []

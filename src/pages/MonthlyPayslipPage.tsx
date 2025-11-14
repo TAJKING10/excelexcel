@@ -22,6 +22,7 @@ import { recordPayslipEdit } from '@/services/payslipEditHistory';
 import { PayslipHistoryButton } from '@/components/payslips/PayslipHistoryButton';
 import { calculateIncomeTax } from '@/lib/luxembourgPayroll';
 import { PageTransition } from '@/components/ui/page-transition';
+import logoImage from '@/assets/logo.png';
 
 const MONTHS = [
   { value: 1, label: 'Janvier' },
@@ -1380,10 +1381,48 @@ export default function MonthlyPayslipPage() {
     );
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let yPos = 10;
+
+    // ===== ADD LOGO =====
+    try {
+      // Load logo image using Image element
+      const img = new Image();
+
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          try {
+            // Create canvas to convert image to data URL
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              const dataURL = canvas.toDataURL('image/png');
+              // Add logo at top left - adjust size as needed (width: 40mm, height: auto-calculated)
+              doc.addImage(dataURL, 'PNG', 14, yPos, 40, 15);
+            }
+            resolve(null);
+          } catch (err) {
+            console.error('Error processing logo:', err);
+            resolve(null);
+          }
+        };
+        img.onerror = (err) => {
+          console.error('Error loading logo image:', err);
+          resolve(null);
+        };
+        img.src = logoImage;
+      });
+    } catch (error) {
+      console.error('Error adding logo to PDF:', error);
+    }
+
+    // Move down to accommodate the logo
+    yPos += 15;
 
     // ===== TITLE - Centered "DECOMPTE SALAIRE/TRAITEMENT" =====
     doc.setFontSize(14);
