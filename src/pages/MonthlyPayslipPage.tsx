@@ -22,7 +22,7 @@ import { recordPayslipEdit } from '@/services/payslipEditHistory';
 import { PayslipHistoryButton } from '@/components/payslips/PayslipHistoryButton';
 import { calculateIncomeTax } from '@/lib/luxembourgPayroll';
 import { PageTransition } from '@/components/ui/page-transition';
-import logoImage from '@/assets/logo.png';
+import logoImage from '@/assets/logo2.png';
 
 const MONTHS = [
   { value: 1, label: 'Janvier' },
