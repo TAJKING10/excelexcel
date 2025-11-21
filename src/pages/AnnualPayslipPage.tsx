@@ -14,6 +14,7 @@ import type { AnnualPayslip } from '@/types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from '@/lib/luxembourgPayroll';
+import { logoGroupe } from '@/assets/logoGroupe';
 
 export default function AnnualPayslipPage() {
   const { employeeId, individualId } = useParams<{ employeeId?: string; individualId?: string }>();
@@ -77,20 +78,37 @@ export default function AnnualPayslipPage() {
     const doc = new jsPDF('landscape');
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Title
+    // ===== ADD LOGO =====
+    const logoWidth = 50;
+    const logoHeight = 20;
+    const logoX = 14;
+    const logoY = 15;
+
+    try {
+      // Use base64 encoded logo directly - works in both dev and production
+      if (logoGroupe) {
+        doc.addImage(logoGroupe, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      }
+    } catch (error) {
+      // Logo loading failed silently
+    }
+
+    // Title - positioned to the right of logo with proper spacing
+    const titleY = logoY + 8;
     doc.setFontSize(18);
-    doc.text(`FICHE DE PAIE ANNUELLE ${annualPayslip.year}`, pageWidth / 2, 15, { align: 'center' });
+    doc.text(`FICHE DE PAIE ANNUELLE ${annualPayslip.year}`, pageWidth / 2, titleY, { align: 'center' });
 
-    // Employee Info
+    // Employee Info - starts below logo with proper spacing
+    const contentStartY = logoY + logoHeight + 8;
     doc.setFontSize(10);
-    doc.text(`Employé: ${annualPayslip.employee.lastName} ${annualPayslip.employee.firstName}`, 14, 25);
-    doc.text(`Matricule: ${annualPayslip.employee.matricule || '-'}`, 14, 30);
-    doc.text(`Classe: ${annualPayslip.employee.class}`, 14, 35);
-    doc.text(`Date d'embauche: ${new Date(annualPayslip.employee.hireDate).toLocaleDateString('fr-LU')}`, 14, 40);
+    doc.text(`Employé: ${annualPayslip.employee.lastName} ${annualPayslip.employee.firstName}`, 14, contentStartY);
+    doc.text(`Matricule: ${annualPayslip.employee.matricule || '-'}`, 14, contentStartY + 5);
+    doc.text(`Classe: ${annualPayslip.employee.class}`, 14, contentStartY + 10);
+    doc.text(`Date d'embauche: ${new Date(annualPayslip.employee.hireDate).toLocaleDateString('fr-LU')}`, 14, contentStartY + 15);
 
-    doc.text(`Entreprise: ${annualPayslip.company.name}`, pageWidth - 14, 25, { align: 'right' });
-    doc.text(`${annualPayslip.company.address}`, pageWidth - 14, 30, { align: 'right' });
-    doc.text(`${annualPayslip.company.city}`, pageWidth - 14, 35, { align: 'right' });
+    doc.text(`Entreprise: ${annualPayslip.company.name}`, pageWidth - 14, contentStartY, { align: 'right' });
+    doc.text(`${annualPayslip.company.address}`, pageWidth - 14, contentStartY + 5, { align: 'right' });
+    doc.text(`${annualPayslip.company.city}`, pageWidth - 14, contentStartY + 10, { align: 'right' });
 
     // Monthly Breakdown Table
     const monthlyHeaders = [
@@ -133,10 +151,13 @@ export default function AnnualPayslipPage() {
       formatCurrency(totals.netPay)
     ]);
 
+    // Table starts below employee info with proper spacing
+    const tableStartY = contentStartY + 20;
+
     autoTable(doc, {
       head: monthlyHeaders,
       body: monthlyBody,
-      startY: 45,
+      startY: tableStartY,
       theme: 'grid',
       styles: { fontSize: 7, cellPadding: 1 },
       headStyles: { fillColor: [66, 139, 202], fontStyle: 'bold' },

@@ -22,7 +22,7 @@ import { recordPayslipEdit } from '@/services/payslipEditHistory';
 import { PayslipHistoryButton } from '@/components/payslips/PayslipHistoryButton';
 import { calculateIncomeTax } from '@/lib/luxembourgPayroll';
 import { PageTransition } from '@/components/ui/page-transition';
-import logoImage from '@/assets/logo_groupe.png';
+import { logoGroupe } from '@/assets/logoGroupe';
 
 const MONTHS = [
   { value: 1, label: 'Janvier' },
@@ -1384,33 +1384,10 @@ export default function MonthlyPayslipPage() {
 
     // ===== ADD LOGO =====
     try {
-      // Load logo image using Image element
-      const img = new Image();
-
-      await new Promise((resolve, reject) => {
-        img.onload = () => {
-          try {
-            // Create canvas to convert image to data URL
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(img, 0, 0);
-              const dataURL = canvas.toDataURL('image/png');
-              // Add logo at top left - adjust size as needed (width: 40mm, height: auto-calculated)
-              doc.addImage(dataURL, 'PNG', 14, yPos, 40, 15);
-            }
-            resolve(null);
-          } catch (err) {
-            resolve(null);
-          }
-        };
-        img.onerror = (err) => {
-          resolve(null);
-        };
-        img.src = logoImage;
-      });
+      // Use base64 encoded logo directly - works in both dev and production
+      if (logoGroupe) {
+        doc.addImage(logoGroupe, 'PNG', 14, yPos, 40, 15);
+      }
     } catch (error) {
       // Logo loading failed silently
     }
