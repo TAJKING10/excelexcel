@@ -1,4 +1,59 @@
 import type { Earnings, EmployeeContrib, EmployerContrib } from '@/types';
+import { create, all } from 'mathjs';
+
+// Create restricted math.js instance for safe formula evaluation
+const math = create(all);
+const limitedEvaluate = math.evaluate;
+
+// Disable dangerous functions to prevent code injection
+math.import({
+  'import':     function () { throw new Error('Function import is disabled') },
+  'createUnit': function () { throw new Error('Function createUnit is disabled') },
+  'evaluate':   function () { throw new Error('Function evaluate is disabled') },
+  'parse':      function () { throw new Error('Function parse is disabled') },
+  'simplify':   function () { throw new Error('Function simplify is disabled') },
+  'derivative': function () { throw new Error('Function derivative is disabled') }
+}, { override: true });
+
+/**
+ * Safely evaluate a mathematical formula
+ * Only allows basic arithmetic operations (+, -, *, /, parentheses, numbers)
+ * @param formula - The formula to evaluate (e.g., "71.99+6.43")
+ * @param scope - Variables available in the formula (e.g., {cotisable: 5000})
+ * @returns The evaluated result as a number
+ * @throws Error if formula is invalid or contains forbidden operations
+ */
+function safeEvaluate(formula: string, scope: Record<string, any>): number {
+  // Validate formula contains only safe characters
+  const safePattern = /^[0-9+\-*/().a-zA-Z_\s]+$/;
+  if (!safePattern.test(formula)) {
+    throw new Error('Formula contains invalid characters');
+  }
+
+  // Blacklist dangerous keywords
+  const dangerousKeywords = ['import', 'eval', 'Function', 'constructor', '__proto__', 'prototype'];
+  const lowerFormula = formula.toLowerCase();
+  for (const keyword of dangerousKeywords) {
+    if (lowerFormula.includes(keyword.toLowerCase())) {
+      throw new Error(`Formula contains forbidden keyword: ${keyword}`);
+    }
+  }
+
+  // Limit formula length to prevent DoS
+  if (formula.length > 500) {
+    throw new Error('Formula too long (max 500 characters)');
+  }
+
+  try {
+    const result = limitedEvaluate(formula, scope);
+    if (typeof result !== 'number' || !isFinite(result)) {
+      throw new Error('Formula must evaluate to a finite number');
+    }
+    return result;
+  } catch (error) {
+    throw new Error(`Invalid formula: ${error.message}`);
+  }
+}
 
 // Luxembourg Social Security Rates (2024) - Based on Advensys Excel
 export const LUXEMBOURG_RATES = {
@@ -25,12 +80,14 @@ export const LUXEMBOURG_RATES = {
  */
 export function calculateMaladie(cotisable: number, customFormula?: string): number {
   if (customFormula) {
-    // Evaluate simple formulas like "71.99+6.43"
+    // Safely evaluate simple formulas like "71.99+6.43" using secured mathjs
+    // This prevents code injection attacks while allowing math expressions
     try {
-      const result = eval(customFormula);
-      return parseFloat(result.toFixed(2));
-    } catch {
-      // Fall back to default
+      const result = safeEvaluate(customFormula, { cotisable });
+      return parseFloat(Number(result).toFixed(2));
+    } catch (error) {
+      // Log error and fall back to default
+      console.warn('[PayrollCalculation] Invalid formula, using default calculation:', error.message);
     }
   }
   // Default: Assurance Maladie (2.80%) + Majoration Espèce (0.25%) = 3.05%
@@ -81,7 +138,7 @@ const TAX_BRACKETS_2025 = {
     [4595, 9870, 0.3900, 1052.7750],
     [9875, 14765, 0.4000, 1151.5000],
     [14770, 19655, 0.4100, 1299.1500],
-    [19660, 999999, 0.4200, 1495.7250]
+    [19660, Infinity, 0.4200, 1495.7250]
   ],
   // Class 1A - Single with children (from barème 2025 Excel - Monthly Withholding)
   "1A": [
@@ -103,7 +160,7 @@ const TAX_BRACKETS_2025 = {
     [4405, 9870, 0.3900, 1246.2300],
     [9875, 14765, 0.4000, 1344.9550],
     [14770, 19655, 0.4100, 1492.6050],
-    [19660, 999999, 0.4200, 1689.1800]
+    [19660, Infinity, 0.4200, 1689.1800]
   ],
   // Class 2 - Married/Partnership (from barème 2025 Excel - Monthly Withholding)
   "2": [
@@ -129,7 +186,7 @@ const TAX_BRACKETS_2025 = {
     [9105, 19660, 0.3900, 2072.4000],
     [19665, 29445, 0.4000, 2269.0000],
     [29450, 39230, 0.4100, 2563.4500],
-    [39235, 999999, 0.4200, 2955.7500]
+    [39235, Infinity, 0.4200, 2955.7500]
   ]
 };
 

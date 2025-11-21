@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { Payslip } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,8 +96,38 @@ export function EmployerContributions({
   }, [monthlyData]);
 
   const handleExport = () => {
-    // TODO: Implement Excel export
+    // Prepare data for export
+    const exportData = monthlyData.map((data) => ({
+      'Month': getMonthAbbreviation(data.month),
+      'Employees': data.employees,
+      'Gross Salaries': data.grossSalaries,
+      'Maladie': data.maladie,
+      'Pension': data.pension,
+      'Sante': data.sante,
+      'Accident': data.accident,
+      'Total': data.total,
+    }));
 
+    // Add totals row
+    exportData.push({
+      'Month': 'TOTAL',
+      'Employees': '',
+      'Gross Salaries': totals.grossSalaries,
+      'Maladie': totals.maladie,
+      'Pension': totals.pension,
+      'Sante': totals.sante,
+      'Accident': totals.accident,
+      'Total': totals.total,
+    });
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Employer Contributions ${year}`);
+
+    // Download file
+    const fileName = `employer_contributions_${companyName || companyId}_${year}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   if (yearlyPayslips.length === 0) {

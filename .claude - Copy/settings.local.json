@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(mkdir:*)",
+      "Bash(xcopy:*)",
+      "Bash(copy img*.* publicassets)",
+      "Bash(cp:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "acceptEdits"
+  }
+}

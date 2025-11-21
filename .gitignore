@@ -1,19 +1,37 @@
-# dependencies
+# Dependencies
 node_modules/
-.vite/
-pnpm-lock.yaml
-yarn.lock
+.pnp
+.pnp.js
 
-# builds
+# Testing
+coverage/
+
+# Production
 dist/
 build/
 
-# misc
+# Environment variables - NEVER COMMIT!
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Logs
 *.log
+npm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-*.local.*
-.env*
-!.env.example
-~$Groupe Advensys Luxembourg SA - Livre de paie 2024.xlsx
+
+# OS
+Thumbs.db
+
+# Supabase
+.supabase/
+
+# TypeScript
+*.tsbuildinfo
 nul
-~$monthly payslip advensys.xlsx

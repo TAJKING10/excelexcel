@@ -52,7 +52,11 @@
       "Bash(src/assets/advensysLogo.ts)",
       "Bash(powershell -ExecutionPolicy Bypass -File fix_logo.ps1)",
       "Bash(del:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(test:*)",
+      "Bash(rm:*)",
+      "mcp__supabase__list_edge_functions",
+      "mcp__supabase__deploy_edge_function"
     ],
     "deny": [],
     "ask": []

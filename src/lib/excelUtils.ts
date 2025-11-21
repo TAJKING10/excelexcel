@@ -320,6 +320,14 @@ export function transformToPayslips(
 
       payslips.push(payslip as Payslip);
     } catch (error) {
+      console.error('[ExcelUtils] Failed to parse payslip row:', error);
+      // Log to Sentry if available
+      if (typeof window !== 'undefined' && (window as any).Sentry) {
+        (window as any).Sentry.captureException(error, {
+          tags: { component: 'ExcelUtils', function: 'parsePayslipsFromRows' },
+          extra: { rowIndex: index }
+        });
+      }
     }
   });
 

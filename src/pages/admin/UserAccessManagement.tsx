@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseUrl } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -252,19 +252,32 @@ export function UserAccessManagement() {
   };
 
   const createNewUser = async () => {
-    // Step 1: Create user via database function (doesn't auto-login)
-    const { data: userData, error: userError } = await supabase.rpc('create_employee_user', {
-      user_email: formData.email,
-      user_password: formData.password,
-      user_username: formData.username,
-      user_first_name: formData.firstName,
-      user_last_name: formData.lastName,
-    });
+    // Step 1: Create user via Edge Function (uses Admin API)
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/create-employee-user`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          username: formData.username,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        }),
+      }
+    );
 
-    if (userError) {
-      throw new Error(`User creation error: ${userError.message}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`User creation error: ${errorData.error || 'Failed to create user'}`);
     }
 
+    const userData = await response.json();
     const userId = userData.id;
     // Step 2: Create user access record
     const { data: accessData_result, error: accessError } = await supabase

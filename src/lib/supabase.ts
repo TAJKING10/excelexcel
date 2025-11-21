@@ -35,6 +35,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Export the URL for use in API calls
+export { supabaseUrl };
+
 // Optional: Export types for database tables
 // You can generate these types from your Supabase schema using:
 // npx supabase gen types typescript --project-id "ozkgkgqahgwuwmohslsr" > src/types/supabase.ts

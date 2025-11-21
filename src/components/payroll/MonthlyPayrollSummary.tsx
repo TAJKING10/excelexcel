@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { Payslip } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -88,8 +89,52 @@ export function MonthlyPayrollSummary({
   }, [monthlyPayslips]);
 
   const handleExport = () => {
-    // TODO: Implement Excel export
+    // Prepare data for export
+    const exportData = monthlyPayslips.map((p) => ({
+      'Employee': `${p.employee.firstName} ${p.employee.lastName}`,
+      'Matricule': p.employee.matricule || '',
+      'Remuneration Base': p.earnings.remunerationBase || 0,
+      'Gross Monthly': p.earnings.grossMonthly,
+      'Cotisable': p.earnings.cotisable,
+      'Imposable': p.earnings.imposable,
+      'Employee Maladie': p.employeeContrib.maladie,
+      'Employee Pension': p.employeeContrib.pension,
+      'Employee Total': p.employeeContrib.total,
+      'Employer Maladie': p.employerContrib.maladie,
+      'Employer Pension': p.employerContrib.pension,
+      'Employer Sante': p.employerContrib.sante || 0,
+      'Employer Accident': p.employerContrib.accident || 0,
+      'Employer Total': p.employerContrib.socialSecurityTotal,
+      'Net Pay': p.netPay,
+    }));
 
+    // Add totals row
+    exportData.push({
+      'Employee': 'TOTAL',
+      'Matricule': '',
+      'Remuneration Base': totals.remunerationBase,
+      'Gross Monthly': totals.grossMonthly,
+      'Cotisable': totals.cotisable,
+      'Imposable': totals.imposable,
+      'Employee Maladie': totals.employeeMaladie,
+      'Employee Pension': totals.employeePension,
+      'Employee Total': totals.employeeContribTotal,
+      'Employer Maladie': totals.employerMaladie,
+      'Employer Pension': totals.employerPension,
+      'Employer Sante': totals.employerSante,
+      'Employer Accident': totals.employerAccident,
+      'Employer Total': totals.employerContribTotal,
+      'Net Pay': totals.netPay,
+    });
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `${getMonthNameFr(month)} ${year}`);
+
+    // Download file
+    const fileName = `monthly_payroll_${year}_${month.toString().padStart(2, '0')}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   if (monthlyPayslips.length === 0) {

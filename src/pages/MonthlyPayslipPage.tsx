@@ -855,10 +855,6 @@ export default function MonthlyPayslipPage() {
     const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
     calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
 
-    console.log('[Auto-Calc] Tax Class:', taxClass);
-    console.log('[Auto-Calc] Total Imposable:', totalImposable.toFixed(2));
-    console.log('[Auto-Calc] Calculated IMPÔT (barème 2025):', calculatedImpot.toFixed(2));
-
     // STEP 8: Calculate NET (Excel formula: D22-D29-D39+D40+D41+D42+D19+D20)
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 + Heures Suppl + H-S majorée - Avantage N
     const net = parseFloat((totalBrut - totalCotisation - calculatedImpot + cissm + cisCipCim + ciCo2 + heuresSuppl + heuresSupplPremium - avantageVehicule).toFixed(2));
@@ -1407,18 +1403,16 @@ export default function MonthlyPayslipPage() {
             }
             resolve(null);
           } catch (err) {
-            console.error('Error processing logo:', err);
             resolve(null);
           }
         };
         img.onerror = (err) => {
-          console.error('Error loading logo image:', err);
           resolve(null);
         };
         img.src = logoImage;
       });
     } catch (error) {
-      console.error('Error adding logo to PDF:', error);
+      // Logo loading failed silently
     }
 
     // Move down to accommodate the logo

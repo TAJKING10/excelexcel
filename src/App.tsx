@@ -6,6 +6,7 @@ import { getDefaultRoute } from './lib/rbac';
 import { ProtectedRoute } from './components/guards/ProtectedRoute2';
 import { useDataStore } from './stores/data';
 import { LoadingScreen, PageLoadingScreen } from './components/ui/loading-screen';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Layouts - not lazy loaded for better UX
 import { AdminShell } from './components/layout/AdminShell';
@@ -147,11 +148,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

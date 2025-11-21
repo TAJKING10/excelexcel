@@ -11,26 +11,49 @@ import { UserCircle, Mail, User, Building2, Save } from 'lucide-react';
 
 export function Profile() {
   const { t } = useLanguageStore();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const { toast } = useToast();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
       toast({ title: t('common.error'), description: t('profile.allFieldsRequired'), variant: 'destructive' });
       return;
     }
 
-    if (user) {
-      // TODO: Implement profile update in AuthContext
-      toast({ title: t('common.info'), description: 'Profile update coming soon!', variant: 'default' });
-      setIsEditing(false);
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      toast({ title: t('common.error'), description: 'Invalid email format', variant: 'destructive' });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const result = await updateProfile({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim(),
+      });
+
+      if (result.success) {
+        toast({ title: t('common.success'), description: t('profile.updateSuccess') });
+        setIsEditing(false);
+      } else {
+        toast({ title: t('common.error'), description: result.error || 'Failed to update profile', variant: 'destructive' });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      toast({ title: t('common.error'), description: errorMessage, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -121,11 +144,11 @@ export function Profile() {
 
           {isEditing && (
             <div className="flex gap-2 pt-4">
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} disabled={isSaving}>
                 <Save className="mr-2 h-4 w-4" />
-                {t('profile.saveChanges')}
+                {isSaving ? t('common.saving', 'Saving...') : t('profile.saveChanges')}
               </Button>
-              <Button variant="outline" onClick={handleCancel}>
+              <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
                 {t('common.cancel')}
               </Button>
             </div>

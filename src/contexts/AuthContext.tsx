@@ -9,6 +9,7 @@ type AuthContextType = {
   session: Session | null;
   loading: boolean;
   logout: () => Promise<void>;
+  updateProfile: (updates: { firstName?: string; lastName?: string; email?: string }) => Promise<{ success: boolean; error?: string }>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   logout: async () => {},
+  updateProfile: async () => ({ success: false, error: 'Not implemented' }),
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -138,12 +140,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   };
 
+  const updateProfile = async (updates: { firstName?: string; lastName?: string; email?: string }) => {
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    try {
+      // Update email in Supabase Auth if changed
+      if (updates.email && updates.email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: updates.email,
+        });
+        if (emailError) {
+          return { success: false, error: emailError.message };
+        }
+      }
+
+      // Update profile in profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: updates.firstName ?? user.firstName,
+          last_name: updates.lastName ?? user.lastName,
+          email: updates.email ?? user.email,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        return { success: false, error: profileError.message };
+      }
+
+      // Update local user state
+      setUser({
+        ...user,
+        firstName: updates.firstName ?? user.firstName,
+        lastName: updates.lastName ?? user.lastName,
+        email: updates.email ?? user.email,
+      });
+
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     supabaseUser: session?.user ?? null,
     session,
     loading,
     logout,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

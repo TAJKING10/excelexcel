@@ -308,7 +308,14 @@ function parseEmployeeSheet(
       payslips,
     };
   } catch (error) {
-
+    console.error('[AdvensysExcelParser] Failed to parse sheet:', error);
+    // Log to Sentry if available
+    if (typeof window !== 'undefined' && (window as any).Sentry) {
+      (window as any).Sentry.captureException(error, {
+        tags: { component: 'AdvensysExcelParser', function: 'parseEmployeeSheet' },
+        extra: { sheetName }
+      });
+    }
     return null;
   }
 }

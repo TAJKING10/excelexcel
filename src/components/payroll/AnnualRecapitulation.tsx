@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { Payslip } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,8 +105,53 @@ export function AnnualRecapitulation({
   }, [yearlyPayslips]);
 
   const handleExport = () => {
-    // TODO: Implement Excel export
+    // Prepare data for export
+    const exportData = monthlyData
+      .filter((m) => m.payslip) // Only include months with payslips
+      .map((m) => {
+        const p = m.payslip!;
+        return {
+          'Month': m.monthAbbr,
+          'Normal Hours': p.workingHours?.normalHours || 0,
+          'Supplementary Hours': p.workingHours?.supplementaryHours || 0,
+          'Holidays': p.workingHours?.holidays || 0,
+          'Public Holiday Extra': p.workingHours?.publicHolidayExtra || 0,
+          'Family Leave': p.workingHours?.familyLeave || 0,
+          'Paternity Leave': p.workingHours?.paternityLeave || 0,
+          'Sick Leave': p.workingHours?.sickLeave || 0,
+          'Unemployment': p.workingHours?.unemployment || 0,
+          'Gross Salary': p.earnings.grossMonthly,
+          'Net Pay': p.netPay,
+          'Employee Contrib': p.employeeContrib.total,
+          'Employer Contrib': p.employerContrib.socialSecurityTotal,
+        };
+      });
 
+    // Add totals row
+    exportData.push({
+      'Month': 'TOTAL',
+      'Normal Hours': totals.normalHours,
+      'Supplementary Hours': totals.supplementaryHours,
+      'Holidays': totals.holidays,
+      'Public Holiday Extra': totals.publicHolidayExtra,
+      'Family Leave': totals.familyLeave,
+      'Paternity Leave': totals.paternityLeave,
+      'Sick Leave': totals.sickLeave,
+      'Unemployment': totals.unemployment,
+      'Gross Salary': totals.grossSalary,
+      'Net Pay': totals.netPay,
+      'Employee Contrib': totals.employeeContrib,
+      'Employer Contrib': totals.employerContrib,
+    });
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Annual Recap ${year}`);
+
+    // Download file
+    const fileName = `annual_recapitulation_${employeeName || employeeId}_${year}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   if (yearlyPayslips.length === 0) {

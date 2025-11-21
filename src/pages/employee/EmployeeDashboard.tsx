@@ -105,8 +105,9 @@ export function EmployeeDashboard() {
       toast({ title: t('common.success'), description: t('companies.createdSuccess') });
       setCompanyForm({ name: '', country: 'Luxembourg', currency: 'EUR' });
       setIsAddCompanyDialogOpen(false);
-    } catch (error: any) {
-      toast({ title: t('common.error'), description: error.message || 'Failed to create company', variant: 'destructive' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create company';
+      toast({ title: t('common.error'), description: errorMessage, variant: 'destructive' });
     }
   };
 
@@ -135,8 +136,9 @@ export function EmployeeDashboard() {
         address: '',
       });
       setIsAddIndividualDialogOpen(false);
-    } catch (error: any) {
-      toast({ title: t('common.error'), description: error.message || 'Failed to create individual', variant: 'destructive' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create individual';
+      toast({ title: t('common.error'), description: errorMessage, variant: 'destructive' });
     }
   };
 

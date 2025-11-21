@@ -220,11 +220,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   deleteUser: async (userId: string) => {
     try {
-      // Delete from auth.users will cascade to profiles and user_access
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        return { success: false, error: 'Not authenticated' };
+      }
 
-      if (error) {
-        return { success: false, error: error.message };
+      // Call Edge Function instead of admin API (more secure)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ userId })
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: result.error || 'Failed to delete user' };
       }
 
       return { success: true };
