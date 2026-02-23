@@ -1,17 +1,95 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Pencil, X, Save, Loader2 } from 'lucide-react';
 import type { AnnualPayslip } from '@/types';
 import { formatCurrency, getMonthNameFr } from '@/lib/luxembourgPayroll';
 import { useTranslation } from 'react-i18next';
+import { useDataStore } from '@/stores/data';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface AnnualPayslipViewProps {
   payslip: AnnualPayslip;
+  onEmployeeUpdated?: () => void;
 }
 
-export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
+export function AnnualPayslipView({ payslip, onEmployeeUpdated }: AnnualPayslipViewProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const updateEmployee = useDataStore((state) => state.updateEmployee);
+
+  const canEdit = user?.role === 'SUPER_ADMIN' || user?.access?.canEditPayslips;
+
+  // Employee edit mode states
+  const [isEditingEmployee, setIsEditingEmployee] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editableMatricule, setEditableMatricule] = useState(payslip.employee.matricule || '');
+  const [editableClass, setEditableClass] = useState(payslip.employee.class || '');
+  const [editableHireDate, setEditableHireDate] = useState(payslip.employee.hireDate || '');
+  const [editableAddress, setEditableAddress] = useState(payslip.employee.address || '');
+
+  // Reset editable fields when payslip changes
+  useEffect(() => {
+    setEditableMatricule(payslip.employee.matricule || '');
+    setEditableClass(payslip.employee.class || '');
+    setEditableHireDate(payslip.employee.hireDate || '');
+    setEditableAddress(payslip.employee.address || '');
+  }, [payslip]);
+
+  const handleSaveEmployeeInfo = async () => {
+    if (!payslip.employeeId) return;
+
+    setIsSaving(true);
+    try {
+      const updates: any = {};
+
+      if (editableMatricule !== (payslip.employee.matricule || '')) {
+        updates.matricule = editableMatricule;
+      }
+      if (editableClass !== (payslip.employee.class || '')) {
+        updates.class = editableClass;
+      }
+      if (editableHireDate !== (payslip.employee.hireDate || '')) {
+        updates.hireDate = editableHireDate;
+      }
+      if (editableAddress !== (payslip.employee.address || '')) {
+        updates.address = editableAddress;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateEmployee(payslip.employeeId, updates);
+        toast({
+          title: 'Success',
+          description: 'Employee information updated successfully',
+        });
+        onEmployeeUpdated?.();
+      }
+
+      setIsEditingEmployee(false);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update employee information',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditableMatricule(payslip.employee.matricule || '');
+    setEditableClass(payslip.employee.class || '');
+    setEditableHireDate(payslip.employee.hireDate || '');
+    setEditableAddress(payslip.employee.address || '');
+    setIsEditingEmployee(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -35,24 +113,105 @@ export function AnnualPayslipView({ payslip }: AnnualPayslipViewProps) {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-muted-foreground">Employee Information</span>
+            {canEdit && (
+              <div className="flex gap-2">
+                {isEditingEmployee ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelEdit}
+                      disabled={isSaving}
+                      className="h-8 px-2"
+                    >
+                      <X size={14} className="mr-1" />
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleSaveEmployeeInfo}
+                      disabled={isSaving}
+                      className="h-8 px-2"
+                    >
+                      {isSaving ? (
+                        <Loader2 size={14} className="mr-1 animate-spin" />
+                      ) : (
+                        <Save size={14} className="mr-1" />
+                      )}
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingEmployee(true)}
+                    className="h-8 px-2"
+                  >
+                    <Pencil size={14} className="mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">{t('employee.matricule')}</p>
-              <p className="font-medium">{payslip.employee.matricule || '-'}</p>
+              {isEditingEmployee ? (
+                <Input
+                  value={editableMatricule}
+                  onChange={(e) => setEditableMatricule(e.target.value)}
+                  className="h-8 text-sm mt-1"
+                  placeholder="1989 11 24 004 47"
+                />
+              ) : (
+                <p className="font-medium">{payslip.employee.matricule || '-'}</p>
+              )}
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('employee.class')}</p>
-              <p className="font-medium">{payslip.employee.class}</p>
+              {isEditingEmployee ? (
+                <Input
+                  value={editableClass}
+                  onChange={(e) => setEditableClass(e.target.value)}
+                  className="h-8 text-sm mt-1"
+                  placeholder="Empl."
+                />
+              ) : (
+                <p className="font-medium">{payslip.employee.class || '-'}</p>
+              )}
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('employee.hire_date')}</p>
-              <p className="font-medium">
-                {new Date(payslip.employee.hireDate).toLocaleDateString('fr-LU')}
-              </p>
+              {isEditingEmployee ? (
+                <Input
+                  type="date"
+                  value={editableHireDate}
+                  onChange={(e) => setEditableHireDate(e.target.value)}
+                  className="h-8 text-sm mt-1"
+                />
+              ) : (
+                <p className="font-medium">
+                  {payslip.employee.hireDate ? new Date(payslip.employee.hireDate).toLocaleDateString('fr-LU') : '-'}
+                </p>
+              )}
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t('employee.address')}</p>
-              <p className="font-medium">{payslip.employee.address || '-'}</p>
+              {isEditingEmployee ? (
+                <Input
+                  value={editableAddress}
+                  onChange={(e) => setEditableAddress(e.target.value)}
+                  className="h-8 text-sm mt-1"
+                  placeholder="52, Grand-Rue"
+                />
+              ) : (
+                <p className="font-medium">{payslip.employee.address || '-'}</p>
+              )}
             </div>
           </div>
         </CardContent>
