@@ -39,14 +39,32 @@ const MONTHS = [
   { value: 12, label: 'Décembre' },
 ];
 
-// Social contributions rates (Luxembourg)
+// Default social contributions rates (Luxembourg)
 // Updated to match 2024/2025 Excel "Livre de Paie"
-const RATES = {
-  assuranceMaladie: 0.028, // 2.80% - matches Excel Sept 2025 (90.84 / 3244.40)
-  majoration: 0.0025, // 0.25% - matches Excel (8.11 / 3244.40)
-  assurancePension: 0.08, // 8.00% - matches Excel (259.55 / 3244.40)
-  assuranceDependance: 0.014, // 1.40% - matches Excel (35.96 / (3244.40 - 675.93))
+const DEFAULT_RATES = {
+  assuranceMaladie: 2.80, // 2.80% - matches Excel Sept 2025
+  majoration: 0.25, // 0.25% - matches Excel
+  assurancePension: 8.00, // 8.00% - matches Excel
+  assuranceDependance: 1.40, // 1.40% - matches Excel
   dependanceThreshold: 675.93,
+};
+
+// Helper to get effective rates (custom or default) - returns decimal values for calculations
+const getEffectiveRates = (payslipData: any) => ({
+  assuranceMaladie: (payslipData.customRateMaladie ?? DEFAULT_RATES.assuranceMaladie) / 100,
+  majoration: (payslipData.customRateMajoration ?? DEFAULT_RATES.majoration) / 100,
+  assurancePension: (payslipData.customRatePension ?? DEFAULT_RATES.assurancePension) / 100,
+  assuranceDependance: (payslipData.customRateDependance ?? DEFAULT_RATES.assuranceDependance) / 100,
+  dependanceThreshold: payslipData.customDependanceThreshold ?? DEFAULT_RATES.dependanceThreshold,
+});
+
+// Legacy RATES object for backward compatibility (uses DEFAULT_RATES converted to decimals)
+const RATES = {
+  assuranceMaladie: DEFAULT_RATES.assuranceMaladie / 100,
+  majoration: DEFAULT_RATES.majoration / 100,
+  assurancePension: DEFAULT_RATES.assurancePension / 100,
+  assuranceDependance: DEFAULT_RATES.assuranceDependance / 100,
+  dependanceThreshold: DEFAULT_RATES.dependanceThreshold,
 };
 
 interface PayslipData {
@@ -128,6 +146,15 @@ interface PayslipData {
   m1CisCipCim?: number;
   m1CiCo2?: number;
   m1Net?: number;
+  // Manual tax rate override
+  useManualTaxRate?: boolean;
+  manualTaxRatePercentage?: number;
+  // Custom cotisation rates (percentage values, e.g., 2.8 for 2.80%)
+  customRateMaladie?: number;
+  customRateMajoration?: number;
+  customRatePension?: number;
+  customRateDependance?: number;
+  customDependanceThreshold?: number;
 }
 
 export default function MonthlyPayslipPage() {
@@ -280,6 +307,8 @@ export default function MonthlyPayslipPage() {
             taxRateId: savedPayslip.taxRateId,
             taxRatePercentage: savedPayslip.taxRatePercentage,
             taxClass: savedPayslip.taxClass || employee?.taxClass || '2',
+            useManualTaxRate: savedPayslip.useManualTaxRate || false,
+            manualTaxRatePercentage: savedPayslip.manualTaxRatePercentage,
             employeeNumber: savedPayslip.employeeNumber || '2',
             indice: savedPayslip.indice || '968.04', // Current Luxembourg salary index
             emploi: savedPayslip.emploi || person?.class || 'Comptable',
@@ -352,6 +381,12 @@ export default function MonthlyPayslipPage() {
             m1CisCipCim: savedPayslip.m1CisCipCim,
             m1CiCo2: savedPayslip.m1CiCo2,
             m1Net: savedPayslip.m1Net,
+            // Custom cotisation rates
+            customRateMaladie: savedPayslip.customRateMaladie,
+            customRateMajoration: savedPayslip.customRateMajoration,
+            customRatePension: savedPayslip.customRatePension,
+            customRateDependance: savedPayslip.customRateDependance,
+            customDependanceThreshold: savedPayslip.customDependanceThreshold,
           };
           if (isMounted) {
             setPayslipData(loadedData);
@@ -411,19 +446,25 @@ export default function MonthlyPayslipPage() {
           const baseForCotisations = totalBrut;
           const baseWithOvertime = totalBrut + heuresSuppl;
 
-          const assuranceMaladie = baseWithOvertime * RATES.assuranceMaladie;
-          const majorationEspece = totalBrut * RATES.majoration;
-          const assurancePension = totalBrut * RATES.assurancePension;
-          const assuranceDependance = Math.max(0, (baseWithOvertime - RATES.dependanceThreshold) * RATES.assuranceDependance);
+          const tempRates = getEffectiveRates(payslipData);
+          const assuranceMaladie = baseWithOvertime * tempRates.assuranceMaladie;
+          const majorationEspece = totalBrut * tempRates.majoration;
+          const assurancePension = totalBrut * tempRates.assurancePension;
+          const assuranceDependance = Math.max(0, (baseWithOvertime - tempRates.dependanceThreshold) * tempRates.assuranceDependance);
           const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
           // IMPOSABLE = BRUT - MALADIE - MAJORATION - PENSION - FD - AC - FFO - FDS (Excel: D20-D23-D24-D25-D30-D31-D32-D33)
           const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
             (tempData.fd || 0) - (tempData.ac || 0) - (tempData.ffo || 0) - (tempData.fds || 0);
 
-          // Calculate IMPÔT: use Luxembourg 2025 barème based on tax class
-          const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
-          const calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
+          // Calculate IMPÔT: use Luxembourg 2025 barème based on tax class or manual rate
+          let calculatedImpot: number;
+          if (payslipData.useManualTaxRate && payslipData.manualTaxRatePercentage !== undefined) {
+            calculatedImpot = parseFloat((totalImposable * (payslipData.manualTaxRatePercentage / 100)).toFixed(2));
+          } else {
+            const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
+            calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
+          }
 
           // Fixed tax credit formulas
           const cissm = totalBrut < 1800 ? 0
@@ -583,21 +624,22 @@ export default function MonthlyPayslipPage() {
     // REVERSE CALCULATION: If user changed Total Cotisation, recalculate Total Brut
     if (lastChangedField === 'manualTotalCotisation' && payslipData.manualTotalCotisation !== undefined) {
       const targetTotalCotisation = payslipData.manualTotalCotisation;
+      const revRates = getEffectiveRates(payslipData);
 
       // Total Cotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance
-      // = totalBrut * (RATES.assuranceMaladie + RATES.majoration + RATES.assurancePension) + assuranceDependance
+      // = totalBrut * (rates.assuranceMaladie + rates.majoration + rates.assurancePension) + assuranceDependance
       // Since assuranceDependance depends on totalBrut, we need to iterate
 
-      let totalBrut = targetTotalCotisation / (RATES.assuranceMaladie + RATES.majoration + RATES.assurancePension); // Initial guess
+      let totalBrut = targetTotalCotisation / (revRates.assuranceMaladie + revRates.majoration + revRates.assurancePension); // Initial guess
 
       for (let i = 0; i < 10; i++) {
-        const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
-        const fixedCotisations = totalBrut * (RATES.assuranceMaladie + RATES.majoration + RATES.assurancePension);
+        const assuranceDependance = Math.max(0, (totalBrut - revRates.dependanceThreshold) * revRates.assuranceDependance);
+        const fixedCotisations = totalBrut * (revRates.assuranceMaladie + revRates.majoration + revRates.assurancePension);
         const calculatedTotal = fixedCotisations + assuranceDependance;
         const diff = targetTotalCotisation - calculatedTotal;
 
         if (Math.abs(diff) < 0.01) break;
-        totalBrut += diff / (RATES.assuranceMaladie + RATES.majoration + RATES.assurancePension + RATES.assuranceDependance);
+        totalBrut += diff / (revRates.assuranceMaladie + revRates.majoration + revRates.assurancePension + revRates.assuranceDependance);
       }
 
       setPayslipData(prev => ({
@@ -686,10 +728,11 @@ export default function MonthlyPayslipPage() {
       const baseForCotisations = totalBrut;
       const baseWithOvertime = totalBrut + heuresSuppl;
 
-      const assuranceMaladie = baseWithOvertime * RATES.assuranceMaladie;
-      const majorationEspece = totalBrut * RATES.majoration;
-      const assurancePension = totalBrut * RATES.assurancePension;
-      const assuranceDependance = Math.max(0, (baseWithOvertime - RATES.dependanceThreshold) * RATES.assuranceDependance);
+      const calcRates = getEffectiveRates(payslipData);
+      const assuranceMaladie = baseWithOvertime * calcRates.assuranceMaladie;
+      const majorationEspece = totalBrut * calcRates.majoration;
+      const assurancePension = totalBrut * calcRates.assurancePension;
+      const assuranceDependance = Math.max(0, (baseWithOvertime - calcRates.dependanceThreshold) * calcRates.assuranceDependance);
       const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
       // Fixed tax credit formulas
@@ -753,10 +796,11 @@ export default function MonthlyPayslipPage() {
                     : totalBrut <= 6666.67 ? (16 - (totalBrut - 3333.33) * 0.0048)
                     : 0;
 
-        const assuranceMaladie = totalBrut * RATES.assuranceMaladie;
-        const majorationEspece = totalBrut * RATES.majoration;
-        const assurancePension = totalBrut * RATES.assurancePension;
-        const assuranceDependance = Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+        const iterRates = getEffectiveRates(payslipData);
+        const assuranceMaladie = totalBrut * iterRates.assuranceMaladie;
+        const majorationEspece = totalBrut * iterRates.majoration;
+        const assurancePension = totalBrut * iterRates.assurancePension;
+        const assuranceDependance = Math.max(0, (totalBrut - iterRates.dependanceThreshold) * iterRates.assuranceDependance);
         const totalCotisation = assuranceMaladie + majorationEspece + assurancePension + assuranceDependance;
 
         // Calculate NET using Excel formula: BRUT - Total Cotisation - IMPÔT + Credits - Avantage N (D20-D27-D37+D38+D39+D40-D19)
@@ -806,14 +850,17 @@ export default function MonthlyPayslipPage() {
     // Base including overtime for Maladie and Dépendance (Excel: D19+D22)
     const baseWithOvertime = totalBrut + heuresSuppl;
 
+    // Get effective rates (custom or default)
+    const rates = getEffectiveRates(payslipData);
+
     // Assurance Maladie: =(D19+D22)*B25 (includes overtime!)
-    const assuranceMaladie = parseFloat((baseWithOvertime * RATES.assuranceMaladie).toFixed(2));
+    const assuranceMaladie = parseFloat((baseWithOvertime * rates.assuranceMaladie).toFixed(2));
     // A-M Majoration: =B26*D22 (just Total Brut, no overtime)
-    const majorationEspece = parseFloat((totalBrut * RATES.majoration).toFixed(2));
+    const majorationEspece = parseFloat((totalBrut * rates.majoration).toFixed(2));
     // Assurance Pension: =B27*D22 (just Total Brut, no overtime)
-    const assurancePension = parseFloat((totalBrut * RATES.assurancePension).toFixed(2));
+    const assurancePension = parseFloat((totalBrut * rates.assurancePension).toFixed(2));
     // Assurance Dépendance: =B28*(D19+D22-675.93) (includes overtime!)
-    const assuranceDependance = parseFloat((Math.max(0, (baseWithOvertime - RATES.dependanceThreshold) * RATES.assuranceDependance)).toFixed(2));
+    const assuranceDependance = parseFloat((Math.max(0, (baseWithOvertime - rates.dependanceThreshold) * rates.assuranceDependance)).toFixed(2));
 
     // STEP 4: Total Cotisation
     const totalCotisation = parseFloat((assuranceMaladie + majorationEspece + assurancePension + assuranceDependance).toFixed(2));
@@ -851,9 +898,15 @@ export default function MonthlyPayslipPage() {
     // This ensures proper tax calculation for Class 1, 1A, and 2
     let calculatedImpot: number;
 
-    // Always use Luxembourg barème calculation based on tax class
-    const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
-    calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
+    // Check if manual tax rate is enabled
+    if (payslipData.useManualTaxRate && payslipData.manualTaxRatePercentage !== undefined) {
+      // Use manual tax rate percentage: IMPÔT = Total Imposable × (Taux / 100)
+      calculatedImpot = parseFloat((totalImposable * (payslipData.manualTaxRatePercentage / 100)).toFixed(2));
+    } else {
+      // Use Luxembourg barème calculation based on tax class
+      const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
+      calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
+    }
 
     // STEP 8: Calculate NET (Excel formula: D22-D29-D39+D40+D41+D42+D19+D20)
     // NET = BRUT - Total Cotisation - IMPÔT + CISSM + CIS-CIP-CIM + CI-CO2 + Heures Suppl + H-S majorée - Avantage N
@@ -918,22 +971,23 @@ export default function MonthlyPayslipPage() {
 
     // Base for cotisations = Total Brut (which already includes all earnings)
     const baseForCotisations = totalBrut;
+    const finalRates = getEffectiveRates(payslipData);
 
     const assuranceMaladie = payslipData.manualAssuranceMaladie !== undefined
       ? payslipData.manualAssuranceMaladie
-      : totalBrut * RATES.assuranceMaladie;
+      : totalBrut * finalRates.assuranceMaladie;
 
     const majorationEspece = payslipData.manualMajoration !== undefined
       ? payslipData.manualMajoration
-      : totalBrut * RATES.majoration;
+      : totalBrut * finalRates.majoration;
 
     const assurancePension = payslipData.manualAssurancePension !== undefined
       ? payslipData.manualAssurancePension
-      : totalBrut * RATES.assurancePension;
+      : totalBrut * finalRates.assurancePension;
 
     const assuranceDependance = payslipData.manualAssuranceDependance !== undefined
       ? payslipData.manualAssuranceDependance
-      : Math.max(0, (totalBrut - RATES.dependanceThreshold) * RATES.assuranceDependance);
+      : Math.max(0, (totalBrut - finalRates.dependanceThreshold) * finalRates.assuranceDependance);
 
     const totalCotisation = payslipData.manualTotalCotisation !== undefined
       ? payslipData.manualTotalCotisation
@@ -945,9 +999,14 @@ export default function MonthlyPayslipPage() {
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
-    // Calculate IMPÔT: use Luxembourg 2025 barème based on tax class
-    const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
-    const calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
+    // Calculate IMPÔT: use Luxembourg 2025 barème based on tax class or manual rate
+    let calculatedImpot: number;
+    if (payslipData.useManualTaxRate && payslipData.manualTaxRatePercentage !== undefined) {
+      calculatedImpot = parseFloat((totalImposable * (payslipData.manualTaxRatePercentage / 100)).toFixed(2));
+    } else {
+      const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
+      calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
+    }
 
     // CISSM (Crédit d'Impôt Salaire Minimum) - Fixed formula
     const cissm = payslipData.manualCissm !== undefined
@@ -1067,6 +1126,14 @@ export default function MonthlyPayslipPage() {
         periodMonth: selectedMonth,
         taxRateId: payslipData.taxRateId,
         taxRatePercentage: payslipData.taxRatePercentage,
+        taxClass: payslipData.taxClass,
+        useManualTaxRate: payslipData.useManualTaxRate || false,
+        manualTaxRatePercentage: payslipData.manualTaxRatePercentage,
+        customRateMaladie: payslipData.customRateMaladie,
+        customRateMajoration: payslipData.customRateMajoration,
+        customRatePension: payslipData.customRatePension,
+        customRateDependance: payslipData.customRateDependance,
+        customDependanceThreshold: payslipData.customDependanceThreshold,
         employeeNumber: payslipData.employeeNumber,
         indice: payslipData.indice,
         emploi: payslipData.emploi,
@@ -1381,6 +1448,7 @@ export default function MonthlyPayslipPage() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let yPos = 10;
+    const pdfRates = getEffectiveRates(payslipData);
 
     // ===== ADD LOGO =====
     try {
@@ -1479,10 +1547,10 @@ export default function MonthlyPayslipPage() {
         ['', '', '', '', '', '', ''],
         // Contributions section
         [{ content: 'Cotisation', styles: { fontStyle: 'bold' } }, '', '', '', '', '', ''],
-        ['Assurance Maladie', RATES.assuranceMaladie.toFixed(4), '', calculated.assuranceMaladie.toFixed(2), '', cumulM1AssuranceMaladie.toFixed(2), (calculated.assuranceMaladie + cumulM1AssuranceMaladie).toFixed(2)],
-        ['A-M Majoration espèce', RATES.majoration.toFixed(4), '', calculated.majorationEspece.toFixed(2), '', cumulM1Majoration.toFixed(2), (calculated.majorationEspece + cumulM1Majoration).toFixed(2)],
-        ['Assurance Pension', RATES.assurancePension.toFixed(4), '', calculated.assurancePension.toFixed(2), '', cumulM1AssurancePension.toFixed(2), (calculated.assurancePension + cumulM1AssurancePension).toFixed(2)],
-        ['Assurance dépendance', RATES.assuranceDependance.toFixed(4), '', calculated.assuranceDependance.toFixed(2), '', cumulM1AssuranceDependance.toFixed(2), (calculated.assuranceDependance + cumulM1AssuranceDependance).toFixed(2)],
+        ['Assurance Maladie', pdfRates.assuranceMaladie.toFixed(4), '', calculated.assuranceMaladie.toFixed(2), '', cumulM1AssuranceMaladie.toFixed(2), (calculated.assuranceMaladie + cumulM1AssuranceMaladie).toFixed(2)],
+        ['A-M Majoration espèce', pdfRates.majoration.toFixed(4), '', calculated.majorationEspece.toFixed(2), '', cumulM1Majoration.toFixed(2), (calculated.majorationEspece + cumulM1Majoration).toFixed(2)],
+        ['Assurance Pension', pdfRates.assurancePension.toFixed(4), '', calculated.assurancePension.toFixed(2), '', cumulM1AssurancePension.toFixed(2), (calculated.assurancePension + cumulM1AssurancePension).toFixed(2)],
+        ['Assurance dépendance', pdfRates.assuranceDependance.toFixed(4), '', calculated.assuranceDependance.toFixed(2), '', cumulM1AssuranceDependance.toFixed(2), (calculated.assuranceDependance + cumulM1AssuranceDependance).toFixed(2)],
         [{ content: 'Total Cotisation', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalCotisation.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalCotisation.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalCotisation + cumulM1TotalCotisation).toFixed(2), styles: { fontStyle: 'bold' } }],
         // Empty row
         ['', '', '', '', '', '', ''],
@@ -1920,6 +1988,7 @@ export default function MonthlyPayslipPage() {
                   onValueChange={(value) => {
                     handleInputChange('taxClass', value);
                   }}
+                  disabled={payslipData.useManualTaxRate}
                 >
                   <SelectTrigger className="w-full h-8 text-xs">
                     <SelectValue placeholder="Sélectionner la classe" />
@@ -1938,6 +2007,100 @@ export default function MonthlyPayslipPage() {
                   {!payslipData.taxClass && (employee?.taxClass || '2')}
                 </div>
               )}
+            </div>
+
+            {/* Manual Tax Rate Override */}
+            <div className="pt-3 border-t border-border">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-xs font-semibold text-muted-foreground">Taux manuel (%):</Label>
+                {isEditMode && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={payslipData.useManualTaxRate || false}
+                      onChange={(e) => {
+                        handleInputChange('useManualTaxRate', e.target.checked);
+                        if (!e.target.checked) {
+                          // Reset manual rate when unchecked
+                          handleInputChange('manualTaxRatePercentage', undefined);
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <span className="text-xs text-muted-foreground">Activer</span>
+                  </label>
+                )}
+              </div>
+              {isEditMode && payslipData.useManualTaxRate ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={payslipData.manualTaxRatePercentage || ''}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      handleInputChange('manualTaxRatePercentage', isNaN(value) ? undefined : value);
+                    }}
+                    placeholder="Ex: 15.5"
+                    className="h-8 text-xs"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+              ) : (
+                <div className="text-sm font-medium">
+                  {payslipData.useManualTaxRate && payslipData.manualTaxRatePercentage !== undefined
+                    ? `${payslipData.manualTaxRatePercentage}% (manuel)`
+                    : 'Auto (barème Luxembourg)'}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                {payslipData.useManualTaxRate
+                  ? "IMPÔT = Total Imposable × Taux manuel"
+                  : "Calcul automatique selon classe d'impôt"}
+              </p>
+            </div>
+
+            {/* Cotisation Rates */}
+            <div className="pt-3 border-t border-border">
+              <Label className="text-xs font-semibold text-muted-foreground mb-3 block">Taux de Cotisation (%):</Label>
+              <div className="space-y-2">
+                {[
+                  { label: 'Assurance Maladie', field: 'customRateMaladie', default: DEFAULT_RATES.assuranceMaladie },
+                  { label: 'A-M Majoration', field: 'customRateMajoration', default: DEFAULT_RATES.majoration },
+                  { label: 'Assurance Pension', field: 'customRatePension', default: DEFAULT_RATES.assurancePension },
+                  { label: 'Assurance Dépendance', field: 'customRateDependance', default: DEFAULT_RATES.assuranceDependance },
+                ].map(({ label, field, default: defaultVal }) => (
+                  <div key={field} className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground flex-1">{label}:</span>
+                    {isEditMode ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          value={(payslipData as any)[field] ?? defaultVal}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            handleInputChange(field, isNaN(value) ? undefined : value);
+                          }}
+                          className="h-7 w-20 text-xs text-right"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-medium">
+                        {((payslipData as any)[field] ?? defaultVal).toFixed(2)}%
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Modifiez les taux pour ce bulletin uniquement
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -2261,15 +2424,38 @@ export default function MonthlyPayslipPage() {
                 {/* Contributions */}
                 <TableRow className="bg-muted/70 font-semibold"><TableCell className="font-semibold" colSpan={6}>{t('payslips.monthlyPayslip.contributions')}</TableCell></TableRow>
 
-                {[
-                  [t('payslips.monthlyPayslip.healthInsurance'), RATES.assuranceMaladie, calculated.assuranceMaladie, 'manualAssuranceMaladie', 'm1AssuranceMaladie'],
-                  [t('payslips.monthlyPayslip.cashAllowance'), RATES.majoration, calculated.majorationEspece, 'manualMajoration', 'm1Majoration'],
-                  [t('payslips.monthlyPayslip.pensionInsurance'), RATES.assurancePension, calculated.assurancePension, 'manualAssurancePension', 'm1AssurancePension'],
-                  [t('payslips.monthlyPayslip.dependencyInsurance'), RATES.assuranceDependance, calculated.assuranceDependance, 'manualAssuranceDependance', 'm1AssuranceDependance'],
-                ].map(([label, rate, value, manualField, m1Field]) => (
+                {(() => {
+                  const effectiveRates = getEffectiveRates(payslipData);
+                  const cotisationRows = [
+                    { label: t('payslips.monthlyPayslip.healthInsurance'), rate: effectiveRates.assuranceMaladie, value: calculated.assuranceMaladie, manualField: 'manualAssuranceMaladie', m1Field: 'm1AssuranceMaladie', rateField: 'customRateMaladie', defaultRate: DEFAULT_RATES.assuranceMaladie },
+                    { label: t('payslips.monthlyPayslip.cashAllowance'), rate: effectiveRates.majoration, value: calculated.majorationEspece, manualField: 'manualMajoration', m1Field: 'm1Majoration', rateField: 'customRateMajoration', defaultRate: DEFAULT_RATES.majoration },
+                    { label: t('payslips.monthlyPayslip.pensionInsurance'), rate: effectiveRates.assurancePension, value: calculated.assurancePension, manualField: 'manualAssurancePension', m1Field: 'm1AssurancePension', rateField: 'customRatePension', defaultRate: DEFAULT_RATES.assurancePension },
+                    { label: t('payslips.monthlyPayslip.dependencyInsurance'), rate: effectiveRates.assuranceDependance, value: calculated.assuranceDependance, manualField: 'manualAssuranceDependance', m1Field: 'm1AssuranceDependance', rateField: 'customRateDependance', defaultRate: DEFAULT_RATES.assuranceDependance },
+                  ];
+                  return cotisationRows.map(({ label, rate, value, manualField, m1Field, rateField, defaultRate }) => (
                   <TableRow key={label as string}>
                     <TableCell>{label}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{((rate as number) * 100).toFixed(2)}%</TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {isEditMode ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <Input
+                            type="number"
+                            value={(payslipData as any)[rateField] ?? defaultRate}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              handleInputChange(rateField, isNaN(val) ? undefined : val);
+                            }}
+                            className="h-6 w-16 text-xs text-right p-1"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                          />
+                          <span className="text-xs">%</span>
+                        </div>
+                      ) : (
+                        <span>{((rate as number) * 100).toFixed(2)}%</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right text-muted-foreground">-</TableCell>
                     <TableCell className="text-right bg-blue-50/50 dark:bg-blue-950/30 font-medium">
                       <EditableValue value={value as number} manualField={manualField as keyof PayslipData} />
@@ -2281,7 +2467,8 @@ export default function MonthlyPayslipPage() {
                       <EditableValue value={value as number} manualField={manualField as keyof PayslipData} />
                     </TableCell>
                   </TableRow>
-                ))}
+                ));
+                })()}
 
                 <TableRow className="bg-orange-50 dark:bg-orange-950 font-bold">
                   <TableCell className="font-bold">{t('payslips.monthlyPayslip.totalContributions')}</TableCell>

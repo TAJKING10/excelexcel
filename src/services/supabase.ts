@@ -1816,6 +1816,16 @@ export interface MonthlyPayslipData {
   // Tax rate information (immutable - stored at payslip creation)
   taxRateId?: string;
   taxRatePercentage?: number;
+  taxClass?: string;
+  // Manual tax rate override
+  useManualTaxRate?: boolean;
+  manualTaxRatePercentage?: number;
+  // Custom cotisation rates
+  customRateMaladie?: number;
+  customRateMajoration?: number;
+  customRatePension?: number;
+  customRateDependance?: number;
+  customDependanceThreshold?: number;
   employeeNumber?: string;
   indice?: string;
   emploi?: string;
@@ -2039,6 +2049,14 @@ export const monthlyPayslipService = {
       periodMonth: data.period_month,
       taxRateId: data.tax_rate_id,
       taxRatePercentage: data.tax_rate_percentage ? parseFloat(data.tax_rate_percentage) : undefined,
+      taxClass: data.tax_class || '2',
+      useManualTaxRate: data.use_manual_tax_rate || false,
+      manualTaxRatePercentage: data.manual_tax_rate_percentage ? parseFloat(data.manual_tax_rate_percentage) : undefined,
+      customRateMaladie: data.custom_rate_maladie ? parseFloat(data.custom_rate_maladie) : undefined,
+      customRateMajoration: data.custom_rate_majoration ? parseFloat(data.custom_rate_majoration) : undefined,
+      customRatePension: data.custom_rate_pension ? parseFloat(data.custom_rate_pension) : undefined,
+      customRateDependance: data.custom_rate_dependance ? parseFloat(data.custom_rate_dependance) : undefined,
+      customDependanceThreshold: data.custom_dependance_threshold ? parseFloat(data.custom_dependance_threshold) : undefined,
       employeeNumber: data.employee_number,
       indice: data.indice,
       emploi: data.emploi,
@@ -2127,6 +2145,14 @@ export const monthlyPayslipService = {
       period_month: payslipData.periodMonth,
       tax_rate_id: payslipData.taxRateId || null,
       tax_rate_percentage: payslipData.taxRatePercentage || null,
+      tax_class: payslipData.taxClass || '2',
+      use_manual_tax_rate: payslipData.useManualTaxRate || false,
+      manual_tax_rate_percentage: payslipData.manualTaxRatePercentage || null,
+      custom_rate_maladie: payslipData.customRateMaladie || null,
+      custom_rate_majoration: payslipData.customRateMajoration || null,
+      custom_rate_pension: payslipData.customRatePension || null,
+      custom_rate_dependance: payslipData.customRateDependance || null,
+      custom_dependance_threshold: payslipData.customDependanceThreshold || null,
       employee_number: payslipData.employeeNumber,
       indice: payslipData.indice,
       emploi: payslipData.emploi,
@@ -2234,6 +2260,14 @@ export const monthlyPayslipService = {
       periodMonth: data.period_month,
       taxRateId: data.tax_rate_id,
       taxRatePercentage: data.tax_rate_percentage ? parseFloat(data.tax_rate_percentage) : undefined,
+      taxClass: data.tax_class || '2',
+      useManualTaxRate: data.use_manual_tax_rate || false,
+      manualTaxRatePercentage: data.manual_tax_rate_percentage ? parseFloat(data.manual_tax_rate_percentage) : undefined,
+      customRateMaladie: data.custom_rate_maladie ? parseFloat(data.custom_rate_maladie) : undefined,
+      customRateMajoration: data.custom_rate_majoration ? parseFloat(data.custom_rate_majoration) : undefined,
+      customRatePension: data.custom_rate_pension ? parseFloat(data.custom_rate_pension) : undefined,
+      customRateDependance: data.custom_rate_dependance ? parseFloat(data.custom_rate_dependance) : undefined,
+      customDependanceThreshold: data.custom_dependance_threshold ? parseFloat(data.custom_dependance_threshold) : undefined,
       employeeNumber: data.employee_number,
       indice: data.indice,
       emploi: data.emploi,
