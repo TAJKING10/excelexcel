@@ -57,9 +57,26 @@
       "Bash(rm:*)",
       "mcp__supabase__list_edge_functions",
       "mcp__supabase__deploy_edge_function",
-      "Bash(src/assets/logoGroupe.ts)"
+      "Bash(src/assets/logoGroupe.ts)",
+      "Bash(if [ -f \".env\" ])",
+      "Bash(then echo \"✓ .env file exists\")",
+      "Bash(else echo \"✗ .env file missing - check .env.example\")",
+      "Bash(fi)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\Toufi\\AndroidStudioProjects\\create_zip.ps1\")",
+      "Bash(NUL)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\Toufi\\AndroidStudioProjects\\create_deployment_package.ps1\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\Toufi\\AndroidStudioProjects\\create_final_package.ps1\")",
+      "Bash(if [ -f \"C:\\Users\\Toufi\\AndroidStudioProjects\\ovhcloud-deployment-FINAL.zip\" ])",
+      "Bash(then echo \"✓ Package exists\")",
+      "Bash(else echo \"✗ Package not found\")",
+      "Bash(if exist \"dist\" rmdir /s /q dist)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\Toufi\\AndroidStudioProjects\\create_deployment.ps1\")"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enableAllProjectMcpServers": true
 }

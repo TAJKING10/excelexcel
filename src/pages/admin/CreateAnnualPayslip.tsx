@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Pencil, Check, X } from 'lucide-react';
 import { calculatePayslip, formatCurrency, getMonthNameFr } from '@/lib/luxembourgPayroll';
 import { useToast } from '@/hooks/use-toast';
 
@@ -46,13 +46,21 @@ export function CreateAnnualPayslip() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { companies, employees, individuals, getEmployeeAnnualPayslip, getIndividualAnnualPayslip, updateAnnualPayslip } = useDataStore();
+  const { companies, employees, individuals, getEmployeeAnnualPayslip, getIndividualAnnualPayslip, updateAnnualPayslip, updateEmployee } = useDataStore();
 
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(employeeId || '');
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [autoCalc, setAutoCalc] = useState<boolean>(false);
   const [existingPayslipId, setExistingPayslipId] = useState<string | null>(null);
+
+  // Employee edit mode states
+  const [isEditingEmployee, setIsEditingEmployee] = useState<boolean>(false);
+  const [editableMatricule, setEditableMatricule] = useState<string>('');
+  const [editableClass, setEditableClass] = useState<string>('');
+  const [editableHireDate, setEditableHireDate] = useState<string>('');
+  const [editableAddress, setEditableAddress] = useState<string>('');
+
   // Check if this is an individual or employee
   const isIndividual = individuals.some((i) => i.id === employeeId);
   const individual = individuals.find((i) => i.id === employeeId);
@@ -115,6 +123,17 @@ export function CreateAnnualPayslip() {
       }
     }
   }, [employeeId, employees, isIndividual]);
+
+  // Initialize editable employee fields when employee is selected
+  useEffect(() => {
+    if (selectedEmployee && !isIndividual) {
+      const emp = selectedEmployee as any;
+      setEditableMatricule(emp.matricule || '');
+      setEditableClass(emp.class || '');
+      setEditableHireDate(emp.hireDate || '');
+      setEditableAddress(emp.address || '');
+    }
+  }, [selectedEmployee, isIndividual]);
 
   // Load existing annual payslip when editing
   useEffect(() => {
@@ -457,6 +476,30 @@ export function CreateAnnualPayslip() {
         totalHoursWorked: totals.normalHours,
       };
 
+      // Save employee data if it was edited (only for employees, not individuals)
+      if (!isIndividual && selectedEmployeeId) {
+        const employeeUpdates: any = {};
+        const emp = selectedEmployee as any;
+
+        if (editableMatricule !== (emp.matricule || '')) {
+          employeeUpdates.matricule = editableMatricule;
+        }
+        if (editableClass !== (emp.class || '')) {
+          employeeUpdates.class = editableClass;
+        }
+        if (editableHireDate !== (emp.hireDate || '')) {
+          employeeUpdates.hireDate = editableHireDate;
+        }
+        if (editableAddress !== (emp.address || '')) {
+          employeeUpdates.address = editableAddress;
+        }
+
+        // Only update if there are changes
+        if (Object.keys(employeeUpdates).length > 0) {
+          await updateEmployee(selectedEmployeeId, employeeUpdates);
+        }
+      }
+
       if (existingPayslipId) {
         // Update existing payslip
         const result = await updateAnnualPayslip(existingPayslipId, {
@@ -466,7 +509,7 @@ export function CreateAnnualPayslip() {
         });
         toast({
           title: 'Success',
-          description: `Annual payslip updated successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+          description: `Annual payslip and employee data updated successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
         });
       } else {
         toast({
@@ -601,40 +644,101 @@ export function CreateAnnualPayslip() {
           )}
 
           {selectedEmployee && (isIndividual || selectedCompany) && (
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  {isIndividual ? 'individual.id' : 'employee.matricule'}
-                </p>
-                <p className="font-medium">
-                  {isIndividual ? selectedEmployee.id.slice(0, 8) : (selectedEmployee as any).matricule || '1989 11 24 004 47'}
-                </p>
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-muted-foreground">Employee Information</span>
+                {!isIndividual && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingEmployee(!isEditingEmployee)}
+                    className="h-8 px-2"
+                  >
+                    {isEditingEmployee ? (
+                      <>
+                        <X size={14} className="mr-1" />
+                        Cancel
+                      </>
+                    ) : (
+                      <>
+                        <Pencil size={14} className="mr-1" />
+                        Edit
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  {isIndividual ? 'individual.status' : 'employee.class'}
-                </p>
-                <p className="font-medium">
-                  {isIndividual ? (selectedEmployee as any).status : (selectedEmployee as any).class || 'Empl.'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  {isIndividual ? 'individual.created' : 'employee.hire_date'}
-                </p>
-                <p className="font-medium">
-                  {isIndividual
-                    ? new Date((selectedEmployee as any).createdAt).toLocaleDateString('fr-LU')
-                    : (selectedEmployee as any).hireDate ? new Date((selectedEmployee as any).hireDate).toLocaleDateString('fr-LU') : '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  {isIndividual ? 'individual.country' : 'employee.address'}
-                </p>
-                <p className="font-medium">
-                  {isIndividual ? (selectedEmployee as any).country : (selectedEmployee as any).address || '52, Grand-Rue'}
-                </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {isIndividual ? 'individual.id' : 'employee.matricule'}
+                  </p>
+                  {!isIndividual && isEditingEmployee ? (
+                    <Input
+                      value={editableMatricule}
+                      onChange={(e) => setEditableMatricule(e.target.value)}
+                      className="h-8 text-sm mt-1"
+                      placeholder="1989 11 24 004 47"
+                    />
+                  ) : (
+                    <p className="font-medium">
+                      {isIndividual ? selectedEmployee.id.slice(0, 8) : (selectedEmployee as any).matricule || '-'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {isIndividual ? 'individual.status' : 'employee.class'}
+                  </p>
+                  {!isIndividual && isEditingEmployee ? (
+                    <Input
+                      value={editableClass}
+                      onChange={(e) => setEditableClass(e.target.value)}
+                      className="h-8 text-sm mt-1"
+                      placeholder="Empl."
+                    />
+                  ) : (
+                    <p className="font-medium">
+                      {isIndividual ? (selectedEmployee as any).status : (selectedEmployee as any).class || '-'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {isIndividual ? 'individual.created' : 'employee.hire_date'}
+                  </p>
+                  {!isIndividual && isEditingEmployee ? (
+                    <Input
+                      type="date"
+                      value={editableHireDate}
+                      onChange={(e) => setEditableHireDate(e.target.value)}
+                      className="h-8 text-sm mt-1"
+                    />
+                  ) : (
+                    <p className="font-medium">
+                      {isIndividual
+                        ? new Date((selectedEmployee as any).createdAt).toLocaleDateString('fr-LU')
+                        : (selectedEmployee as any).hireDate ? new Date((selectedEmployee as any).hireDate).toLocaleDateString('fr-LU') : '-'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {isIndividual ? 'individual.country' : 'employee.address'}
+                  </p>
+                  {!isIndividual && isEditingEmployee ? (
+                    <Input
+                      value={editableAddress}
+                      onChange={(e) => setEditableAddress(e.target.value)}
+                      className="h-8 text-sm mt-1"
+                      placeholder="52, Grand-Rue"
+                    />
+                  ) : (
+                    <p className="font-medium">
+                      {isIndividual ? (selectedEmployee as any).country : (selectedEmployee as any).address || '-'}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}

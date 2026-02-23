@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Payslip } from '@/types';
 import i18n from '@/i18n';
+import { logoGroupe } from '@/assets/logoGroupe';
 
 // Extend jsPDF type to include autoTable
 declare module 'jspdf' {
@@ -42,6 +43,7 @@ export function generatePayslipPDF(payslip: Payslip): void {
       employerContribYTD: 'Cotisations Employeur',
       taxes: 'Impôts',
       generatedOn: 'Généré le',
+      thankYou: 'Merci',
     },
     en: {
       payslip: 'PAYSLIP',
@@ -69,6 +71,7 @@ export function generatePayslipPDF(payslip: Payslip): void {
       employerContribYTD: 'Employer Contributions',
       taxes: 'Taxes',
       generatedOn: 'Generated on',
+      thankYou: 'Thank you',
     },
   };
 
@@ -102,6 +105,20 @@ export function generatePayslipPDF(payslip: Payslip): void {
   const getMonthName = (month: number) => monthNames[currentLanguage][month - 1];
 
   let yPosition = 20;
+
+  // ===== ADD LOGO =====
+  try {
+    // Use base64 encoded logo directly - works in both dev and production
+    if (logoGroupe && logoGroupe.length > 0) {
+      console.log('Adding logo to PDF, length:', logoGroupe.length);
+      doc.addImage(logoGroupe, 'PNG', 14, yPosition, 50, 18);
+      console.log('Logo added successfully');
+    } else {
+      console.warn('Logo data is empty or undefined');
+    }
+  } catch (error) {
+    console.error('Failed to add logo to PDF:', error);
+  }
 
   // Header - Company Name
   doc.setFontSize(20);
@@ -269,7 +286,8 @@ export function generatePayslipPDF(payslip: Payslip): void {
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(128, 128, 128);
   const today = new Date().toLocaleDateString(currentLanguage);
-  doc.text(`${t.generatedOn}: ${today}`, 105, 285, { align: 'center' });
+  doc.text(`${t.generatedOn}: ${today}`, 105, 282, { align: 'center' });
+  doc.text(`${t.thankYou}`, 105, 288, { align: 'center' });
 
   // Save the PDF
   const fileName = `Payslip_${payslip.employee.lastName}_${payslip.period.month}-${payslip.period.year}.pdf`;

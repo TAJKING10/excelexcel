@@ -80,17 +80,21 @@ export default function AnnualPayslipPage() {
 
     // ===== ADD LOGO =====
     const logoWidth = 50;
-    const logoHeight = 20;
+    const logoHeight = 18;
     const logoX = 14;
     const logoY = 15;
 
     try {
       // Use base64 encoded logo directly - works in both dev and production
-      if (logoGroupe) {
+      if (logoGroupe && logoGroupe.length > 0) {
+        console.log('Adding logo to PDF, length:', logoGroupe.length);
         doc.addImage(logoGroupe, 'PNG', logoX, logoY, logoWidth, logoHeight);
+        console.log('Logo added successfully');
+      } else {
+        console.warn('Logo data is empty or undefined');
       }
     } catch (error) {
-      // Logo loading failed silently
+      console.error('Failed to add logo to PDF:', error);
     }
 
     // Title - positioned to the right of logo with proper spacing
@@ -225,6 +229,12 @@ export default function AnnualPayslipPage() {
     doc.text(`Cotisations Employeur: ${formatCurrency(annualPayslip.recapitulation.totalEmployerContributions)}`, 14, yPos + 18);
     doc.text(`Impôts: ${formatCurrency(annualPayslip.recapitulation.totalTaxes)}`, 14, yPos + 24);
     doc.text(`Heures Travaillées: ${annualPayslip.recapitulation.totalHoursWorked}h`, 14, yPos + 30);
+
+    // Footer
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Document généré le ${new Date().toLocaleDateString('fr-LU')} à ${new Date().toLocaleTimeString('fr-LU')}`, pageWidth / 2, 185, { align: 'center' });
+    doc.text('Merci', pageWidth / 2, 189, { align: 'center' });
 
     // Download
     const filename = `Fiche_Paie_Annuelle_${annualPayslip.employee.lastName}_${annualPayslip.year}.pdf`;

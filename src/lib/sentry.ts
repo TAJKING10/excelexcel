@@ -5,80 +5,64 @@ import * as Sentry from '@sentry/react';
  * Only runs in production to avoid noise during development
  */
 export function initSentry() {
-  // Only initialize in production
-  if (import.meta.env.PROD) {
-    Sentry.init({
-      dsn: import.meta.env.VITE_SENTRY_DSN,
-      environment: import.meta.env.MODE,
+  // Only initialize in production if DSN is provided
+  if (import.meta.env.PROD && import.meta.env.VITE_SENTRY_DSN) {
+    try {
+      Sentry.init({
+        dsn: import.meta.env.VITE_SENTRY_DSN,
+        environment: import.meta.env.MODE,
 
-      // Performance Monitoring
-      integrations: [
-        new Sentry.BrowserTracing({
-          // Set sampling rate for performance monitoring
-          tracePropagationTargets: ['localhost', /^https:\/\/.*\.supabase\.co/],
-        }),
-        // Session Replay for debugging
-        new Sentry.Replay({
-          maskAllText: true, // Mask sensitive text
-          blockAllMedia: true, // Block media for privacy
-        }),
-      ],
+        // Filter sensitive data before sending to Sentry
+        beforeSend(event, hint) {
+          // Remove cookies and sensitive headers
+          if (event.request?.cookies) {
+            delete event.request.cookies;
+          }
+          if (event.request?.headers) {
+            delete event.request.headers.Authorization;
+            delete event.request.headers.Cookie;
+          }
 
-      // Performance traces sample rate (10% of transactions)
-      tracesSampleRate: 0.1,
+          // Filter out non-error events in production
+          if (event.level === 'log' || event.level === 'info') {
+            return null;
+          }
 
-      // Session Replay sample rates
-      replaysSessionSampleRate: 0.1, // 10% of sessions
-      replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
+          return event;
+        },
 
-      // Filter sensitive data before sending to Sentry
-      beforeSend(event, hint) {
-        // Remove cookies and sensitive headers
-        if (event.request?.cookies) {
-          delete event.request.cookies;
+        // Ignore specific errors
+        ignoreErrors: [
+          // Browser extension errors
+          'top.GLOBALS',
+          'canvas.contentDocument',
+          'MyApp_RemoveAllHighlights',
+          'atomicFindClose',
+          // Network errors that are expected
+          'NetworkError',
+          'Failed to fetch',
+          // User cancelled actions
+          'AbortError',
+        ],
+      });
+
+      // Set user context if available
+      const storedUser = localStorage.getItem('supabase.auth.token');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          if (userData?.user) {
+            Sentry.setUser({
+              id: userData.user.id,
+              email: userData.user.email,
+            });
+          }
+        } catch (error) {
+          // Ignore JSON parse errors
         }
-        if (event.request?.headers) {
-          delete event.request.headers.Authorization;
-          delete event.request.headers.Cookie;
-        }
-
-        // Filter out non-error events in production
-        if (event.level === 'log' || event.level === 'info') {
-          return null;
-        }
-
-        return event;
-      },
-
-      // Ignore specific errors
-      ignoreErrors: [
-        // Browser extension errors
-        'top.GLOBALS',
-        'canvas.contentDocument',
-        'MyApp_RemoveAllHighlights',
-        'atomicFindClose',
-        // Network errors that are expected
-        'NetworkError',
-        'Failed to fetch',
-        // User cancelled actions
-        'AbortError',
-      ],
-    });
-
-    // Set user context if available
-    const storedUser = localStorage.getItem('supabase.auth.token');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        if (userData?.user) {
-          Sentry.setUser({
-            id: userData.user.id,
-            email: userData.user.email,
-          });
-        }
-      } catch (error) {
-        // Ignore JSON parse errors
       }
+    } catch (error) {
+      console.warn('Failed to initialize Sentry:', error);
     }
   }
 }

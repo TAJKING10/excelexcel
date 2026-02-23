@@ -1385,11 +1385,15 @@ export default function MonthlyPayslipPage() {
     // ===== ADD LOGO =====
     try {
       // Use base64 encoded logo directly - works in both dev and production
-      if (logoGroupe) {
-        doc.addImage(logoGroupe, 'PNG', 14, yPos, 40, 15);
+      if (logoGroupe && logoGroupe.length > 0) {
+        console.log('Adding logo to PDF, length:', logoGroupe.length);
+        doc.addImage(logoGroupe, 'PNG', 14, yPos, 50, 18);
+        console.log('Logo added successfully');
+      } else {
+        console.warn('Logo data is empty or undefined');
       }
     } catch (error) {
-      // Logo loading failed silently
+      console.error('Failed to add logo to PDF:', error);
     }
 
     // Move down to accommodate the logo
@@ -1583,6 +1587,7 @@ export default function MonthlyPayslipPage() {
     doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
     doc.text(`Document généré le ${new Date().toLocaleDateString('fr-LU')} à ${new Date().toLocaleTimeString('fr-LU')}`, pageWidth / 2, footerY, { align: 'center' });
+    doc.text('Merci', pageWidth / 2, footerY + 4, { align: 'center' });
 
     doc.save(`Bulletin_Salaire_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
   };

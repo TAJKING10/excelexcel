@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Pencil, X } from 'lucide-react';
 import { calculatePayslip, formatCurrency, getMonthNameFr } from '@/lib/luxembourgPayroll';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,7 +45,7 @@ export function CreatePayslip() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { companies, employees, annualPayslips, getEmployeeAnnualPayslip, updateAnnualPayslip } = useDataStore();
+  const { companies, employees, annualPayslips, getEmployeeAnnualPayslip, updateAnnualPayslip, updateEmployee } = useDataStore();
   const [searchParams] = useSearchParams();
   const { employeeId: urlEmployeeId } = useParams<{ employeeId?: string }>();
 
@@ -54,6 +54,14 @@ export function CreatePayslip() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [autoCalc, setAutoCalc] = useState<boolean>(false);
   const [existingPayslipId, setExistingPayslipId] = useState<string | null>(null);
+
+  // Employee edit mode states
+  const [isEditingEmployee, setIsEditingEmployee] = useState<boolean>(false);
+  const [editableMatricule, setEditableMatricule] = useState<string>('');
+  const [editableClass, setEditableClass] = useState<string>('');
+  const [editableHireDate, setEditableHireDate] = useState<string>('');
+  const [editableAddress, setEditableAddress] = useState<string>('');
+
   // Initialize 12 months with zeros
   const [monthsData, setMonthsData] = useState<MonthData[]>(() =>
     Array.from({ length: 12 }, (_, i) => ({
@@ -148,6 +156,16 @@ export function CreatePayslip() {
 
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId);
   const selectedCompany = companies.find((c) => c.id === selectedCompanyId);
+
+  // Initialize editable employee fields when employee is selected
+  useEffect(() => {
+    if (selectedEmployee) {
+      setEditableMatricule(selectedEmployee.matricule || '');
+      setEditableClass(selectedEmployee.class || '');
+      setEditableHireDate(selectedEmployee.hireDate || '');
+      setEditableAddress(selectedEmployee.address || '');
+    }
+  }, [selectedEmployee]);
 
   // Auto-fill from selected employee
   useEffect(() => {
@@ -380,6 +398,29 @@ export function CreatePayslip() {
         totalHoursWorked: totals.normalHours,
       };
 
+      // Save employee data if it was edited
+      if (selectedEmployeeId) {
+        const employeeUpdates: any = {};
+
+        if (editableMatricule !== (selectedEmployee.matricule || '')) {
+          employeeUpdates.matricule = editableMatricule;
+        }
+        if (editableClass !== (selectedEmployee.class || '')) {
+          employeeUpdates.class = editableClass;
+        }
+        if (editableHireDate !== (selectedEmployee.hireDate || '')) {
+          employeeUpdates.hireDate = editableHireDate;
+        }
+        if (editableAddress !== (selectedEmployee.address || '')) {
+          employeeUpdates.address = editableAddress;
+        }
+
+        // Only update if there are changes
+        if (Object.keys(employeeUpdates).length > 0) {
+          await updateEmployee(selectedEmployeeId, employeeUpdates);
+        }
+      }
+
       if (existingPayslipId) {
         // Update existing payslip
         const result = await updateAnnualPayslip(existingPayslipId, {
@@ -389,7 +430,7 @@ export function CreatePayslip() {
         });
         toast({
           title: 'Success',
-          description: `Annual payslip updated successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+          description: `Annual payslip and employee data updated successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
         });
       } else {
         toast({
@@ -495,24 +536,83 @@ export function CreatePayslip() {
           </div>
 
           {selectedEmployee && selectedCompany && (
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-xs text-muted-foreground">employee.matricule</p>
-                <p className="font-medium">{selectedEmployee.matricule || '1989 11 24 004 47'}</p>
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-muted-foreground">Employee Information</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditingEmployee(!isEditingEmployee)}
+                  className="h-8 px-2"
+                >
+                  {isEditingEmployee ? (
+                    <>
+                      <X size={14} className="mr-1" />
+                      Cancel
+                    </>
+                  ) : (
+                    <>
+                      <Pencil size={14} className="mr-1" />
+                      Edit
+                    </>
+                  )}
+                </Button>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">employee.class</p>
-                <p className="font-medium">{selectedEmployee.class || 'Empl.'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">employee.hire_date</p>
-                <p className="font-medium">
-                  {selectedEmployee.hireDate ? new Date(selectedEmployee.hireDate).toLocaleDateString('fr-LU') : '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">employee.address</p>
-                <p className="font-medium">{selectedEmployee.address || '52, Grand-Rue'}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">employee.matricule</p>
+                  {isEditingEmployee ? (
+                    <Input
+                      value={editableMatricule}
+                      onChange={(e) => setEditableMatricule(e.target.value)}
+                      className="h-8 text-sm mt-1"
+                      placeholder="1989 11 24 004 47"
+                    />
+                  ) : (
+                    <p className="font-medium">{selectedEmployee.matricule || '-'}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">employee.class</p>
+                  {isEditingEmployee ? (
+                    <Input
+                      value={editableClass}
+                      onChange={(e) => setEditableClass(e.target.value)}
+                      className="h-8 text-sm mt-1"
+                      placeholder="Empl."
+                    />
+                  ) : (
+                    <p className="font-medium">{selectedEmployee.class || '-'}</p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">employee.hire_date</p>
+                  {isEditingEmployee ? (
+                    <Input
+                      type="date"
+                      value={editableHireDate}
+                      onChange={(e) => setEditableHireDate(e.target.value)}
+                      className="h-8 text-sm mt-1"
+                    />
+                  ) : (
+                    <p className="font-medium">
+                      {selectedEmployee.hireDate ? new Date(selectedEmployee.hireDate).toLocaleDateString('fr-LU') : '-'}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">employee.address</p>
+                  {isEditingEmployee ? (
+                    <Input
+                      value={editableAddress}
+                      onChange={(e) => setEditableAddress(e.target.value)}
+                      className="h-8 text-sm mt-1"
+                      placeholder="52, Grand-Rue"
+                    />
+                  ) : (
+                    <p className="font-medium">{selectedEmployee.address || '-'}</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
