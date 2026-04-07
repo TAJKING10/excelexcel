@@ -2718,9 +2718,14 @@ export default function MonthlyPayslipPage() {
 
                 {/* NET TO PAY */}
                 <TableRow className="border-t-2 border-border bg-green-600/30 dark:bg-green-600/40">
-                  <TableCell colSpan={4}></TableCell>
-                  <TableCell className="text-right py-3 px-2 font-bold text-base text-foreground">{t('payslips.monthlyPayslip.netToPay')}</TableCell>
-                  <TableCell className="text-right py-3 px-2 bg-green-600/50 dark:bg-green-600/60 font-bold text-base text-foreground">
+                  <TableCell className="py-3 text-base font-bold">{t('payslips.monthlyPayslip.netToPay')}</TableCell>
+                  <TableCell className="text-right py-3">-</TableCell>
+                  <TableCell className="text-right py-3">-</TableCell>
+                  <TableCell className="text-right py-3 bg-green-600/50 dark:bg-green-600/60 font-bold text-base text-foreground">
+                    <EditableValue value={calculated.netAPayer} manualField="manualNetAPayer" className="font-bold text-base" />
+                  </TableCell>
+                  <TableCell className="text-right py-3">-</TableCell>
+                  <TableCell className="text-right py-3 bg-green-600/50 dark:bg-green-600/60 font-bold text-base text-foreground">
                     <EditableValue value={calculated.netAPayer} manualField="manualNetAPayer" className="font-bold text-base" />
                   </TableCell>
                 </TableRow>

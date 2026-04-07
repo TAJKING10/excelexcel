@@ -7,7 +7,7 @@ import path from "path";
 export default defineConfig({
   plugins: [react()],
   publicDir: "./static",
-  base: "/",
+  base: "./",
   server: {
     port: 4049,
     host: true,
