@@ -299,7 +299,7 @@
     "employeeNotFound": "Employé non trouvé",
     "employeeNotFoundDesc": "L'employé avec l'ID \"{{id}}\" n'a pas été trouvé.",
     "employeesAvailable": "Employés disponibles",
-    "cannotGenerate": "Impossible de générer la fiche de paie annuelle pour {name}",
+    "cannotGenerate": "Impossible de générer la fiche de paie annuelle pour {{name}}",
     "selectCompanyEmployee": "Veuillez sélectionner une entreprise et un employé",
     "company": "Entreprise",
     "grossPay": "Salaire brut",
