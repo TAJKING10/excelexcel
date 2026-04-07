@@ -56,7 +56,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
   };
 
   handleReload = () => {
-    window.location.reload();
+    // Navigate to root without a full page reload, then clear error state
+    window.history.pushState(null, '', '/');
+    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
   render() {

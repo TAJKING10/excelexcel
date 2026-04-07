@@ -84,11 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 
-      // Only process auth changes after initial load is complete
-      // This prevents the race condition where SIGNED_IN fires before getSession completes
-      if (!initialLoadComplete) {
-        return;
-      }
+      // Skip INITIAL_SESSION — handled by getSession() below to avoid duplicate fetch
+      if (event === 'INITIAL_SESSION') return;
+
+      // For all other events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
+      // wait until initial load is done so we don't race with getSession
+      if (!initialLoadComplete) return;
 
       setSession(newSession);
 

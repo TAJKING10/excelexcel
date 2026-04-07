@@ -2,7 +2,7 @@ import React from 'react'
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
-import { useAuthStore } from '@/stores/auth'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Topbar } from './Topbar'
@@ -24,7 +24,7 @@ export function AdminShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false)
   const location = useLocation()
   const { t } = useTranslation()
-  const { user } = useAuthStore()
+  const { user } = useAuth()
 
   const navItems = [
     { path: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },

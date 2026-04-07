@@ -171,7 +171,7 @@ export default function MonthlyPayslipPage() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [autoCalculate, setAutoCalculate] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [payslipId, setPayslipId] = useState<string | undefined>(undefined);
@@ -183,15 +183,9 @@ export default function MonthlyPayslipPage() {
   const taxRates = useTaxRatesStore((state) => state.taxRates);
   const { getTaxRateForDate, getTaxRateById, loadTaxRates } = useTaxRatesStore();
 
-  // Reset states on component mount and cleanup on unmount
+  // Cleanup saving state on unmount
   useEffect(() => {
-    // Reset loading states on mount to prevent stuck loading
-    setIsLoading(false);
-    setIsSaving(false);
-
-    // Cleanup on unmount
     return () => {
-      setIsLoading(false);
       setIsSaving(false);
     };
   }, []);
@@ -204,6 +198,14 @@ export default function MonthlyPayslipPage() {
   // Update payslip data with active tax rate when tax rates are loaded
   // IMPORTANT: This should ONLY run for NEW payslips ONCE, never change after
   const hasAppliedTaxRate = React.useRef(false);
+  const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up save-protection timeout when navigating away
+  React.useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     // Only run if tax rates are loaded, no payslip ID, and haven't applied yet
@@ -281,9 +283,8 @@ export default function MonthlyPayslipPage() {
         return;
       }
 
-      // Wait for tax rates to be loaded first
+      // Wait for tax rates to be loaded first — keep spinner visible
       if (taxRates.length === 0) {
-        setIsLoading(false);
         return;
       }
 
@@ -303,9 +304,28 @@ export default function MonthlyPayslipPage() {
         if (savedPayslip) {
           // Load all the saved data
           setPayslipId(savedPayslip.id);
+
+          // Resolve taxRatePercentage: use saved value, or look up from store by ID, or use date-based rate
+          let resolvedTaxRatePercentage = savedPayslip.taxRatePercentage;
+          let resolvedTaxRateId = savedPayslip.taxRateId;
+          if (!resolvedTaxRatePercentage) {
+            if (resolvedTaxRateId) {
+              const storedRate = getTaxRateById(resolvedTaxRateId);
+              if (storedRate) resolvedTaxRatePercentage = storedRate.rate;
+            }
+            if (!resolvedTaxRatePercentage) {
+              const payslipDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString();
+              const fallbackRate = getTaxRateForDate(payslipDate);
+              if (fallbackRate) {
+                resolvedTaxRatePercentage = fallbackRate.rate;
+                resolvedTaxRateId = fallbackRate.id;
+              }
+            }
+          }
+
           const loadedData = {
-            taxRateId: savedPayslip.taxRateId,
-            taxRatePercentage: savedPayslip.taxRatePercentage,
+            taxRateId: resolvedTaxRateId,
+            taxRatePercentage: resolvedTaxRatePercentage,
             taxClass: savedPayslip.taxClass || employee?.taxClass || '2',
             useManualTaxRate: savedPayslip.useManualTaxRate || false,
             manualTaxRatePercentage: savedPayslip.manualTaxRatePercentage,
@@ -1094,7 +1114,9 @@ export default function MonthlyPayslipPage() {
     setIsSaving(true);
 
     // Add timeout protection to prevent stuck saving state
-    const saveTimeout = setTimeout(() => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveTimeoutRef.current = null;
       setIsSaving(false);
       toast({
         title: t('payslips.saveError'),
@@ -1265,7 +1287,7 @@ export default function MonthlyPayslipPage() {
         duration: 3000,
       });
     } catch (error: any) {
-      clearTimeout(saveTimeout); // Clear timeout on error
+      if (saveTimeoutRef.current) { clearTimeout(saveTimeoutRef.current); saveTimeoutRef.current = null; } // Clear timeout on error
       toast({
         title: t('payslips.saveError'),
         description: error.message || t('payslips.saveErrorDesc'),
@@ -1273,7 +1295,7 @@ export default function MonthlyPayslipPage() {
         duration: 5000,
       });
     } finally {
-      clearTimeout(saveTimeout); // Clear timeout in finally block
+      if (saveTimeoutRef.current) { clearTimeout(saveTimeoutRef.current); saveTimeoutRef.current = null; } // Clear timeout in finally block
       setIsSaving(false);
     }
   };
@@ -1291,7 +1313,7 @@ export default function MonthlyPayslipPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasUnsavedChanges, isSaving, payslipData]);
+  }, [hasUnsavedChanges, isSaving]); // payslipData intentionally excluded — only the boolean flags affect the handler
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -1452,6 +1474,7 @@ export default function MonthlyPayslipPage() {
   };
 
   const handleExportPDF = async () => {
+    try {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let yPos = 10;
@@ -1489,7 +1512,10 @@ export default function MonthlyPayslipPage() {
     doc.text(`N° Salarié : ${payslipData.employeeNumber}`, 14, yPos);
     doc.text(`Indice : ${payslipData.indice}`, 14, yPos + 5);
     doc.text(`Emploi : ${payslipData.emploi}`, 14, yPos + 10);
-    doc.text(`Date d'entrée : ${new Date(payslipData.dateEntree).toLocaleDateString('fr-LU')}`, 14, yPos + 15);
+    const dateEntreeFormatted = payslipData.dateEntree
+      ? (() => { try { const d = new Date(payslipData.dateEntree); return isNaN(d.getTime()) ? payslipData.dateEntree : d.toLocaleDateString('fr-LU'); } catch { return payslipData.dateEntree; } })()
+      : '-';
+    doc.text(`Date d'entrée : ${dateEntreeFormatted}`, 14, yPos + 15);
     doc.text(`Matricule assuré : ${payslipData.matriculeAssure}`, 14, yPos + 20);
     doc.text(`Matricule employeur : ${payslipData.matriculeEmployeur}`, 14, yPos + 25);
     doc.text(`Période : ${MONTHS.find(m => m.value === selectedMonth)?.label} ${selectedYear}`, 14, yPos + 30);
@@ -1665,6 +1691,15 @@ export default function MonthlyPayslipPage() {
     doc.text('Merci', pageWidth / 2, footerY + 4, { align: 'center' });
 
     doc.save(`Bulletin_Salaire_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast({
+        title: 'Erreur PDF',
+        description: `Impossible de générer le PDF: ${error instanceof Error ? error.message : String(error)}`,
+        variant: 'destructive',
+        duration: 5000,
+      });
+    }
   };
 
   // Generate years from 2020 to 2050 for flexibility
@@ -1678,6 +1713,17 @@ export default function MonthlyPayslipPage() {
         <Card><CardHeader><CardTitle>{t('payslips.errorTitle')}</CardTitle></CardHeader>
           <CardContent><p className="text-muted-foreground mb-4">{t('payslips.employeeNotFound')}</p>
             <Button onClick={() => navigate(-1)}>{t('common.back')}</Button></CardContent></Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground text-sm">Chargement du bulletin...</p>
+        </div>
       </div>
     );
   }
@@ -2794,7 +2840,7 @@ export default function MonthlyPayslipPage() {
               ['Salaire horaire', `${payslipData.hourlyRate.toFixed(4)} €`],
               ['N° de carte', person?.identityNumber || 'D608388-2022'],
               ['Classe d\'impôt', payslipData.taxClass || employee?.taxClass || '2'],
-              ['Taux', '-'],
+              ['Taux', payslipData.taxRatePercentage ? `${payslipData.taxRatePercentage}%` : '-'],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
                 <span className="text-xs font-semibold text-muted-foreground">{label}:</span>

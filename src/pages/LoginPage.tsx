@@ -33,7 +33,7 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
-      navigate(user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : '/dashboard', { replace: true });
+      navigate(user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : '/employee/dashboard', { replace: true });
     }
   }, [loading, user, navigate]);
 

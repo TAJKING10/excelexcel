@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ export default function AnnualPayslipPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -74,7 +76,7 @@ export default function AnnualPayslipPage() {
 
   const handleExportPDF = () => {
     if (!annualPayslip) return;
-
+    try {
     const doc = new jsPDF('landscape');
     const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -108,7 +110,10 @@ export default function AnnualPayslipPage() {
     doc.text(`Employé: ${annualPayslip.employee.lastName} ${annualPayslip.employee.firstName}`, 14, contentStartY);
     doc.text(`Matricule: ${annualPayslip.employee.matricule || '-'}`, 14, contentStartY + 5);
     doc.text(`Classe: ${annualPayslip.employee.class}`, 14, contentStartY + 10);
-    doc.text(`Date d'embauche: ${new Date(annualPayslip.employee.hireDate).toLocaleDateString('fr-LU')}`, 14, contentStartY + 15);
+    const hireDateFormatted = annualPayslip.employee.hireDate
+      ? (() => { try { const d = new Date(annualPayslip.employee.hireDate); return isNaN(d.getTime()) ? annualPayslip.employee.hireDate : d.toLocaleDateString('fr-LU'); } catch { return annualPayslip.employee.hireDate; } })()
+      : '-';
+    doc.text(`Date d'embauche: ${hireDateFormatted}`, 14, contentStartY + 15);
 
     doc.text(`Entreprise: ${annualPayslip.company.name}`, pageWidth - 14, contentStartY, { align: 'right' });
     doc.text(`${annualPayslip.company.address}`, pageWidth - 14, contentStartY + 5, { align: 'right' });
@@ -239,6 +244,15 @@ export default function AnnualPayslipPage() {
     // Download
     const filename = `Fiche_Paie_Annuelle_${annualPayslip.employee.lastName}_${annualPayslip.year}.pdf`;
     doc.save(filename);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast({
+        title: 'Erreur PDF',
+        description: `Impossible de générer le PDF: ${error instanceof Error ? error.message : String(error)}`,
+        variant: 'destructive',
+        duration: 5000,
+      });
+    }
   };
 
   // Early return with visible content for debugging

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useLanguageStore } from '@/stores/language'
 import { useAuth } from '@/contexts/AuthContext'
@@ -27,6 +27,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const { t } = useLanguageStore()
   const { user, logout } = useAuth()
 
@@ -112,7 +113,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Bottom Actions */}
       <div className="p-3 space-y-1 border-t border-[#eff6ff] dark:border-[#1e293b]">
         {user?.role === 'SUPER_ADMIN' && (
-          <Link to="/activity-log">
+          <Link to="/admin/activity-log">
             <Button
               variant="ghost"
               className={cn(
@@ -143,7 +144,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
         <Button
           variant="ghost"
-          onClick={logout}
+          onClick={async () => { await logout(); navigate('/login', { replace: true }); }}
           className={cn(
             "w-full justify-start h-11 text-[#64748B] hover:text-[#dc2626] hover:bg-red-50 transition-advensys font-medium dark:text-[#94a3b8] dark:hover:text-[#ef4444] dark:hover:bg-[#1e293b]",
             collapsed ? "px-2 justify-center" : "px-4"

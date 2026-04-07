@@ -236,10 +236,8 @@ export function UserAccessManagement() {
 
       setIsDialogOpen(false);
 
-      // Refresh the list after a small delay to ensure data is committed
-      setTimeout(() => {
-        fetchData();
-      }, 500);
+      // Refresh the list immediately — data already committed before reaching here
+      await fetchData();
     } catch (error: any) {
       toast({
         title: t('common.error'),

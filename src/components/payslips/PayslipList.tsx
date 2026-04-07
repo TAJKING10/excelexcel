@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguageStore } from '@/stores/language'
 import { useDataStore } from '@/stores/data'
-import { useAuthStore } from '@/stores/auth'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -18,7 +18,7 @@ export function PayslipList() {
   const navigate = useNavigate()
   const { t } = useLanguageStore()
   const { payslips, employees, companies, updatePayslip, deletePayslip } = useDataStore()
-  const { user } = useAuthStore()
+  const { user } = useAuth()
   const [selectedPayslip, setSelectedPayslip] = useState<Payslip | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [filterCompanyId, setFilterCompanyId] = useState<string>('all')

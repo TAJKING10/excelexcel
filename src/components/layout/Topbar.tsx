@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
-import { useAuthStore } from '@/stores/auth'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import { useThemeStore } from '@/stores/theme'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
@@ -14,7 +14,8 @@ interface TopbarProps {
 
 export function Topbar({ onMenuToggle }: TopbarProps) {
   const { t, i18n } = useTranslation()
-  const { user, logout } = useAuthStore()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const { isDarkMode, toggleDarkMode } = useThemeStore()
 
   const handleLanguageChange = (lang: string) => {
@@ -112,7 +113,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               )}
            
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} className="cursor-pointer">
+              <DropdownMenuItem onClick={async () => { await logout(); navigate('/login', { replace: true }); }} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 {t('nav.logout')}
               </DropdownMenuItem>

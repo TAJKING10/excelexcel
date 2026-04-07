@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useTranslation } from 'react-i18next';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { getDefaultRoute } from './lib/rbac';
-import { ProtectedRoute } from './components/guards/ProtectedRoute2';
+import { ProtectedRoute } from './components/guards/ProtectedRoute';
 import { useDataStore } from './stores/data';
 import { LoadingScreen, PageLoadingScreen } from './components/ui/loading-screen';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -49,18 +49,22 @@ function AppRoutes() {
   const { user } = useAuth();
   const { i18n } = useTranslation();
   const initializeData = useDataStore((state) => state.initializeData);
+  const clearData = useDataStore((state) => state.clearData);
 
   useEffect(() => {
     i18n.changeLanguage('fr');
-  }, [i18n]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initialize data from Supabase when user is authenticated
+  // Initialize data on login, clear data on logout
   useEffect(() => {
     if (user) {
       initializeData();
+    } else {
+      // User logged out — reset data store so next login fetches fresh data
+      clearData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // Only re-run when user changes, not when initializeData changes
+  }, [user]);
 
   const defaultRoute = user ? getDefaultRoute(user.role) : '/login';
 

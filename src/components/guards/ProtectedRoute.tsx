@@ -1,35 +1,33 @@
-import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/auth';
-import { canAccessRoute, getDefaultRoute } from '@/lib/rbac';
-import type { Role } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { Role } from '@/types';
 
-interface ProtectedRouteProps {
-  children: ReactNode;
-  requiredRole?: Role | Role[];
-  path?: string;
-}
+type ProtectedRouteProps = {
+  children: JSX.Element;
+  requiredRole?: Role;
+};
 
-export function ProtectedRoute({ children, requiredRole, path }: ProtectedRouteProps) {
-  const { user, isAuthenticated } = useAuthStore();
+export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+  const { user, loading } = useAuth();
 
-  if (!isAuthenticated || !user) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
     return <Navigate to="/" replace />;
   }
 
-  // Check if user's role matches required role(s)
-  if (requiredRole) {
-    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    if (!roles.includes(user.role)) {
-      // Redirect to user's default route
-      return <Navigate to={getDefaultRoute(user.role)} replace />;
-    }
-  }
-
-  // Check if user can access the specific path
-  if (path && !canAccessRoute(user.role, path)) {
-    return <Navigate to={getDefaultRoute(user.role)} replace />;
-  }
-
-  return <>{children}</>;
+  return children;
 }

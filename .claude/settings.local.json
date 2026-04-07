@@ -70,13 +70,15 @@
       "Bash(then echo \"✓ Package exists\")",
       "Bash(else echo \"✗ Package not found\")",
       "Bash(if exist \"dist\" rmdir /s /q dist)",
-      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\Toufi\\AndroidStudioProjects\\create_deployment.ps1\")"
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\Toufi\\AndroidStudioProjects\\create_deployment.ps1\")",
+      "Bash(grep:*)",
+      "Bash(xargs grep:*)"
     ],
     "deny": [],
     "ask": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

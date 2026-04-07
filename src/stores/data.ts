@@ -17,6 +17,7 @@ interface DataState {
 
   // Initialization
   initializeData: () => Promise<void>;
+  clearData: () => void;
 
   // Company methods
   addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => Promise<Company>;
@@ -79,6 +80,11 @@ export const useDataStore = create<DataState>((set, get) => ({
   payrollTemplates: {},
   isLoading: false, // Start as false - will only be true during initial data fetch
   error: null,
+
+  // Clear all data (called on logout so re-login fetches fresh data)
+  clearData: () => {
+    set({ companies: [], employees: [], individuals: [], annualPayslips: [], payslips: [], users: [], activityLogs: [], error: null });
+  },
 
   // Initialize data from Supabase
   initializeData: async () => {
