@@ -457,12 +457,15 @@ export default function MonthlyPayslipPage() {
           const totalImposable = totalBrut - assuranceMaladie - majorationEspece - assurancePension -
             (tempData.fd || 0) - (tempData.ac || 0) - (tempData.ffo || 0) - (tempData.fds || 0);
 
-          // Calculate IMPÔT: use Luxembourg 2025 barème based on tax class or manual rate
+          // Calculate IMPÔT: use manual rate > stored tax rate > Luxembourg barème
           let calculatedImpot: number;
           if (payslipData.useManualTaxRate && payslipData.manualTaxRatePercentage !== undefined) {
             calculatedImpot = parseFloat((totalImposable * (payslipData.manualTaxRatePercentage / 100)).toFixed(2));
+          } else if (applicableTaxRate?.rate !== undefined && applicableTaxRate.rate > 0) {
+            // Use the stored tax rate percentage directly: IMPÔT = Total Imposable × Taux
+            calculatedImpot = parseFloat((totalImposable * (applicableTaxRate.rate / 100)).toFixed(2));
           } else {
-            const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
+            const taxClass = tempData.taxClass || '2'; // Default to Class 2 if not set
             calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
           }
 
@@ -894,16 +897,17 @@ export default function MonthlyPayslipPage() {
       (payslipData.fd || 0) - (payslipData.ac || 0) - (payslipData.ffo || 0) - (payslipData.fds || 0)).toFixed(2));
 
     // STEP 7: Calculate Tax (IMPÔT)
-    // IMPORTANT: Use Luxembourg 2025 barème based on tax class for accurate calculation
-    // This ensures proper tax calculation for Class 1, 1A, and 2
+    // Priority: manual rate > stored tax rate percentage > Luxembourg barème
     let calculatedImpot: number;
 
-    // Check if manual tax rate is enabled
     if (payslipData.useManualTaxRate && payslipData.manualTaxRatePercentage !== undefined) {
       // Use manual tax rate percentage: IMPÔT = Total Imposable × (Taux / 100)
       calculatedImpot = parseFloat((totalImposable * (payslipData.manualTaxRatePercentage / 100)).toFixed(2));
+    } else if (payslipData.taxRatePercentage !== undefined && payslipData.taxRatePercentage > 0) {
+      // Use the stored tax rate (Taux d'imposition from TaxRatesStore): IMPÔT = Total Imposable × Taux
+      calculatedImpot = parseFloat((totalImposable * (payslipData.taxRatePercentage / 100)).toFixed(2));
     } else {
-      // Use Luxembourg barème calculation based on tax class
+      // Fallback: Use Luxembourg barème calculation based on tax class
       const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
       calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
     }
@@ -999,10 +1003,13 @@ export default function MonthlyPayslipPage() {
       : totalBrut - assuranceMaladie - majorationEspece - assurancePension -
         payslipData.fd - payslipData.ac - payslipData.ffo - payslipData.fds;
 
-    // Calculate IMPÔT: use Luxembourg 2025 barème based on tax class or manual rate
+    // Calculate IMPÔT: priority — manual rate > stored tax rate percentage > Luxembourg barème
     let calculatedImpot: number;
     if (payslipData.useManualTaxRate && payslipData.manualTaxRatePercentage !== undefined) {
       calculatedImpot = parseFloat((totalImposable * (payslipData.manualTaxRatePercentage / 100)).toFixed(2));
+    } else if (payslipData.taxRatePercentage !== undefined && payslipData.taxRatePercentage > 0) {
+      // Use the stored Taux d'imposition directly
+      calculatedImpot = parseFloat((totalImposable * (payslipData.taxRatePercentage / 100)).toFixed(2));
     } else {
       const taxClass = payslipData.taxClass || '2'; // Default to Class 2 if not set
       calculatedImpot = calculateIncomeTax(totalImposable, taxClass);
@@ -1963,6 +1970,7 @@ export default function MonthlyPayslipPage() {
                       taxRateId: taxRateId,
                       taxRatePercentage: taxRate.rate
                     }));
+                    setLastChangedField('taxRatePercentage'); // Trigger recalculation with new rate
                     setHasUnsavedChanges(true);
                   }}
                   className="w-full"
@@ -2052,12 +2060,16 @@ export default function MonthlyPayslipPage() {
                 <div className="text-sm font-medium">
                   {payslipData.useManualTaxRate && payslipData.manualTaxRatePercentage !== undefined
                     ? `${payslipData.manualTaxRatePercentage}% (manuel)`
+                    : payslipData.taxRatePercentage
+                    ? `${payslipData.taxRatePercentage}% (taux d'imposition)`
                     : 'Auto (barème Luxembourg)'}
                 </div>
               )}
               <p className="text-xs text-muted-foreground mt-1">
                 {payslipData.useManualTaxRate
                   ? "IMPÔT = Total Imposable × Taux manuel"
+                  : payslipData.taxRatePercentage
+                  ? "IMPÔT = Total Imposable × Taux d'imposition"
                   : "Calcul automatique selon classe d'impôt"}
               </p>
             </div>
