@@ -1503,7 +1503,7 @@ export default function MonthlyPayslipPage() {
     doc.setFont(undefined, 'bold');
     doc.text('DECOMPTE SALAIRE/TRAITEMENT', pageWidth / 2, yPos, { align: 'center' });
 
-    yPos += 10;
+    yPos += 7;
 
     // ===== EMPLOYEE & COMPANY INFO SECTION =====
     doc.setFontSize(9);
@@ -1530,12 +1530,12 @@ export default function MonthlyPayslipPage() {
       doc.text(`${person.address}`, pageWidth - 14, yPos + 25, { align: 'right' });
     }
 
-    yPos += 37;
+    yPos += 32;
 
     // Amounts in Euros note
     doc.setFontSize(8);
     doc.text('Les montants sont exprimées en Euros.', 14, yPos);
-    yPos += 8;
+    yPos += 5;
 
     // ===== MAIN TABLE WITH CUMULATIVE COLUMNS =====
     const cumulM1TotalBrut = payslipData.m1TotalBrut || 0;
@@ -1565,8 +1565,6 @@ export default function MonthlyPayslipPage() {
         ]
       ],
       body: [
-        // Empty row for spacing
-        ['', '', '', '', '', '', ''],
         // Earnings section
         ['Appointement', payslipData.hoursWorked.toFixed(0), payslipData.hourlyRate.toFixed(4), calculated.appointement.toFixed(2), '', '', ''],
         ...(calculated.joursFeries > 0 ? [['Jours fériée', payslipData.publicHolidayHours.toFixed(0), payslipData.publicHolidayHours > 0 ? payslipData.hourlyRate.toFixed(4) : '0', calculated.joursFeries.toFixed(2), '', '', '']] : []),
@@ -1577,35 +1575,25 @@ export default function MonthlyPayslipPage() {
         ...(payslipData.overtimeHours > 0 ? [['H-S part majorée 40% (H)', payslipData.overtimeHours.toFixed(0), payslipData.overtimeHours > 0 ? (payslipData.hourlyRate * 0.40).toFixed(4) : '0', calculated.heuresSupplPremium.toFixed(2), '', '', '']] : []),
         ...(payslipData.sickLeaveHours > 0 ? [['Absences Maladie (H)', payslipData.sickLeaveHours.toFixed(0), '0', '0', '', '', '']] : []),
         [{ content: 'Total brut', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalBrut.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalBrut.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalBrut + cumulM1TotalBrut).toFixed(2), styles: { fontStyle: 'bold' } }],
-        // Empty row
-        ['', '', '', '', '', '', ''],
         // Contributions section
-        [{ content: 'Cotisation', styles: { fontStyle: 'bold' } }, '', '', '', '', '', ''],
+        [{ content: 'Cotisation', styles: { fontStyle: 'bold', cellPadding: { top: 4, bottom: 1, left: 1.5, right: 1.5 } } }, '', '', '', '', '', ''],
         ['Assurance Maladie', pdfRates.assuranceMaladie.toFixed(4), '', calculated.assuranceMaladie.toFixed(2), '', cumulM1AssuranceMaladie.toFixed(2), (calculated.assuranceMaladie + cumulM1AssuranceMaladie).toFixed(2)],
         ['A-M Majoration espèce', pdfRates.majoration.toFixed(4), '', calculated.majorationEspece.toFixed(2), '', cumulM1Majoration.toFixed(2), (calculated.majorationEspece + cumulM1Majoration).toFixed(2)],
         ['Assurance Pension', pdfRates.assurancePension.toFixed(4), '', calculated.assurancePension.toFixed(2), '', cumulM1AssurancePension.toFixed(2), (calculated.assurancePension + cumulM1AssurancePension).toFixed(2)],
         ['Assurance dépendance', pdfRates.assuranceDependance.toFixed(4), '', calculated.assuranceDependance.toFixed(2), '', cumulM1AssuranceDependance.toFixed(2), (calculated.assuranceDependance + cumulM1AssuranceDependance).toFixed(2)],
         [{ content: 'Total Cotisation', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalCotisation.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalCotisation.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalCotisation + cumulM1TotalCotisation).toFixed(2), styles: { fontStyle: 'bold' } }],
-        // Empty row
-        ['', '', '', '', '', '', ''],
         // Deductions section
-        [{ content: 'Deduction', styles: { fontStyle: 'bold' } }, '', '', '', '', '', ''],
+        [{ content: 'Deduction', styles: { fontStyle: 'bold', cellPadding: { top: 4, bottom: 1, left: 1.5, right: 1.5 } } }, '', '', '', '', '', ''],
         ['FD', '', '', payslipData.fd.toFixed(2), '', '0', payslipData.fd.toFixed(2)],
         ['AC', '', '', payslipData.ac.toFixed(2), '', '0', payslipData.ac.toFixed(2)],
         ['FFO', '', '', payslipData.ffo.toFixed(2), '', '0', payslipData.ffo.toFixed(2)],
         ['FDS', '', '', payslipData.fds.toFixed(2), '', '0', payslipData.fds.toFixed(2)],
-        // Empty row
-        ['', '', '', '', '', '', ''],
-        [{ content: 'Total Imposable', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalImposable.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalImposable.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalImposable + cumulM1TotalImposable).toFixed(2), styles: { fontStyle: 'bold' } }],
-        // Empty row
-        ['', '', '', '', '', '', ''],
+        [{ content: 'Total Imposable', styles: { fontStyle: 'bold', cellPadding: { top: 4, bottom: 1, left: 1.5, right: 1.5 } } }, '', '', { content: calculated.totalImposable.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalImposable.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalImposable + cumulM1TotalImposable).toFixed(2), styles: { fontStyle: 'bold' } }],
         ['IMPOT', '', '', calculated.calculatedImpot.toFixed(2), '', cumulM1Impot.toFixed(2), (calculated.calculatedImpot + cumulM1Impot).toFixed(2)],
         ['CISSM', '', '', calculated.cissm.toFixed(2), '', cumulM1Cissm.toFixed(2), (calculated.cissm + cumulM1Cissm).toFixed(2)],
         ['CIS-CIP-CIM', '', '', calculated.cisCipCim.toFixed(2), '', cumulM1CisCipCim.toFixed(2), (calculated.cisCipCim + cumulM1CisCipCim).toFixed(2)],
         ['CI-CO2', '', '', calculated.ciCo2.toFixed(2), '', cumulM1CiCo2.toFixed(2), (calculated.ciCo2 + cumulM1CiCo2).toFixed(2)],
-        // Empty row
-        ['', '', '', '', '', '', ''],
-        [{ content: 'NET', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, '', '', { content: calculated.net.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, '', { content: cumulM1Net.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: (calculated.net + cumulM1Net).toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
+        [{ content: 'NET', styles: { fontStyle: 'bold', fillColor: [240, 240, 240], cellPadding: { top: 4, bottom: 1, left: 1.5, right: 1.5 } } }, '', '', { content: calculated.net.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, '', { content: cumulM1Net.toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: (calculated.net + cumulM1Net).toFixed(2), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }],
         ...(payslipData.chequeRepas > 0 ? [['Chéque repas', '', '', payslipData.chequeRepas.toFixed(2), '', '', '']] : []),
         ...(payslipData.avanceSalaire > 0 ? [['Avance sur salaire', '', '', payslipData.avanceSalaire.toFixed(2), '', '', '']] : []),
         ...(payslipData.customExpense1Amount ? [[payslipData.customExpense1Label || 'Autre déduction 1', '', '', payslipData.customExpense1Amount.toFixed(2), '', '', '']] : []),
@@ -1616,7 +1604,7 @@ export default function MonthlyPayslipPage() {
         ...(payslipData.customExpense6Amount ? [[payslipData.customExpense6Label || 'Autre ajout 6', '', '', '', '', payslipData.customExpense6Amount.toFixed(2)]] : []),
       ],
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.1 },
+      styles: { fontSize: 8, cellPadding: 1, lineColor: [0, 0, 0], lineWidth: 0.1 },
       headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold' },
       columnStyles: {
         0: { cellWidth: 48 },
@@ -1632,8 +1620,8 @@ export default function MonthlyPayslipPage() {
     // ===== NET A PAYER =====
     const tableEndY = (doc as any).lastAutoTable.finalY;
 
-    // How much space we need below the table before we can save: NET À PAYER box (18) + footer (55) + bottom margin (18) = 91
-    const spaceNeeded = 91;
+    // How much space we need below the table before we can save: NET À PAYER box (15) + footer (45) + bottom margin (18) = 78
+    const spaceNeeded = 78;
     let currentY = tableEndY;
 
     // If not enough room for NET A PAYER + footer on this page, start a new page
@@ -1654,7 +1642,7 @@ export default function MonthlyPayslipPage() {
     doc.text(`${calculated.netAPayer.toFixed(2)} €`, pageWidth - 14 - 27.5, netPayerYPosition + 12, { align: 'center' });
 
     // ===== FOOTER SECTION =====
-    let footerY = netPayerYPosition + 22;
+    let footerY = netPayerYPosition + 17;
 
     // Separator line above footer
     doc.setDrawColor(180, 180, 180);
@@ -1701,7 +1689,7 @@ export default function MonthlyPayslipPage() {
     doc.text(`Taux : ${payslipData.taxRatePercentage ? `${payslipData.taxRatePercentage}%` : '-'}`, col3X, footerY + 18);
     doc.text(`IMPÔT : ${calculated.calculatedImpot.toFixed(2)} €`, col3X, footerY + 24);
 
-    footerY += 34;
+    footerY += 28;
 
     // ── "CONSERVEZ CE BULLETIN" notice ──
     doc.setDrawColor(180, 180, 180);
