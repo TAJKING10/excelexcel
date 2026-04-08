@@ -72,7 +72,10 @@
       "Bash(if exist \"dist\" rmdir /s /q dist)",
       "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\Toufi\\AndroidStudioProjects\\create_deployment.ps1\")",
       "Bash(grep:*)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(find /c/Users/Toufi/AndroidStudioProjects/excelexcelexcel -type f -name *.json -path */src/* -o -type f -name vite.config* -o -type f -name tsconfig*)",
+      "Bash(rm -rf \"C:\\\\Users\\\\Toufi\\\\AndroidStudioProjects\\\\excelexcelexcel\\\\deployment-ready/dist\")",
+      "Bash(cp -r \"C:\\\\Users\\\\Toufi\\\\AndroidStudioProjects\\\\excelexcelexcel\\\\dist\" \"C:\\\\Users\\\\Toufi\\\\AndroidStudioProjects\\\\excelexcelexcel\\\\deployment-ready/dist\")"
     ],
     "deny": [],
     "ask": []

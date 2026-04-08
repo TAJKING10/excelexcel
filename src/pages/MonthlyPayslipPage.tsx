@@ -1477,6 +1477,7 @@ export default function MonthlyPayslipPage() {
     try {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     let yPos = 10;
     const pdfRates = getEffectiveRates(payslipData);
 
@@ -1598,7 +1599,7 @@ export default function MonthlyPayslipPage() {
         [{ content: 'Total Imposable', styles: { fontStyle: 'bold' } }, '', '', { content: calculated.totalImposable.toFixed(2), styles: { fontStyle: 'bold' } }, '', { content: cumulM1TotalImposable.toFixed(2), styles: { fontStyle: 'bold' } }, { content: (calculated.totalImposable + cumulM1TotalImposable).toFixed(2), styles: { fontStyle: 'bold' } }],
         // Empty row
         ['', '', '', '', '', '', ''],
-        ['IMPOT', '', '', payslipData.impot.toFixed(2), '', cumulM1Impot.toFixed(2), (payslipData.impot + cumulM1Impot).toFixed(2)],
+        ['IMPOT', '', '', calculated.calculatedImpot.toFixed(2), '', cumulM1Impot.toFixed(2), (calculated.calculatedImpot + cumulM1Impot).toFixed(2)],
         ['CISSM', '', '', calculated.cissm.toFixed(2), '', cumulM1Cissm.toFixed(2), (calculated.cissm + cumulM1Cissm).toFixed(2)],
         ['CIS-CIP-CIM', '', '', calculated.cisCipCim.toFixed(2), '', cumulM1CisCipCim.toFixed(2), (calculated.cisCipCim + cumulM1CisCipCim).toFixed(2)],
         ['CI-CO2', '', '', calculated.ciCo2.toFixed(2), '', cumulM1CiCo2.toFixed(2), (calculated.ciCo2 + cumulM1CiCo2).toFixed(2)],
@@ -1628,67 +1629,95 @@ export default function MonthlyPayslipPage() {
       },
     });
 
-    // ===== NET A PAYER - Positioned separately like Excel =====
+    // ===== NET A PAYER =====
     const tableEndY = (doc as any).lastAutoTable.finalY;
 
-    // Add 5-6 pixels spacing below the table (≈0.4-0.5 cm) for visual separation
-    // This aligns the box horizontally with the NET row while keeping it visually distinct
-    const netPayerYPosition = tableEndY + 5;
+    // How much space we need below the table before we can save: NET À PAYER box (18) + footer (55) + bottom margin (18) = 91
+    const spaceNeeded = 91;
+    let currentY = tableEndY;
+
+    // If not enough room for NET A PAYER + footer on this page, start a new page
+    if (currentY + spaceNeeded > pageHeight - 15) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    const netPayerYPosition = currentY + 5;
 
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.setFillColor(66, 139, 202);
     doc.setTextColor(255, 255, 255);
-    doc.rect(pageWidth - 14 - 50, netPayerYPosition, 50, 8, 'F');
-    doc.text('NET A PAYER', pageWidth - 14 - 25, netPayerYPosition + 5, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text(calculated.netAPayer.toFixed(2), pageWidth - 14 - 25, netPayerYPosition + 11, { align: 'center' });
+    doc.rect(pageWidth - 14 - 55, netPayerYPosition, 55, 9, 'F');
+    doc.text('NET À PAYER', pageWidth - 14 - 27.5, netPayerYPosition + 5.5, { align: 'center' });
+    doc.setFontSize(11);
+    doc.text(`${calculated.netAPayer.toFixed(2)} €`, pageWidth - 14 - 27.5, netPayerYPosition + 12, { align: 'center' });
 
     // ===== FOOTER SECTION =====
-    // Position footer below the NET À PAYER box with proper spacing
-    let footerY = netPayerYPosition + 20;
+    let footerY = netPayerYPosition + 22;
+
+    // Separator line above footer
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.3);
+    doc.line(14, footerY, pageWidth - 14, footerY);
+    footerY += 5;
 
     doc.setTextColor(0, 0, 0);
+    doc.setLineWidth(0.1);
+
+    // ── Column 1: Congés (H) ──
     doc.setFontSize(9);
     doc.setFont(undefined, 'bold');
-
-    // Leave information
     doc.text('Congés (H)', 14, footerY);
     doc.setFont(undefined, 'normal');
-    doc.text(`Légaux: ${payslipData.legalLeave}`, 14, footerY + 5);
-    doc.text(`Report: ${payslipData.leaveReport}`, 14, footerY + 10);
-    doc.text(`Pris: ${payslipData.leaveTaken}`, 14, footerY + 15);
-    doc.text(`Solde: ${payslipData.legalLeave + payslipData.leaveReport - payslipData.leaveTaken}`, 14, footerY + 20);
-
-    // Remuneration information
+    doc.setFontSize(8);
+    doc.text(`Légaux : ${payslipData.legalLeave} H`, 14, footerY + 6);
+    doc.text(`Report : ${payslipData.leaveReport} H`, 14, footerY + 12);
+    doc.text(`Pris : ${payslipData.leaveTaken} H`, 14, footerY + 18);
     doc.setFont(undefined, 'bold');
-    doc.text('Rémunération', 80, footerY);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Salaire mensuel: ${calculated.appointement.toFixed(2)}`, 80, footerY + 5);
-    doc.text(`Heures: ${payslipData.hoursWorked}`, 80, footerY + 10);
-    doc.text(`Salaire horaire: ${payslipData.hourlyRate.toFixed(4)}`, 80, footerY + 15);
+    doc.text(`Solde : ${(payslipData.legalLeave + payslipData.leaveReport - payslipData.leaveTaken)} H`, 14, footerY + 24);
 
-    // Tax card information
+    // ── Column 2: Rémunération ──
+    const col2X = pageWidth / 2 - 20;
     doc.setFont(undefined, 'bold');
-    doc.text('Fiche d\'impôts', pageWidth - 70, footerY);
+    doc.setFontSize(9);
+    doc.text('Rémunération', col2X, footerY);
     doc.setFont(undefined, 'normal');
-    if (employee?.taxCardNumber) {
-      doc.text(`N° de carte: ${employee.taxCardNumber}`, pageWidth - 70, footerY + 5);
-    }
-    if (employee?.taxClass) {
-      doc.text(`Classe: ${employee.taxClass}`, pageWidth - 70, footerY + 10);
-    }
-    if (payslipData.taxRatePercentage) {
-      doc.text(`Taux: ${payslipData.taxRatePercentage}%`, pageWidth - 70, footerY + 15);
-    } else {
-      doc.text('Taux: -', pageWidth - 70, footerY + 15);
-    }
+    doc.setFontSize(8);
+    doc.text(`Salaire mensuel : ${calculated.totalBrut.toFixed(2)} €`, col2X, footerY + 6);
+    doc.text(`Heures : ${payslipData.hoursWorked}`, col2X, footerY + 12);
+    doc.text(`Salaire horaire : ${payslipData.hourlyRate.toFixed(4)} €`, col2X, footerY + 18);
+    doc.text(`N° matricule : ${payslipData.matriculeAssure || '-'}`, col2X, footerY + 24);
 
-    footerY += 28;
+    // ── Column 3: Fiche d'impôts ──
+    const col3X = pageWidth - 14 - 55;
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(9);
+    doc.text("Fiche d'impôts", col3X, footerY);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(8);
+    doc.text(`N° de carte : ${(employee as any)?.taxCardNumber || person?.identityNumber || '-'}`, col3X, footerY + 6);
+    doc.text(`Classe d'impôt : ${payslipData.taxClass || employee?.taxClass || '2'}`, col3X, footerY + 12);
+    doc.text(`Taux : ${payslipData.taxRatePercentage ? `${payslipData.taxRatePercentage}%` : '-'}`, col3X, footerY + 18);
+    doc.text(`IMPÔT : ${calculated.calculatedImpot.toFixed(2)} €`, col3X, footerY + 24);
+
+    footerY += 34;
+
+    // ── "CONSERVEZ CE BULLETIN" notice ──
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.3);
+    doc.line(14, footerY, pageWidth - 14, footerY);
+    footerY += 5;
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(80, 80, 80);
+    doc.text('⚠  CONSERVEZ CE BULLETIN DE PAIE SANS LIMITATION DE DURÉE  ⚠', pageWidth / 2, footerY, { align: 'center' });
+
+    footerY += 6;
     doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(130, 130, 130);
     doc.text(`Document généré le ${new Date().toLocaleDateString('fr-LU')} à ${new Date().toLocaleTimeString('fr-LU')}`, pageWidth / 2, footerY, { align: 'center' });
-    doc.text('Merci', pageWidth / 2, footerY + 4, { align: 'center' });
 
     doc.save(`Bulletin_Salaire_${person?.lastName}_${MONTHS.find(m => m.value === selectedMonth)?.label}_${selectedYear}.pdf`);
     } catch (error) {
